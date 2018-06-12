@@ -208,8 +208,9 @@ Distribution directory          = ${DIST_DIR}
       }
       post{
         always {
-          warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Sphinx-build', pattern: "${LOGS_DIR}/build_sphinx.log"]]
+          
           dir("${LOGS_DIR}"){
+            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Sphinx-build', pattern: "build_sphinx.log"]]
             archiveArtifacts artifacts: "build_sphinx.log"
           }
           
