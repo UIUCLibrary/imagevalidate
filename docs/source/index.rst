@@ -1,5 +1,5 @@
-Welcome to uiucprescon-imagevalidate 's documentation!
-======================================================
+Welcome to uiucprescon-imagevalidate's documentation!
+=====================================================
 
 .. toctree::
    :titlesonly:
