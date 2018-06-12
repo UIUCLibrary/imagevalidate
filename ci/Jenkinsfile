@@ -240,7 +240,7 @@ Distribution directory          = ${DIST_DIR}
           steps {
             dir("source"){
               script {
-                bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=uiucprescon"
+                bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=uiucprescon.imagevalidate"
                 
               }
             }
