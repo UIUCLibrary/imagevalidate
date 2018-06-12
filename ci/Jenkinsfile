@@ -354,6 +354,8 @@ Distribution directory          = ${DIST_DIR}
         success {
           dir("${DIST_DIR}") {
             archiveArtifacts artifacts: '*.whl', fingerprint: true
+            archiveArtifacts artifacts: '*.zip', fingerprint: true
+            archiveArtifacts artifacts: '*.tar.gz', fingerprint: true
           }
         }
       }
