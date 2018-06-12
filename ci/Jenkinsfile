@@ -181,8 +181,9 @@ Distribution directory          = ${DIST_DIR}
       }
       post{
         always{
-          warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: "${LOGS_DIR}/build.log"]]
+          
           dir("${LOGS_DIR}"){
+            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: "build.log"]]
             archiveArtifacts artifacts: "*.log"
           }
         }
