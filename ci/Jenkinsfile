@@ -238,6 +238,9 @@ Distribution directory          = ${DIST_DIR}
             equals expected: true, actual: params.TEST_UNIT_TESTS
           }
           steps {
+            dir("${REPORT_DIR}\\coverage\\"){
+              bat "dir"
+            }
             dir("source"){
               script {
                 bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
