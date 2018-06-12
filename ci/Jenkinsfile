@@ -13,7 +13,7 @@ def VENV_PIP = ""
 
 pipeline {
   agent {
-    label 'Windows && VS2015 && DevPi'
+    label 'Windows && DevPi'
   }
   triggers {
         cron('@daily')
@@ -46,7 +46,7 @@ pipeline {
         // Set up the reports directory variable 
         script{
             REPORT_DIR = "${pwd tmp: true}\\reports"
-            LOGS_DIR = "${pwd tmp: true}\\logs"
+            LOGS_DIR = "${WORKSPACE}\\logs"
             BUILD_DIR = "${pwd tmp: true}\\build"
             DIST_DIR = "${WORKSPACE}\\dist"
             SOURCE_DIR = "${WORKSPACE}\\source"
