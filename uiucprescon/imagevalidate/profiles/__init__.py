@@ -1,0 +1,1 @@
+from .HathiJP2 import HathiJP2
