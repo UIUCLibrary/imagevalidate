@@ -448,9 +448,14 @@ Distribution directory          = ${DIST_DIR}
           }
         }
         stage("Built Distribution: .whl") {
+          agent {
+            node {
+              label "Windows && Python3"
+            }
+          }
           steps {
             script {
-              node("Windows") {
+              // node("Windows") {
                 bat "${tool 'CPython-3.6'} -m venv venv"
                 bat "venv\\Scripts\\pip.exe install tox devpi-client"
                 bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
@@ -460,7 +465,7 @@ Distribution directory          = ${DIST_DIR}
                   echo "Testing Whl package in devpi"
                   bat "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${PKG_NAME} -s whl"
                 }
-              }
+              // }
             }
           }
         }
