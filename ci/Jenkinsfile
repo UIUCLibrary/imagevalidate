@@ -159,13 +159,14 @@ Logs directory                  = ${LOGS_DIR}
 Build directory                 = ${BUILD_DIR}
 Distribution directory          = ${DIST_DIR}
 """        
-          dir(pwd(tmp: true)){
-              archiveArtifacts artifacts: "${LOGS_DIR}/pippackages_system_${NODE_NAME}.log"
-              archiveArtifacts artifacts: "${LOGS_DIR}/pippackages_venv_${NODE_NAME}.log"
+          dir("${LOGS_DIR}"){
+              archiveArtifacts artifacts: "pippackages_system_${NODE_NAME}.log"
+              archiveArtifacts artifacts: "pippackages_venv_${NODE_NAME}.log"
 
           }
         }
         failure {
+            bat "dir"
             deleteDir()
         }
       }
