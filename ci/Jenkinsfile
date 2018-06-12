@@ -46,7 +46,7 @@ pipeline {
         // Set up the reports directory variable 
         script{
             REPORT_DIR = "${pwd tmp: true}\\reports"
-            LOGS_DIR = "${WORKSPACE}\\logs"
+            LOGS_DIR = "${pwd tmp: true}\\logs"
             BUILD_DIR = "${pwd tmp: true}\\build"
             DIST_DIR = "${WORKSPACE}\\dist"
             SOURCE_DIR = "${WORKSPACE}\\source"
@@ -67,6 +67,7 @@ pipeline {
       
         dir("${LOGS_DIR}"){
           deleteDir()
+          bat "dir"
         }
         
 
