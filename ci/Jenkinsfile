@@ -1,0 +1,504 @@
+def PKG_NAME = "unknown"
+def PKG_VERSION = "unknown"
+def DOC_ZIP_FILENAME = "doc.zip"
+def junit_filename = "junit.xml"
+def REPORT_DIR = ""
+def LOGS_DIR = ""
+def BUILD_DIR = ""
+def DIST_DIR = ""
+def SOURCE_DIR = ""
+def VENV_ROOT = ""
+def VENV_PYTHON = ""
+def VENV_PIP = ""
+
+pipeline {
+  agent {
+    label 'Windows && VS2015 && DevPi'
+  }
+  triggers {
+        cron('@daily')
+    }
+  options {
+        disableConcurrentBuilds()  //each branch has 1 job running at a time
+        timeout(60)  // Timeout after 60 minutes. This shouldn't take this long but it hangs for some reason
+        checkoutToSubdirectory("source")
+  }
+  environment {
+    build_number = VersionNumber(projectStartDate: '2018-6-12', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
+    PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
+  }
+  parameters {
+    booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
+      booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
+      booleanParam(name: "TEST_UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
+      booleanParam(name: "TEST_DOCTEST", defaultValue: true, description: "Run Doctest on the documentation")
+      booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy Tests")
+      booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 Tests")
+      booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
+      booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only")
+      booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation. Release Branch Only")
+      string(name: 'DEPLOY_DOCS_URL_SUBFOLDER', defaultValue: "pykdu_compress", description: 'The directory that the docs should be saved under')
+  }
+
+  stages {
+    stage('Configure Environment') {
+      steps {
+        // Set up the reports directory variable 
+        script{
+            REPORT_DIR = "${pwd tmp: true}\\reports"
+            LOGS_DIR = "${pwd tmp: true}\\logs"
+            BUILD_DIR = "${pwd tmp: true}\\build"
+            DIST_DIR = "${WORKSPACE}\\dist"
+            SOURCE_DIR = "${WORKSPACE}\\source"
+            
+        }
+        script{
+          if (params.FRESH_WORKSPACE == true){
+            deleteDir()
+            dir("${SOURCE_DIR}"){
+                checkout scm
+                bat "dir"
+
+            }
+            
+          }
+        }
+
+      
+        dir("${LOGS_DIR}"){
+          deleteDir()
+        }
+        
+
+        dir("${BUILD_DIR}"){
+          deleteDir()
+        }
+
+        dir("${DIST_DIR}"){
+          deleteDir()
+          // echo "Cleaned out distrubution directory"
+          // bat "dir"
+        }
+
+        dir("${REPORT_DIR}"){
+          deleteDir()
+          echo "Cleaned out reports directory"
+          bat "dir"
+        }
+        lock("system_python_${NODE_NAME}"){
+          bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+        }
+
+
+        script {
+          dir("${SOURCE_DIR}"){
+            PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
+            PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+          }
+  
+          // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
+          def alljob = env.JOB_NAME.tokenize("/") as String[]
+          def project_name = alljob[0]
+          DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
+          
+          junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
+        }
+
+        tee("${LOGS_DIR}/pippackages_system_${NODE_NAME}.log") {
+          bat "${tool 'CPython-3.6'} -m pip list"
+        }
+
+        bat "${tool 'CPython-3.6'} -m venv venv"
+        
+        script {
+          VENV_ROOT = "${WORKSPACE}\\venv"
+          
+          // set python exe
+          VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
+          bat "${VENV_PYTHON} --version"
+
+          VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
+          bat "${VENV_PIP} --version"
+        }
+        script {
+            try {
+                bat "call venv\\Scripts\\activate.bat && python -m pip install -U pip"
+            }
+            catch (exc) {
+                bat "${tool 'CPython-3.6'} -m venv venv"
+                bat "call venv\\Scripts\\activate.bat && python -m pip install -U pip --no-cache-dir"
+            }
+            
+
+        }
+        bat "${tool 'CPython-3.6'} -m venv venv"
+        bat "${VENV_PIP} install devpi-client -r ${SOURCE_DIR}\\requirements.txt --upgrade-strategy only-if-needed"
+
+        bat "${VENV_PYTHON} -m pip install devpi-client tox lxml mypy flake8"
+
+        tee("${LOGS_DIR}/pippackages_venv_${NODE_NAME}.log") {
+          bat "${VENV_PIP} list"
+        }
+        bat "${VENV_ROOT}\\Scripts\\devpi use https://devpi.library.illinois.edu"
+        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
+            bat "${VENV_ROOT}\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+        }
+      }
+      post{
+        always{
+          echo """Name                            = ${PKG_NAME}
+Version                         = ${PKG_VERSION}
+Report Directory                = ${REPORT_DIR}
+documentation zip file          = ${DOC_ZIP_FILENAME}
+Python virtual environment path = ${VENV_ROOT}
+VirtualEnv Python executable    = ${VENV_PYTHON}
+VirtualEnv Pip executable       = ${VENV_PIP}
+Source directory                = ${SOURCE_DIR}
+Logs directory                  = ${LOGS_DIR}
+Build directory                 = ${BUILD_DIR}
+Distribution directory          = ${DIST_DIR}
+"""        
+          dir(pwd(tmp: true)){
+              archiveArtifacts artifacts: "${LOGS_DIR}/pippackages_system_${NODE_NAME}.log"
+              archiveArtifacts artifacts: "${LOGS_DIR}/pippackages_venv_${NODE_NAME}.log"
+
+          }
+        }
+        failure {
+            deleteDir()
+        }
+      }
+    }
+    stage("Python Package"){
+      steps {
+        tee("${LOGS_DIR}/build.log") {
+          dir("${SOURCE_DIR}"){
+            bat script: "${VENV_PYTHON} setup.py build -b ${BUILD_DIR}"
+          }
+        }
+      }
+      post{
+        always{
+          warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: "${LOGS_DIR}/build.log"]]
+          archiveArtifacts artifacts: "${LOGS_DIR}/*.log"
+        }
+      }
+    }
+    stage("Sphinx documentation"){
+      steps {
+        echo "Building docs on ${env.NODE_NAME}"
+          script{
+            // Add a line to config file so auto docs look in the build folder
+            def sphinx_config_file = "${SOURCE_DIR}/docs/source/conf.py"
+            def extra_line = "sys.path.insert(0, os.path.abspath('${BUILD_DIR}/build/lib'))"
+            def readContent = readFile "${sphinx_config_file}"
+            echo "Adding \"${extra_line}\" to ${sphinx_config_file}."
+            writeFile file: "${sphinx_config_file}", text: readContent+"\r\n${extra_line}\r\n"
+          }
+        tee("${LOGS_DIR}/build_sphinx.log") {
+          // dir("build/lib"){
+            bat "${VENV_ROOT}\\Scripts\\sphinx-build.exe -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees"
+          // }
+        }
+      }
+      post{
+        always {
+          warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: "${LOGS_DIR}/build_sphinx.log"]]
+          archiveArtifacts artifacts: "${LOGS_DIR}/build_sphinx.log"
+        }
+        success{
+          publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${BUILD_DIR}/docs/html", reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+          script{
+            // // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
+            // def alljob = env.JOB_NAME.tokenize("/") as String[]
+            // def project_name = alljob[0]
+            dir("${DIST_DIR}"){
+              zip archive: true, dir: "${BUILD_DIR}/docs/html", glob: '', zipFile: "${DOC_ZIP_FILENAME}"
+            } 
+          }
+        }
+        failure{
+            echo "Failed to build Python package"
+        }
+      }
+    }
+  
+    stage('Test') {
+      parallel {
+        stage("Tox") {
+          when {
+            equals expected: true, actual: params.TEST_UNIT_TESTS
+          }
+          steps {
+            dir("source"){
+              script {
+                bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                // --cov-report html:${REPORT_DIR}/coverage/ --cov=pykdu_compress"
+                
+              }
+            }
+            
+          }
+          post{
+            always{
+              dir("${REPORT_DIR}"){
+                junit "${junit_filename}"
+              }              
+              publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+            }
+            failure{
+              echo "Tox test failed. Removing ${WORKSPACE}\\.tox\\PyTest"
+              dir("${WORKSPACE}\\.tox\\PyTest"){
+                deleteDir()
+              }
+            }
+          }
+        }
+        stage("Run Doctest Tests"){
+          when {
+            equals expected: true, actual: params.TEST_DOCTEST
+          }
+          steps {
+            dir("${SOURCE_DIR}"){
+              dir("${REPORT_DIR}/doctests"){
+                echo "Cleaning doctest reports directory"
+                deleteDir()
+              }
+              bat "${VENV_ROOT}\\Scripts\\sphinx-build.exe -b doctest docs\\source ${BUILD_DIR}\\docs -d ${BUILD_DIR}\\docs\\doctrees -v" 
+            }
+            bat "move ${BUILD_DIR}\\docs\\output.txt ${REPORT_DIR}\\doctest.txt"
+          }
+          post{
+            always {
+              dir("${REPORT_DIR}"){
+                archiveArtifacts artifacts: "doctest.txt"
+              }
+            }
+          }
+        }
+        stage("Run MyPy Static Analysis") {
+          when {
+            equals expected: true, actual: params.TEST_RUN_MYPY
+          }
+          steps{
+            dir("${REPORT_DIR}/mypy/html"){
+              deleteDir()
+              bat "dir"
+            }
+            script{
+              tee("${LOGS_DIR}/mypy.log") {
+                try{
+                  dir("${SOURCE_DIR}"){
+                    bat "dir"
+                    bat "${VENV_ROOT}\\Scripts\\mypy.exe -p pykdu_compress --html-report ${REPORT_DIR}\\mypy\\html"
+                  }
+                } catch (exc) {
+                  echo "MyPy found some warnings"
+                }
+              }
+            }
+          }
+          post {
+            always {
+              dir(pwd(tmp: true)){
+                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: "${LOGS_DIR}/mypy.log"]], unHealthy: ''
+              }
+              publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+            }
+          }
+        }
+        stage("Flake8") {
+          when {
+              equals expected: true, actual: params.TEST_RUN_FLAKE8
+          }
+          steps{
+            script{
+              try{
+                tee('flake8.log') {
+                  dir("source"){
+                    bat "${VENV_ROOT}\\Scripts\\flake8.exe pykdu_compress --format=pylint"
+                  }
+                }
+              } catch (exc) {
+                echo "flake8 found some warnings"
+              }
+            }
+          }
+          post {
+            always {
+              warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'flake8.log']], unHealthy: ''
+            }
+          }
+        }
+      }
+    }
+    stage('Package') {
+      steps {
+        dir("${SOURCE_DIR}"){
+
+          // bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist"
+          bat "${VENV_PYTHON} setup.py bdist_wheel sdist -d ${DIST_DIR} bdist_wheel -d ${DIST_DIR}"
+        }
+      }
+      post{
+        success {
+          dir("${DIST_DIR}") {
+            archiveArtifacts artifacts: '*.whl', fingerprint: true
+          }
+        }
+      }
+    }
+    stage("Deploying to Devpi") {
+      when {
+        expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev")}
+      }
+      steps {
+        bat "${VENV_ROOT}\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
+        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+          bat "${VENV_ROOT}\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+          bat "${VENV_ROOT}\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+          dir("${SOURCE_DIR}"){
+            script {
+              bat "${VENV_ROOT}\\Scripts\\devpi.exe upload --from-dir ${DIST_DIR} --verbose"
+              try {
+                bat "${VENV_ROOT}\\Scripts\\devpi.exe upload --only-docs ${DIST_DIR}\\${DOC_ZIP_FILENAME}"
+              } catch (exc) {
+                echo "Unable to upload to devpi with docs."
+              }
+            }
+          }
+        }
+      }
+    }
+    stage("Test Devpi packages") {
+      when {
+          expression { params.DEPLOY_DEVPI == true  && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev")}
+      }
+      parallel {
+        stage("Built Distribution: .whl") {
+          steps {
+            script {
+              node("Windows") {
+                bat "${tool 'CPython-3.6'} -m venv venv"
+                bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
+                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                  bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                  bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                  echo "Testing Whl package in devpi"
+                  bat "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${PKG_NAME} -s whl"
+                }
+              }
+            }
+          }
+        }
+      }
+      post {
+        success {
+          echo "It Worked. Pushing file to ${env.BRANCH_NAME} index"
+          script {
+            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+              bat "${VENV_ROOT}\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+              bat "${VENV_ROOT}\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+              bat "${VENV_ROOT}\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+            }
+          }
+        }
+      }
+
+    }
+    stage("Release") {
+      parallel {
+        stage("Release to DevPi production") {
+          when {
+            allOf{
+              equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+              branch "master"
+            }
+          }
+          steps{
+            input "Release ${PKG_NAME} ${PKG_VERSION} to DevPi Production?"
+            // script {
+            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+              bat "${VENV_ROOT}\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+            }
+            // }
+            bat "${VENV_ROOT}\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+            bat "${VENV_ROOT}\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
+          }
+        }
+        stage("Deploy online documentation") {
+          when {
+            allOf{
+              equals expected: true, actual: params.DEPLOY_DOCS
+              branch "master"
+            }
+          }
+          steps {
+            bat "${VENV_PYTHON} setup.py build_sphinx"
+            dir("${BUILD_DIR}/docs/html/"){
+              input 'Update project documentation?'
+              sshPublisher(
+                publishers: [
+                  sshPublisherDesc(
+                    configName: 'apache-ns - lib-dccuser-updater', 
+                    sshLabel: [label: 'Linux'], 
+                    transfers: [sshTransfer(excludes: '', 
+                    execCommand: '', 
+                    execTimeout: 120000, 
+                    flatten: false, 
+                    makeEmptyDirs: false, 
+                    noDefaultExcludes: false, 
+                    patternSeparator: '[, ]+', 
+                    remoteDirectory: "${params.DEPLOY_DOCS_URL_SUBFOLDER}", 
+                    remoteDirectorySDF: false, 
+                    removePrefix: '', 
+                    sourceFiles: '**')], 
+                  usePromotionTimestamp: false, 
+                  useWorkspaceInPromotion: false, 
+                  verbose: true
+                  )
+                ]
+              )
+            }
+          }
+        }
+      }
+    }
+  }
+  post {
+    cleanup {
+      
+      dir("${DIST_DIR}") {
+        deleteDir()
+      }
+
+      dir("${BUILD_DIR}") {
+        deleteDir()
+      }
+      script {
+        if(fileExists("${SOURCE_DIR}/setup.py")){
+          dir("${SOURCE_DIR}"){
+            try{
+              bat "${VENV_PYTHON} setup.py clean --all"
+            } catch (Exception ex) {
+              // echo "Unable to succesfully run clean. Purging source directory."
+              deleteDir()
+            }
+            bat "dir"
+          }
+        }                
+        if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
+          withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+            bat "${VENV_ROOT}\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+            bat "${VENV_ROOT}\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+          }
+
+          def devpi_remove_return_code = bat returnStatus: true, script:"${VENV_ROOT}\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+          echo "Devpi remove exited with code ${devpi_remove_return_code}."
+        }
+      }
+      bat "dir"
+    }
+  }
+}
