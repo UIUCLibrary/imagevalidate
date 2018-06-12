@@ -37,7 +37,7 @@ pipeline {
       booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
       booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only")
       booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation. Release Branch Only")
-      string(name: 'DEPLOY_DOCS_URL_SUBFOLDER', defaultValue: "pykdu_compress", description: 'The directory that the docs should be saved under')
+      string(name: 'DEPLOY_DOCS_URL_SUBFOLDER', defaultValue: "imagevalidate", description: 'The directory that the docs should be saved under')
   }
 
   stages {
@@ -239,8 +239,7 @@ Distribution directory          = ${DIST_DIR}
           steps {
             dir("source"){
               script {
-                bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
-                // --cov-report html:${REPORT_DIR}/coverage/ --cov=pykdu_compress"
+                bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=uiucprescon"
                 
               }
             }
@@ -297,7 +296,7 @@ Distribution directory          = ${DIST_DIR}
                 try{
                   dir("${SOURCE_DIR}"){
                     bat "dir"
-                    bat "${VENV_ROOT}\\Scripts\\mypy.exe -p pykdu_compress --html-report ${REPORT_DIR}\\mypy\\html"
+                    bat "${VENV_ROOT}\\Scripts\\mypy.exe -p uiucprescon --html-report ${REPORT_DIR}\\mypy\\html"
                   }
                 } catch (exc) {
                   echo "MyPy found some warnings"
@@ -323,7 +322,7 @@ Distribution directory          = ${DIST_DIR}
               try{
                 tee('flake8.log') {
                   dir("source"){
-                    bat "${VENV_ROOT}\\Scripts\\flake8.exe pykdu_compress --format=pylint"
+                    bat "${VENV_ROOT}\\Scripts\\flake8.exe uiucprescon --format=pylint"
                   }
                 }
               } catch (exc) {
