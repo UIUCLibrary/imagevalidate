@@ -1,4 +1,4 @@
 About
 =====
 
-Library for validating image file metadata.
+The imagevalidate Library is for validating image file metadata.
