@@ -307,8 +307,8 @@ Distribution directory          = ${DIST_DIR}
           }
           post {
             always {
-              dir(pwd(tmp: true)){
-                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: "${LOGS_DIR}/mypy.log"]], unHealthy: ''
+              dir("${LOGS_DIR}"){
+                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: "mypy.log"]], unHealthy: ''
               }
               publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
             }
