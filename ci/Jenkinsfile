@@ -13,7 +13,7 @@ def VENV_PIP = ""
 
 pipeline {
   agent {
-    label 'Windows && DevPi'
+    label 'Windows'
   }
   triggers {
         cron('@daily')
@@ -338,6 +338,7 @@ Distribution directory          = ${DIST_DIR}
             always {
               dir("${LOGS_DIR}"){
                 warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'flake8.log']], unHealthy: ''
+                archiveArtifacts artifacts: 'flake8.log', fingerprint: true
               }
               
             }
