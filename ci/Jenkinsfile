@@ -135,7 +135,7 @@ pipeline {
         bat "${tool 'CPython-3.6'} -m venv venv"
         bat "${VENV_PIP} install devpi-client -r ${SOURCE_DIR}\\requirements.txt --upgrade-strategy only-if-needed"
 
-        bat "${VENV_PYTHON} -m pip install devpi-client tox lxml mypy flake8 sphinx"
+        bat "${VENV_PYTHON} -m pip install devpi-client tox lxml mypy flake8 sphinx wheel"
 
         tee("${LOGS_DIR}/pippackages_venv_${NODE_NAME}.log") {
           bat "${VENV_PIP} list"
