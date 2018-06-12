@@ -320,7 +320,7 @@ Distribution directory          = ${DIST_DIR}
           steps{
             script{
               try{
-                tee('flake8.log') {
+                tee("${LOGS_DIR}/flake8.log") {
                   dir("source"){
                     bat "${VENV_ROOT}\\Scripts\\flake8.exe uiucprescon --format=pylint"
                   }
@@ -332,7 +332,10 @@ Distribution directory          = ${DIST_DIR}
           }
           post {
             always {
-              warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'flake8.log']], unHealthy: ''
+              dir("${LOGS_DIR}"){
+                warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'flake8.log']], unHealthy: ''
+              }
+              
             }
           }
         }
