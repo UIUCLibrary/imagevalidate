@@ -1,3 +1,9 @@
+from .report import Report
 from .profile import Profile
+from . import profiles
 
-__all__ = ["Profile"]
+__all__ = [
+    "Report",
+    "Profile",
+    "profiles",
+]
