@@ -1,3 +1,7 @@
-from .HathiJP2 import HathiJP2
+from .absProfile import AbsProfile
+from .hathijp2 import HathiJP2
 
-__all__ = ["HathiJP2"]
+__all__ = [
+    "AbsProfile",
+    "HathiJP2",
+]
