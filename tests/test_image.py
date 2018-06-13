@@ -1,6 +1,6 @@
 import pytest
-from uiucprescon import imagevalidate
 from uiucprescon.imagevalidate import profiles
+from uiucprescon import imagevalidate
 
 import os
 
@@ -19,6 +19,13 @@ def test_missing_file():
     with pytest.raises(FileNotFoundError):
         report = hathi_jp2_profile.validate(file="invalid_file.jp2")
 
+
 if "test_image" in os.environ.keys():
-    def test_dummy():
-        pass
+    def test_report():
+        test_image = os.environ["test_image"]
+        assert os.path.exists(test_image)
+        hathi_jp2_profile = imagevalidate.Profile(profiles.HathiJP2())
+        report = hathi_jp2_profile.validate(file=test_image)
+        assert isinstance(report, imagevalidate.Report)
+        assert report.valid
+
