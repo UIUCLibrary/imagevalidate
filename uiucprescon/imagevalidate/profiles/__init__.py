@@ -1,7 +1,7 @@
 from .absProfile import AbsProfile
-from .hathijp2 import HathiJP2
+from .hathi_tiff import HathiTiff
 
 __all__ = [
     "AbsProfile",
-    "HathiJP2",
+    "HathiTiff",
 ]

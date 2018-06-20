@@ -13,7 +13,7 @@ def test_load_profile():
 
 
 def test_missing_file():
-    hathi_jp2_profile = imagevalidate.Profile(profiles.HathiJP2())
+    hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiff())
     with pytest.raises(FileNotFoundError):
-        report = hathi_jp2_profile.validate(file="invalid_file.jp2")
+        report = hathi_tiff_profile .validate(file="invalid_file.tif")
 
