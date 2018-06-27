@@ -43,9 +43,10 @@ class HathiTiff(AbsProfile):
         report_data = self._get_report_data(image)
         report._properties = report_data
         analysis = self.analyze_data(report_data)
-
+        report._analysis_data.update(analysis)
         for issue in self.parse_issues(analysis, report_data):
-            report._issues.append(issue)
+            # report._issues.append(issue)
+            report._add_issue(issue)
 
         return report
 
@@ -68,7 +69,7 @@ class HathiTiff(AbsProfile):
         icc = image.icc()
         device_model = icc.get('device_model')
         if device_model:
-            color_space = str(device_model)
+            color_space = device_model.value.decode("ascii").rstrip(' \0')
         else:
             color_space = None
         return color_space
@@ -81,6 +82,10 @@ class HathiTiff(AbsProfile):
         for field, result in data.items():
             if result.actual is None:
                 analysis["missing"].append(field)
+                continue
+
+            if result.actual is "":
+                analysis["empty"].append(field)
                 continue
 
             if result.actual != result.expected and \
