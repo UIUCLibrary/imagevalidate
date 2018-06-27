@@ -48,6 +48,9 @@ class AbsProfile(metaclass=abc.ABCMeta):
         for field in analysis.get("missing", list()):
             yield "No metadata for \"{}\" found in file.".format(field)
 
+        for field in analysis.get("empty", list()):
+            yield "The \"{}\" field is empty.".format(field)
+
         for field in analysis.get("mismatch", list()):
             data_expected = report_data[field].expected
             data_got = report_data[field].actual
