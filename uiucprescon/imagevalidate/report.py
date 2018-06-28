@@ -1,10 +1,16 @@
 from uiucprescon import imagevalidate
 from typing import NamedTuple, Optional, Dict, List, Union
+from enum import Enum
+
+
+class ResultCategory(Enum):
+    ANY = 0
+    NONE = 1
 
 
 class Result(NamedTuple):
-    expected: Union[str, None]
-    actual: str
+    expected: Union[str, ResultCategory]
+    actual: Optional[str]
 
 
 class Report:
@@ -18,10 +24,11 @@ class Report:
     def valid(self) -> bool:
         return len(self._data.items()) == 0
 
-    def issues(self, issue_type: imagevalidate.IssueCategory=None)\
+    def issues(self,
+               issue_type: Optional[imagevalidate.IssueCategory]=None) \
             -> List[str]:
 
-        if issue_type:
+        if issue_type is not None:
             return self._data.get(issue_type, list())
         else:
             # In issue category is selected, return all

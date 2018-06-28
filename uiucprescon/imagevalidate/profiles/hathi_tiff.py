@@ -63,10 +63,10 @@ class HathiTiff(AbsProfile):
 
         data = super().get_data_from_image(image)
 
-        color_space = cls._determine_color_space(image)
+        color_space = cls.determine_color_space(image)
         data['Color Space'] = Result(expected="sRGB", actual=color_space)
 
-        longest_side = cls._get_longest_side(image)
+        longest_side = max(image.pixelHeight, image.pixelWidth)
 
         data['Pixel on longest angle'] = Result(
             expected="3000",
@@ -75,8 +75,8 @@ class HathiTiff(AbsProfile):
 
         return data
 
-    @classmethod
-    def _determine_color_space(cls, image):
+    @staticmethod
+    def determine_color_space(image: py3exiv2bind.Image)->typing.Optional[str]:
         icc = image.icc()
 
         device_model = icc.get('device_model')\
@@ -88,8 +88,5 @@ class HathiTiff(AbsProfile):
         pref_ccm = icc.get("pref_ccm").value.decode("ascii").rstrip(' \0')
         if pref_ccm:
             return pref_ccm
-        return None
 
-    @classmethod
-    def _get_longest_side(cls, image)->int:
-        return max(image.pixelHeight, image.pixelWidth)
+        return None

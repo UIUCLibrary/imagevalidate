@@ -28,8 +28,8 @@ def test_colorspace():
     print(report)
     assert len(report.issues()) == 1
     assert len(report.issues(issue_type=IssueCategory.INVALID_DATA)) == 1
-    assert len(report.issues(issue_type=IssueCategory.EMPTY)) == 0
-    assert len(report.issues(issue_type=IssueCategory.MISSING)) == 0
+    assert len(report.issues(issue_type=IssueCategory.EMPTY_DATA)) == 0
+    assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 0
     assert not report.valid
 
 
@@ -42,8 +42,8 @@ def test_correct():
     assert "No issues discovered" in str(report)
     assert len(report.issues()) == 0
     assert len(report.issues(issue_type=IssueCategory.INVALID_DATA)) == 0
-    assert len(report.issues(issue_type=IssueCategory.EMPTY)) == 0
-    assert len(report.issues(issue_type=IssueCategory.MISSING)) == 0
+    assert len(report.issues(issue_type=IssueCategory.EMPTY_DATA)) == 0
+    assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 0
     assert report.valid
 
 
@@ -55,8 +55,8 @@ def test_empty_address():
     print(report)
     assert len(report.issues()) == 1
     assert len(report.issues(issue_type=IssueCategory.INVALID_DATA)) == 0
-    assert len(report.issues(issue_type=IssueCategory.EMPTY)) == 1
-    assert len(report.issues(issue_type=IssueCategory.MISSING)) == 0
+    assert len(report.issues(issue_type=IssueCategory.EMPTY_DATA)) == 1
+    assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 0
     assert not report.valid
 
 
@@ -66,8 +66,8 @@ def test_empty_city():
     hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiff())
     report = hathi_tiff_profile.validate(file=test_image)
     assert len(report.issues(issue_type=IssueCategory.INVALID_DATA)) == 0
-    assert len(report.issues(issue_type=IssueCategory.EMPTY)) == 1
-    assert len(report.issues(issue_type=IssueCategory.MISSING)) == 0
+    assert len(report.issues(issue_type=IssueCategory.EMPTY_DATA)) == 1
+    assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 0
     print(report)
     assert len(report.issues()) == 1
     assert not report.valid
@@ -81,8 +81,8 @@ def test_empty_country():
     print(report)
     assert len(report.issues()) == 1
     assert len(report.issues(issue_type=IssueCategory.INVALID_DATA)) == 0
-    assert len(report.issues(issue_type=IssueCategory.EMPTY)) == 1
-    assert len(report.issues(issue_type=IssueCategory.MISSING)) == 0
+    assert len(report.issues(issue_type=IssueCategory.EMPTY_DATA)) == 1
+    assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 0
     assert not report.valid
 
 
@@ -94,8 +94,8 @@ def test_missing_creator():
     print(report)
     assert len(report.issues()) == 1
     assert len(report.issues(issue_type=IssueCategory.INVALID_DATA)) == 0
-    assert len(report.issues(issue_type=IssueCategory.EMPTY)) == 0
-    assert len(report.issues(issue_type=IssueCategory.MISSING)) == 1
+    assert len(report.issues(issue_type=IssueCategory.EMPTY_DATA)) == 0
+    assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 1
     assert not report.valid
 
 
@@ -106,8 +106,8 @@ def test_empty_state():
     report = hathi_tiff_profile.validate(file=test_image)
     assert len(report.issues()) == 1
     assert len(report.issues(issue_type=IssueCategory.INVALID_DATA)) == 0
-    assert len(report.issues(issue_type=IssueCategory.EMPTY)) == 1
-    assert len(report.issues(issue_type=IssueCategory.MISSING)) == 0
+    assert len(report.issues(issue_type=IssueCategory.EMPTY_DATA)) == 1
+    assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 0
     print(report)
     assert not report.valid
 
@@ -120,8 +120,8 @@ def test_empty_zip():
     print(report)
     assert len(report.issues()) == 1
     assert len(report.issues(issue_type=IssueCategory.INVALID_DATA)) == 0
-    assert len(report.issues(issue_type=IssueCategory.EMPTY)) == 1
-    assert len(report.issues(issue_type=IssueCategory.MISSING)) == 0
+    assert len(report.issues(issue_type=IssueCategory.EMPTY_DATA)) == 1
+    assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 0
     assert not report.valid
 
 
@@ -133,8 +133,8 @@ def test_empty_phonenumber():
     print(report)
     assert len(report.issues()) == 1
     assert len(report.issues(issue_type=IssueCategory.INVALID_DATA)) == 0
-    assert len(report.issues(issue_type=IssueCategory.EMPTY)) == 1
-    assert len(report.issues(issue_type=IssueCategory.MISSING)) == 0
+    assert len(report.issues(issue_type=IssueCategory.EMPTY_DATA)) == 1
+    assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 0
     assert not report.valid
 
 
@@ -147,6 +147,6 @@ def test_pixelarray():
     print(report)
     assert len(report.issues()) == 1
     assert len(report.issues(issue_type=IssueCategory.INVALID_DATA)) == 1
-    assert len(report.issues(issue_type=IssueCategory.EMPTY)) == 0
-    assert len(report.issues(issue_type=IssueCategory.MISSING)) == 0
+    assert len(report.issues(issue_type=IssueCategory.EMPTY_DATA)) == 0
+    assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 0
     assert not report.valid

@@ -3,7 +3,7 @@ import abc
 import py3exiv2bind
 from typing import Dict, List, Optional
 from uiucprescon.imagevalidate import Report, IssueCategory
-from uiucprescon.imagevalidate.report import Result
+from uiucprescon.imagevalidate.report import Result, ResultCategory
 
 
 class AbsProfile(metaclass=abc.ABCMeta):
@@ -23,7 +23,9 @@ class AbsProfile(metaclass=abc.ABCMeta):
         pass
 
     @classmethod
-    def _get_metadata_static_values(cls, image: py3exiv2bind.Image):
+    def _get_metadata_static_values(cls, image: py3exiv2bind.Image)\
+            ->Dict[str, Result]:
+
         data = dict()
         for key, value in cls.expected_metadata_constants.items():
             data[key] = Result(
@@ -33,17 +35,21 @@ class AbsProfile(metaclass=abc.ABCMeta):
         return data
 
     @classmethod
-    def _get_metadata_has_values(cls, image):
+    def _get_metadata_has_values(cls, image: py3exiv2bind.Image)->\
+            Dict[str, Result]:
+
         data = dict()
         for key in cls.expected_metadata_any_value:
             data[key] = Result(
-                expected=None,
+                expected=ResultCategory.ANY,
                 actual=image.metadata.get(key)
             )
         return data
 
     @staticmethod
-    def generate_msg(category: IssueCategory, field, report_data)->str:
+    def generate_msg(category: IssueCategory, field: str,
+                     report_data: Result)->str:
+
         # TODO: refactor to a strategy pattern or a factory pattern
 
         if category == IssueCategory.INVALID_DATA:
@@ -55,24 +61,27 @@ class AbsProfile(metaclass=abc.ABCMeta):
                     field, data_expected, data_got)
             return report_string
 
-        if category == IssueCategory.EMPTY:
+        if category == IssueCategory.EMPTY_DATA:
             return "The \"{}\" field is empty.".format(field)
 
-        if category == IssueCategory.MISSING:
-            return "No metadata for \"{}\" found in file.".format(field)
+        if category == IssueCategory.MISSING_FIELD:
+            return "No metadata field for \"{}\" found in file.".format(field)
 
         return "Unknown error with {}".format(field)
 
     @staticmethod
     def analyze_data_for_issues(result: Result) -> Optional[IssueCategory]:
         if result.actual is None:
-            return IssueCategory.MISSING
+            return IssueCategory.MISSING_FIELD
 
         if result.actual is "":
-            return IssueCategory.EMPTY
+            return IssueCategory.EMPTY_DATA
 
-        if result.actual != result.expected and result.expected is not None:
+        if result.actual != result.expected and \
+                result.expected is not ResultCategory.ANY:
+
             return IssueCategory.INVALID_DATA
+
         return None
 
     @classmethod
