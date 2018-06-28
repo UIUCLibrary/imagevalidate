@@ -9,5 +9,5 @@ profiles
 ________
 
 .. automodule:: uiucprescon.imagevalidate.profiles
-    :members: HathiJP2
+    :members: hathi_tiff
 
