@@ -2,6 +2,7 @@ import collections
 
 import py3exiv2bind
 import typing
+from uiucprescon.imagevalidate import IssueCategory
 from uiucprescon.imagevalidate import Report
 from uiucprescon.imagevalidate.report import Result
 from . import AbsProfile
@@ -42,11 +43,17 @@ class HathiTiff(AbsProfile):
         image = py3exiv2bind.Image(file)
         report_data = self._get_report_data(image)
         report._properties = report_data
-        analysis = self.analyze_data(report_data)
-        report._analysis_data.update(analysis)
-        for issue in self.parse_issues(analysis, report_data):
-            # report._issues.append(issue)
-            report._add_issue(issue)
+
+        analysis: typing.Dict[IssueCategory, list] = \
+            collections.defaultdict(list)
+
+        for key, result in report_data.items():
+            issue_category = self.analyze_data_for_issues(result)
+            if issue_category:
+                message = self.generate_msg(issue_category, key, result)
+                analysis[issue_category].append(message)
+
+        report._data.update(analysis)
 
         return report
 
@@ -59,38 +66,33 @@ class HathiTiff(AbsProfile):
         data.update(cls._get_metadata_has_values(image))
         data.update(cls._get_metadata_static_values(image))
 
-        color_space = cls.determine_color_space(image)
+        color_space = cls._determine_color_space(image)
         data['Color Space'] = Result(expected="sRGB", actual=color_space)
+
+        longest_side = cls._get_longest_side(image)
+
+        data['Pixel on longest angle'] = Result(
+            expected="3000",
+            actual=str(longest_side)
+        )
 
         return data
 
     @classmethod
-    def determine_color_space(cls, image):
+    def _determine_color_space(cls, image):
         icc = image.icc()
-        device_model = icc.get('device_model')
+
+        device_model = icc.get('device_model')\
+            .value.decode("ascii").rstrip(' \0')
+
         if device_model:
-            color_space = device_model.value.decode("ascii").rstrip(' \0')
-        else:
-            color_space = None
-        return color_space
+            return device_model
 
-    @staticmethod
-    def analyze_data(data: typing.Dict[str, Result]) -> \
-            typing.Dict[str, list]:
+        pref_ccm = icc.get("pref_ccm").value.decode("ascii").rstrip(' \0')
+        if pref_ccm:
+            return pref_ccm
+        return None
 
-        analysis: typing.Dict[str, list] = collections.defaultdict(list)
-        for field, result in data.items():
-            if result.actual is None:
-                analysis["missing"].append(field)
-                continue
-
-            if result.actual is "":
-                analysis["empty"].append(field)
-                continue
-
-            if result.actual != result.expected and \
-                    result.expected is not None:
-
-                analysis["mismatch"].append(field)
-
-        return dict(analysis)
+    @classmethod
+    def _get_longest_side(cls, image)->int:
+        return max(image.pixelHeight, image.pixelWidth)
