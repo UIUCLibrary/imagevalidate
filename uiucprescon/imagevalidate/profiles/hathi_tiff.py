@@ -83,10 +83,10 @@ class HathiTiff(AbsProfile):
             .value.decode("ascii").rstrip(' \0')
 
         if device_model:
-            return device_model
+            return str(device_model)
 
         pref_ccm = icc.get("pref_ccm").value.decode("ascii").rstrip(' \0')
         if pref_ccm:
-            return pref_ccm
+            return str(pref_ccm)
 
         return None
