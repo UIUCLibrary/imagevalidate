@@ -41,7 +41,7 @@ class HathiTiff(AbsProfile):
         report = Report()
         report.filename = file
         image = py3exiv2bind.Image(file)
-        report_data = self._get_report_data(image)
+        report_data = self.get_data_from_image(image)
         report._properties = report_data
 
         analysis: typing.Dict[IssueCategory, list] = \
@@ -58,13 +58,10 @@ class HathiTiff(AbsProfile):
         return report
 
     @classmethod
-    def _get_report_data(cls, image: py3exiv2bind.Image) \
+    def get_data_from_image(cls, image: py3exiv2bind.Image) \
             -> typing.Dict[str, Result]:
 
-        data: typing.Dict[str, Result] = dict()
-
-        data.update(cls._get_metadata_has_values(image))
-        data.update(cls._get_metadata_static_values(image))
+        data = super().get_data_from_image(image)
 
         color_space = cls._determine_color_space(image)
         data['Color Space'] = Result(expected="sRGB", actual=color_space)

@@ -74,3 +74,12 @@ class AbsProfile(metaclass=abc.ABCMeta):
         if result.actual != result.expected and result.expected is not None:
             return IssueCategory.INVALID_DATA
         return None
+
+    @classmethod
+    def get_data_from_image(cls, image: py3exiv2bind.Image) \
+            -> Dict[str, Result]:
+
+        data: Dict[str, Result] = dict()
+        data.update(cls._get_metadata_has_values(image))
+        data.update(cls._get_metadata_static_values(image))
+        return data
