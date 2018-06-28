@@ -2,7 +2,7 @@ import abc
 
 import py3exiv2bind
 from typing import Dict, List, Optional
-from uiucprescon.imagevalidate import Report, IssueCategory
+from uiucprescon.imagevalidate import Report, IssueCategory, messages
 from uiucprescon.imagevalidate.report import Result, ResultCategory
 
 
@@ -47,25 +47,21 @@ class AbsProfile(metaclass=abc.ABCMeta):
         return data
 
     @staticmethod
-    def generate_msg(category: IssueCategory, field: str,
-                     report_data: Result)->str:
+    def generate_error_msg(category: IssueCategory, field: str,
+                           report_data: Result)->str:
 
-        # TODO: refactor to a strategy pattern or a factory pattern
+        message_types: Dict[IssueCategory, messages.AbsMessage] = {
+            IssueCategory.INVALID_DATA: messages.InvalidData(),
+            IssueCategory.EMPTY_DATA: messages.EmptyData(),
+            IssueCategory.MISSING_FIELD: messages.MissingField()
+        }
 
-        if category == IssueCategory.INVALID_DATA:
-            data_expected = report_data.expected
-            data_got = report_data.actual
-            report_string = \
-                "Invalid match for \"{}\". " \
-                "Expected: \"{}\". Got: \"{}\".".format(
-                    field, data_expected, data_got)
-            return report_string
+        if category in message_types:
 
-        if category == IssueCategory.EMPTY_DATA:
-            return "The \"{}\" field exists but contains no data.".format(field)
+            message_generator = \
+                messages.MessageGenerator(message_types[category])
 
-        if category == IssueCategory.MISSING_FIELD:
-            return "No metadata field for \"{}\" found in file.".format(field)
+            return message_generator.generate_message(field, report_data)
 
         return "Unknown error with {}".format(field)
 

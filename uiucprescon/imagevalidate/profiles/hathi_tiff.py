@@ -50,7 +50,7 @@ class HathiTiff(AbsProfile):
         for key, result in report_data.items():
             issue_category = self.analyze_data_for_issues(result)
             if issue_category:
-                message = self.generate_msg(issue_category, key, result)
+                message = self.generate_error_msg(issue_category, key, result)
                 analysis[issue_category].append(message)
 
         report._data.update(analysis)
