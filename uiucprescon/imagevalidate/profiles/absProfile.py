@@ -62,7 +62,7 @@ class AbsProfile(metaclass=abc.ABCMeta):
             return report_string
 
         if category == IssueCategory.EMPTY_DATA:
-            return "The \"{}\" field is empty.".format(field)
+            return "The \"{}\" field exists but contains no data.".format(field)
 
         if category == IssueCategory.MISSING_FIELD:
             return "No metadata field for \"{}\" found in file.".format(field)
