@@ -265,6 +265,13 @@ Distribution directory          = ${DIST_DIR}
             }
           }
         }
+        stage("Integration Test"){
+          steps{
+            dir("${SOURCE_DIR}"){
+              bat "${VENV_PYTHON} -m pytest --integration"
+            }
+          }
+        }
         stage("Run Doctest Tests"){
           when {
             equals expected: true, actual: params.TEST_DOCTEST
