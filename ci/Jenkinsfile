@@ -42,132 +42,138 @@ pipeline {
 
   stages {
     stage('Configure Environment') {
-      steps {
-        // Set up the reports directory variable 
-        script{
-            REPORT_DIR = "${pwd tmp: true}\\reports"
-            LOGS_DIR = "${pwd tmp: true}\\logs"
-            BUILD_DIR = "${pwd tmp: true}\\build"
-            DIST_DIR = "${WORKSPACE}\\dist"
-            SOURCE_DIR = "${WORKSPACE}\\source"
-            
-        }
-        script{
-          if (params.FRESH_WORKSPACE == true){
-            deleteDir()
-            dir("${SOURCE_DIR}"){
-                checkout scm
-                bat "dir"
+      stages{
+        stage("Setting job path variables"){
 
+        
+          steps {
+            // Set up the reports directory variable 
+            script{
+                REPORT_DIR = "${pwd tmp: true}\\reports"
+                LOGS_DIR = "${pwd tmp: true}\\logs"
+                BUILD_DIR = "${pwd tmp: true}\\build"
+                DIST_DIR = "${WORKSPACE}\\dist"
+                SOURCE_DIR = "${WORKSPACE}\\source"
+                
+            }
+            script{
+              if (params.FRESH_WORKSPACE == true){
+                deleteDir()
+                dir("${SOURCE_DIR}"){
+                    checkout scm
+                    bat "dir"
+
+                }
+                
+              }
+            }
+
+          
+            dir("${LOGS_DIR}"){
+              deleteDir()
+              bat "dir"
             }
             
-          }
-        }
 
+            dir("${BUILD_DIR}"){
+              deleteDir()
+            }
+
+            dir("${DIST_DIR}"){
+              deleteDir()
+              // echo "Cleaned out distrubution directory"
+              // bat "dir"
+            }
+
+            dir("${REPORT_DIR}"){
+              deleteDir()
+              echo "Cleaned out reports directory"
+              bat "dir"
+            }
+            lock("system_python_${NODE_NAME}"){
+              bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+            }
+
+
+            script {
+              dir("${SOURCE_DIR}"){
+                PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
+                PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+              }
       
-        dir("${LOGS_DIR}"){
-          deleteDir()
-          bat "dir"
-        }
-        
-
-        dir("${BUILD_DIR}"){
-          deleteDir()
-        }
-
-        dir("${DIST_DIR}"){
-          deleteDir()
-          // echo "Cleaned out distrubution directory"
-          // bat "dir"
-        }
-
-        dir("${REPORT_DIR}"){
-          deleteDir()
-          echo "Cleaned out reports directory"
-          bat "dir"
-        }
-        lock("system_python_${NODE_NAME}"){
-          bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
-        }
-
-
-        script {
-          dir("${SOURCE_DIR}"){
-            PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
-            PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
-          }
-  
-          // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-          def alljob = env.JOB_NAME.tokenize("/") as String[]
-          def project_name = alljob[0]
-          DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
-          
-          junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
-        }
-
-        tee("${LOGS_DIR}/pippackages_system_${NODE_NAME}.log") {
-          bat "${tool 'CPython-3.6'} -m pip list"
-        }
-
-        bat "${tool 'CPython-3.6'} -m venv venv"
-        
-        script {
-          VENV_ROOT = "${WORKSPACE}\\venv"
-          
-          // set python exe
-          VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
-          bat "${VENV_PYTHON} --version"
-
-          VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
-          bat "${VENV_PIP} --version"
-        }
-        script {
-            try {
-                bat "call venv\\Scripts\\activate.bat && python -m pip install -U pip"
+              // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
+              def alljob = env.JOB_NAME.tokenize("/") as String[]
+              def project_name = alljob[0]
+              DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
+              
+              junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
             }
-            catch (exc) {
-                bat "${tool 'CPython-3.6'} -m venv venv"
-                bat "call venv\\Scripts\\activate.bat && python -m pip install -U pip --no-cache-dir"
+
+            tee("${LOGS_DIR}/pippackages_system_${NODE_NAME}.log") {
+              bat "${tool 'CPython-3.6'} -m pip list"
             }
+
+            bat "${tool 'CPython-3.6'} -m venv venv"
             
+            script {
+              VENV_ROOT = "${WORKSPACE}\\venv"
+              
+              // set python exe
+              VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
+              bat "${VENV_PYTHON} --version"
 
-        }
-        bat "${tool 'CPython-3.6'} -m venv venv"
-        bat "${VENV_PIP} install devpi-client -r ${SOURCE_DIR}\\requirements.txt --upgrade-strategy only-if-needed"
+              VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
+              bat "${VENV_PIP} --version"
+            }
+            script {
+                try {
+                    bat "call venv\\Scripts\\activate.bat && python -m pip install -U pip"
+                }
+                catch (exc) {
+                    bat "${tool 'CPython-3.6'} -m venv venv"
+                    bat "call venv\\Scripts\\activate.bat && python -m pip install -U pip --no-cache-dir"
+                }
+                
 
-        bat "${VENV_PYTHON} -m pip install devpi-client tox lxml mypy flake8 sphinx wheel"
+            }
+            bat "${tool 'CPython-3.6'} -m venv venv"
+            bat "${VENV_PIP} install devpi-client -r ${SOURCE_DIR}\\requirements.txt --upgrade-strategy only-if-needed"
 
-        tee("${LOGS_DIR}/pippackages_venv_${NODE_NAME}.log") {
-          bat "${VENV_PIP} list"
-        }
-        bat "${VENV_ROOT}\\Scripts\\devpi use https://devpi.library.illinois.edu"
-        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
-            bat "${VENV_ROOT}\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-        }
-      }
-      post{
-        always{
-          echo """Name                            = ${PKG_NAME}
-Version                         = ${PKG_VERSION}
-Report Directory                = ${REPORT_DIR}
-documentation zip file          = ${DOC_ZIP_FILENAME}
-Python virtual environment path = ${VENV_ROOT}
-VirtualEnv Python executable    = ${VENV_PYTHON}
-VirtualEnv Pip executable       = ${VENV_PIP}
-Source directory                = ${SOURCE_DIR}
-Logs directory                  = ${LOGS_DIR}
-Build directory                 = ${BUILD_DIR}
-Distribution directory          = ${DIST_DIR}
-"""        
-          dir("${LOGS_DIR}"){
-              archiveArtifacts artifacts: "pippackages_system_${NODE_NAME}.log"
-              archiveArtifacts artifacts: "pippackages_venv_${NODE_NAME}.log"
+            bat "${VENV_PYTHON} -m pip install devpi-client tox lxml mypy flake8 sphinx wheel"
 
+            tee("${LOGS_DIR}/pippackages_venv_${NODE_NAME}.log") {
+              bat "${VENV_PIP} list"
+            }
+            bat "${VENV_ROOT}\\Scripts\\devpi use https://devpi.library.illinois.edu"
+            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
+                bat "${VENV_ROOT}\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+            }
           }
-        }
-        failure {
-            bat "dir"
-            deleteDir()
+          post{
+            always{
+              echo """Name                            = ${PKG_NAME}
+    Version                         = ${PKG_VERSION}
+    Report Directory                = ${REPORT_DIR}
+    documentation zip file          = ${DOC_ZIP_FILENAME}
+    Python virtual environment path = ${VENV_ROOT}
+    VirtualEnv Python executable    = ${VENV_PYTHON}
+    VirtualEnv Pip executable       = ${VENV_PIP}
+    Source directory                = ${SOURCE_DIR}
+    Logs directory                  = ${LOGS_DIR}
+    Build directory                 = ${BUILD_DIR}
+    Distribution directory          = ${DIST_DIR}
+    """        
+              dir("${LOGS_DIR}"){
+                  archiveArtifacts artifacts: "pippackages_system_${NODE_NAME}.log"
+                  archiveArtifacts artifacts: "pippackages_venv_${NODE_NAME}.log"
+
+              }
+            }
+            failure {
+                bat "dir"
+                deleteDir()
+            }
+          }
         }
       }
     }
