@@ -56,19 +56,19 @@ pipeline {
                 SOURCE_DIR = "${WORKSPACE}\\source"
                 
             }
-            script{
-              if (params.FRESH_WORKSPACE == true){
-                deleteDir()
-                dir("${SOURCE_DIR}"){
-                    checkout scm
-                    bat "dir"
-
-                }
-                
-              }
+          }
+        }
+        stage("Purge all existing data in workspace"){
+            when{
+                equals expected: true, actual: params.FRESH_WORKSPACE
             }
-
-          
+            steps{
+                deleteDir()
+                checkout scm
+            }
+        }
+        stage("Cleanup"){
+          steps {
             dir("${LOGS_DIR}"){
               deleteDir()
               bat "dir"
