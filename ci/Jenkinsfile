@@ -26,6 +26,8 @@ pipeline {
   environment {
     build_number = VersionNumber(projectStartDate: '2018-6-12', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
     PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
+    PIPENV_CACHE_DIR="${WORKSPACE}\\..\\.virtualenvs\\cache\\"
+    WORKON_HOME ="${WORKSPACE}\\pipenv\\"
   }
   parameters {
     booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
@@ -157,6 +159,33 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
         // tee("${LOGS_DIR}/pippackages_system_${NODE_NAME}.log") {
         //   bat "${tool 'CPython-3.6'} -m pip list"
         // }
+        stage("Installing Pipfile"){
+          options{
+            timeout(5)
+          }
+          steps {
+            dir("source"){
+              bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
+            }
+            tee("logs/pippackages_pipenv_${NODE_NAME}.log") {
+              bat "${tool 'CPython-3.6'} -m pipenv run pip list"
+            }  
+          }
+          post{
+            always{
+              dir("logs"){
+                script{
+                  def log_files = findFiles glob: '**/pippackages_pipenv_*.log'
+                  log_files.each { log_file ->
+                    echo "Found ${log_file}"
+                    archiveArtifacts artifacts: "${log_file}"
+                    bat "del ${log_file}"
+                  }
+                }
+              }
+            }
+          }
+        }
         stage("Creating virtualenv for building"){
           steps {
               bat "${tool 'CPython-3.6'} -m venv venv"
