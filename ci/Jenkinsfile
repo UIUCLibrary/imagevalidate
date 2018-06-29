@@ -165,7 +165,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
           steps {
             dir("source"){
-              bat "pipenv install --dev --deploy"
+              bat "pipenv install --dev"
             }
             tee("logs/pippackages_pipenv_${NODE_NAME}.log") {
               bat "pipenv run pip list"
