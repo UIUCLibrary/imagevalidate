@@ -355,7 +355,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             }
             dir("source"){
               script {
-                bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
+                bat "pipenv run tox"
                 
               }
             }
@@ -379,7 +379,22 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         stage("Integration Test"){
           steps{
             dir("${SOURCE_DIR}"){
-              bat "pipenv run pytest --integration"
+              bat "pipenv run pytest --integration  --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
+            }
+          }
+          post{
+            always{
+              dir("${REPORT_DIR}"){
+                bat "dir"
+                script {
+                  def xml_files = findFiles glob: "**/*.xml"
+                  xml_files.each { junit_xml_file ->
+                    echo "Found ${junit_xml_file}"
+                    junit "${junit_xml_file}"
+                  }
+                }
+              }              
+              publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
             }
           }
         }
