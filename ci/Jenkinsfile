@@ -355,7 +355,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             }
             dir("source"){
               script {
-                bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
+                bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
                 
               }
             }
@@ -379,7 +379,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         stage("Integration Test"){
           steps{
             dir("${SOURCE_DIR}"){
-              bat "${VENV_PYTHON} -m pytest --integration"
+              bat "pipenv run pytest --integration"
             }
           }
         }
@@ -393,7 +393,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                 echo "Cleaning doctest reports directory"
                 deleteDir()
               }
-              bat "${VENV_ROOT}\\Scripts\\sphinx-build.exe -b doctest docs\\source ${BUILD_DIR}\\docs -d ${BUILD_DIR}\\docs\\doctrees -v" 
+              bat "$pipenv run sphinx-build -b doctest docs\\source ${BUILD_DIR}\\docs -d ${BUILD_DIR}\\docs\\doctrees -v" 
             }
             bat "move ${BUILD_DIR}\\docs\\output.txt ${REPORT_DIR}\\doctest.txt"
           }
@@ -419,7 +419,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                 try{
                   dir("${SOURCE_DIR}"){
                     bat "dir"
-                    bat "${VENV_ROOT}\\Scripts\\mypy.exe -p uiucprescon --html-report ${REPORT_DIR}\\mypy\\html"
+                    bat "pipenv run mypy -p uiucprescon --html-report ${REPORT_DIR}\\mypy\\html"
                   }
                 } catch (exc) {
                   echo "MyPy found some warnings"
@@ -445,7 +445,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
               try{
                 tee("${LOGS_DIR}/flake8.log") {
                   dir("source"){
-                    bat "${VENV_ROOT}\\Scripts\\flake8.exe uiucprescon --format=pylint"
+                    bat "pipenv run flake8 uiucprescon --format=pylint"
                   }
                 }
               } catch (exc) {
