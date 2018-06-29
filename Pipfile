@@ -20,6 +20,11 @@ name = "pypi"
 pytest = "*"
 tox = "*"
 coverage = "*"
+lxml = "*"
+mypy = "*"
+"flake8" = "*"
+sphinx = "*"
+wheel = "*"
 
 [requires]
 python_version = "3.6"
