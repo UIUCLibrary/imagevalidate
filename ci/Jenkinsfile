@@ -355,32 +355,11 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             }
             dir("source"){
               script {
-                bat "pipenv run tox"
+                bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --integration --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
                 
               }
             }
             
-          }
-          post{
-            always{
-              dir("${REPORT_DIR}"){
-                junit "${junit_filename}"
-              }              
-              publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
-            }
-            failure{
-              echo "Tox test failed. Removing ${WORKSPACE}\\.tox\\PyTest"
-              dir("${WORKSPACE}\\.tox\\PyTest"){
-                deleteDir()
-              }
-            }
-          }
-        }
-        stage("Integration Test"){
-          steps{
-            dir("${SOURCE_DIR}"){
-              bat "pipenv run pytest --integration  --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
-            }
           }
           post{
             always{
@@ -393,11 +372,25 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                     junit "${junit_xml_file}"
                   }
                 }
-              }              
+              }                      
               publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+            }
+            failure{
+              echo "Tox test failed. Removing ${WORKSPACE}\\.tox\\PyTest"
+              dir("${WORKSPACE}\\.tox\\PyTest"){
+                deleteDir()
+              }
             }
           }
         }
+        // stage("Integration Test"){
+        //   steps{
+        //     dir("${SOURCE_DIR}"){
+        //       bat "pipenv run pytest --integration"
+        //     }
+        //   }
+          
+        // }
         stage("Run Doctest Tests"){
           when {
             equals expected: true, actual: params.TEST_DOCTEST
