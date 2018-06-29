@@ -200,7 +200,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                   }                           
               }
               
-              bat "venv\\Scripts\\pip.exe install devpi-client tox lxml mypy flake8 sphinx wheel pytest --upgrade-strategy only-if-needed"
+              bat "venv\\Scripts\\pip.exe install devpi-client tox lxml mypy flake8 sphinx wheel pytest -r source\\requirements.txt --upgrade-strategy only-if-needed"
               
   
               tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
