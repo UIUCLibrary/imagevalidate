@@ -161,7 +161,7 @@ Version     = ${PKG_VERSION}"""
                   }                           
               }
               
-              bat "venv\\Scripts\\pip.exe install devpi-client sphinx --upgrade-strategy only-if-needed"
+              bat "venv\\Scripts\\pip.exe install devpi-client tox lxml mypy flake8 sphinx wheel --upgrade-strategy only-if-needed"
               
   
               tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
