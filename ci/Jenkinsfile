@@ -393,7 +393,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                 echo "Cleaning doctest reports directory"
                 deleteDir()
               }
-              bat "$pipenv run sphinx-build -b doctest docs\\source ${BUILD_DIR}\\docs -d ${BUILD_DIR}\\docs\\doctrees -v" 
+              bat "pipenv run sphinx-build -b doctest docs\\source ${BUILD_DIR}\\docs -d ${BUILD_DIR}\\docs\\doctrees -v" 
             }
             bat "move ${BUILD_DIR}\\docs\\output.txt ${REPORT_DIR}\\doctest.txt"
           }
