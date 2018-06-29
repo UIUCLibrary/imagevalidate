@@ -134,72 +134,119 @@ pipeline {
               
               junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
             }
-
-            // tee("${LOGS_DIR}/pippackages_system_${NODE_NAME}.log") {
-            //   bat "${tool 'CPython-3.6'} -m pip list"
-            // }
-
-            bat "${tool 'CPython-3.6'} -m venv venv"
-            
-            script {
-              VENV_ROOT = "${WORKSPACE}\\venv"
-              
-              // set python exe
-              VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
-              bat "${VENV_PYTHON} --version"
-
-              VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
-              bat "${VENV_PIP} --version"
-            }
-            script {
-                try {
-                    bat "call venv\\Scripts\\activate.bat && python -m pip install -U pip"
-                }
-                catch (exc) {
-                    bat "${tool 'CPython-3.6'} -m venv venv"
-                    bat "call venv\\Scripts\\activate.bat && python -m pip install -U pip --no-cache-dir"
-                }
-                
-
-            }
-            bat "${tool 'CPython-3.6'} -m venv venv"
-            bat "${VENV_PIP} install devpi-client -r ${SOURCE_DIR}\\requirements.txt --upgrade-strategy only-if-needed"
-
-            bat "${VENV_PYTHON} -m pip install devpi-client tox lxml mypy flake8 sphinx wheel"
-
-            tee("${LOGS_DIR}/pippackages_venv_${NODE_NAME}.log") {
-              bat "${VENV_PIP} list"
-            }
-            bat "${VENV_ROOT}\\Scripts\\devpi use https://devpi.library.illinois.edu"
-            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
-                bat "${VENV_ROOT}\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-            }
           }
           post{
             always{
               echo """Name                            = ${PKG_NAME}
-    Version                         = ${PKG_VERSION}
-    Report Directory                = ${REPORT_DIR}
-    documentation zip file          = ${DOC_ZIP_FILENAME}
-    Python virtual environment path = ${VENV_ROOT}
-    VirtualEnv Python executable    = ${VENV_PYTHON}
-    VirtualEnv Pip executable       = ${VENV_PIP}
-    Source directory                = ${SOURCE_DIR}
-    Logs directory                  = ${LOGS_DIR}
-    Build directory                 = ${BUILD_DIR}
-    Distribution directory          = ${DIST_DIR}
-    """        
-              dir("${LOGS_DIR}"){
-                  archiveArtifacts artifacts: "pippackages_system_${NODE_NAME}.log"
-                  archiveArtifacts artifacts: "pippackages_venv_${NODE_NAME}.log"
-
-              }
-            }
-            failure {
-                bat "dir"
-                deleteDir()
+Version                         = ${PKG_VERSION}"""
+              
             }
           }
+        }
+
+        // tee("${LOGS_DIR}/pippackages_system_${NODE_NAME}.log") {
+        //   bat "${tool 'CPython-3.6'} -m pip list"
+        // }
+        stage("Creating virtualenv for building"){
+          steps {
+              bat "${tool 'CPython-3.6'} -m venv venv"
+              
+              script {
+                  try {
+                      bat "call venv\\Scripts\\python.exe -m pip install -U pip"
+                  }
+                  catch (exc) {
+                      bat "${tool 'CPython-3.6'} -m venv venv"
+                      bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                  }                           
+              }
+              
+              bat "venv\\Scripts\\pip.exe install devpi-client --upgrade-strategy only-if-needed"
+              
+  
+              tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
+                  bat "venv\\Scripts\\pip.exe list"
+              }
+              script {
+                VENV_ROOT = "${WORKSPACE}\\venv"
+                
+                // set python exe
+                VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
+                bat "${VENV_PYTHON} --version"
+
+                VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
+                bat "${VENV_PIP} --version"
+              }
+          }
+          post{
+              always{
+                  dir(pwd(tmp: true)){
+                      script{
+                          def log_files = findFiles glob: '**/pippackages_venv_*.log'
+                          log_files.each { log_file ->
+                              echo "Found ${log_file}"
+                              archiveArtifacts artifacts: "${log_file}"
+                              bat "del ${log_file}"
+                          }
+                      }
+                  }
+              }
+              failure {
+                  deleteDir()
+              }
+          }
+        }
+            // bat "${tool 'CPython-3.6'} -m venv venv"
+            
+
+            // script {
+            //     try {
+            //         bat "call venv\\Scripts\\activate.bat && python -m pip install -U pip"
+            //     }
+            //     catch (exc) {
+            //         bat "${tool 'CPython-3.6'} -m venv venv"
+            //         bat "call venv\\Scripts\\activate.bat && python -m pip install -U pip --no-cache-dir"
+            //     }
+                
+
+            // }
+            // bat "${tool 'CPython-3.6'} -m venv venv"
+            // bat "${VENV_PIP} install devpi-client -r ${SOURCE_DIR}\\requirements.txt --upgrade-strategy only-if-needed"
+
+            // bat "${VENV_PYTHON} -m pip install devpi-client tox lxml mypy flake8 sphinx wheel"
+
+            // tee("${LOGS_DIR}/pippackages_venv_${NODE_NAME}.log") {
+            //   bat "${VENV_PIP} list"
+            // }
+        stage("Configure devpi login"){
+          steps{    
+            bat "${VENV_ROOT}\\Scripts\\devpi use https://devpi.library.illinois.edu"
+            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
+              bat "${VENV_ROOT}\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+            }
+          }
+        }
+        
+        // }
+        // }
+        
+      }
+      post{
+        always{
+          echo """Report Directory                = ${REPORT_DIR}
+documentation zip file          = ${DOC_ZIP_FILENAME}
+Python virtual environment path = ${VENV_ROOT}
+VirtualEnv Python executable    = ${VENV_PYTHON}
+VirtualEnv Pip executable       = ${VENV_PIP}
+Source directory                = ${SOURCE_DIR}
+Logs directory                  = ${LOGS_DIR}
+Build directory                 = ${BUILD_DIR}
+Distribution directory          = ${DIST_DIR}
+"""        
+        }
+        failure {
+            bat "dir"
+            deleteDir()
         }
       }
     }
