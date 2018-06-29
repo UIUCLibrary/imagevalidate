@@ -6,7 +6,7 @@ from uiucprescon import imagevalidate
 from uiucprescon.imagevalidate import profiles
 from uiucprescon.imagevalidate import IssueCategory
 
-TEST_PATH = "T:/HenryTest-PSR_2/DCC/henrytestmetadata"
+TEST_PATH = os.path.join(os.path.dirname(__file__), "henrytestmetadata")
 
 
 @pytest.mark.integration
