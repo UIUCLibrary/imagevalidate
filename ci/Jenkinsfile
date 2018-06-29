@@ -90,6 +90,10 @@ pipeline {
               echo "Cleaned out reports directory"
               bat "dir"
             }
+          }
+        }
+        stage("Installing required system level dependencies"){
+          steps{
             lock("system_python_${NODE_NAME}"){
               bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
             }
