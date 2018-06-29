@@ -199,9 +199,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                       bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                   }                           
               }
-              
-              bat "venv\\Scripts\\pip.exe install  -r source\\requirements.txt --upgrade-strategy only-if-needed"
-              bat "venv\\Scripts\\pip.exe install devpi-client tox lxml mypy flake8 sphinx wheel pytest --upgrade-strategy only-if-needed"
+              bat "venv\\Scripts\\pip.exe install devpi-client --upgrade-strategy only-if-needed"
               
   
               tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
@@ -383,14 +381,6 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             }
           }
         }
-        // stage("Integration Test"){
-        //   steps{
-        //     dir("${SOURCE_DIR}"){
-        //       bat "pipenv run pytest --integration"
-        //     }
-        //   }
-          
-        // }
         stage("Run Doctest Tests"){
           when {
             equals expected: true, actual: params.TEST_DOCTEST
