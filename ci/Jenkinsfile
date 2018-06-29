@@ -285,7 +285,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
       steps {
         tee("${LOGS_DIR}/build.log") {
           dir("${SOURCE_DIR}"){
-            bat script: "${VENV_PYTHON} setup.py build -b ${BUILD_DIR}"
+            bat script: "pipenv run python setup.py build -b ${BUILD_DIR}"
           }
         }
       }
@@ -312,7 +312,8 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
           }
         tee("${LOGS_DIR}/build_sphinx.log") {
           // dir("build/lib"){
-            bat "${VENV_ROOT}\\Scripts\\sphinx-build.exe -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees"
+            bat "pipenv run sphinx-build -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees"
+            // bat "${VENV_ROOT}\\Scripts\\sphinx-build.exe -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees"
           // }
         }
       }
