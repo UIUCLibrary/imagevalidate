@@ -57,6 +57,15 @@ pipeline {
                 
             }
           }
+          post{
+            always{
+              echo """Report Directory       = ${REPORT_DIR}
+Source directory       = ${SOURCE_DIR}
+Logs directory         = ${LOGS_DIR}
+Build directory        = ${BUILD_DIR}
+Distribution directory = ${DIST_DIR}"""
+            }
+          }
         }
         stage("Purge all existing data in workspace"){
             when{
@@ -236,12 +245,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
       }
       post{
         always{
-          echo """Report Directory                = ${REPORT_DIR}
-documentation zip file          = ${DOC_ZIP_FILENAME}
-Source directory                = ${SOURCE_DIR}
-Logs directory                  = ${LOGS_DIR}
-Build directory                 = ${BUILD_DIR}
-Distribution directory          = ${DIST_DIR}
+          echo """documentation zip file          = ${DOC_ZIP_FILENAME}
 """        
         }
         failure {
