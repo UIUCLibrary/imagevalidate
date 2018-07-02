@@ -8,12 +8,12 @@ Welcome to uiucprescon-imagevalidate's documentation!
    about
    install
 
-..
-   .. toctree::
-      :titlesonly:
-      :caption: API:
 
-      pykdu_compress
+.. toctree::
+  :titlesonly:
+  :caption: API:
+
+  imagevalidate
 
 
 
