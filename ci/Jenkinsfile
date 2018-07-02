@@ -302,14 +302,14 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
     stage("Sphinx documentation"){
       steps {
         echo "Building docs on ${env.NODE_NAME}"
-          script{
+        script{
             // Add a line to config file so auto docs look in the build folder
             def sphinx_config_file = "${SOURCE_DIR}/docs/source/conf.py"
             def extra_line = "sys.path.insert(0, os.path.abspath('${BUILD_DIR}/build/lib'))"
             def readContent = readFile "${sphinx_config_file}"
             echo "Adding \"${extra_line}\" to ${sphinx_config_file}."
             writeFile file: "${sphinx_config_file}", text: readContent+"\r\n${extra_line}\r\n"
-          }
+        }
         tee("${LOGS_DIR}/build_sphinx.log") {
           // dir("build/lib"){
             bat "pipenv run sphinx-build -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees"
@@ -638,7 +638,6 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             }
           }
           steps {
-            bat "${VENV_PYTHON} setup.py build_sphinx"
             dir("${BUILD_DIR}/docs/html/"){
               input 'Update project documentation?'
               sshPublisher(
