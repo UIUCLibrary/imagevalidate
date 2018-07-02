@@ -26,6 +26,8 @@ pipeline {
   environment {
     build_number = VersionNumber(projectStartDate: '2018-6-12', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
     PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
+    PIPENV_CACHE_DIR="${WORKSPACE}\\..\\.virtualenvs\\cache\\"
+    WORKON_HOME ="${WORKSPACE}\\pipenv\\"
   }
   parameters {
     booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
@@ -146,17 +148,46 @@ Distribution directory = ${DIST_DIR}"""
           }
           post{
             always{
-              echo """Name                    = ${PKG_NAME}
+              echo """Name                   = ${PKG_NAME}
 Version                = ${PKG_VERSION}
 documentation zip file = ${DOC_ZIP_FILENAME}"""
               
-            }
+            } 
           }
         }
 
         // tee("${LOGS_DIR}/pippackages_system_${NODE_NAME}.log") {
         //   bat "${tool 'CPython-3.6'} -m pip list"
         // }
+        stage("Installing Pipfile"){
+          options{
+            timeout(5)
+          }
+          steps {
+            dir("source"){
+              bat "pipenv install --dev --deploy"
+            }
+            tee("logs/pippackages_pipenv_${NODE_NAME}.log") {
+              dir("source"){
+                bat "pipenv run pip list"
+              }
+            }  
+          }
+          post{
+            always{
+              dir("logs"){
+                script{
+                  def log_files = findFiles glob: '**/pippackages_pipenv_*.log'
+                  log_files.each { log_file ->
+                    echo "Found ${log_file}"
+                    archiveArtifacts artifacts: "${log_file}"
+                    bat "del ${log_file}"
+                  }
+                }
+              }
+            }
+          }
+        }
         stage("Creating virtualenv for building"){
           steps {
               bat "${tool 'CPython-3.6'} -m venv venv"
@@ -170,8 +201,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                       bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                   }                           
               }
-              
-              bat "venv\\Scripts\\pip.exe install devpi-client tox lxml mypy flake8 sphinx wheel pytest --upgrade-strategy only-if-needed"
+              bat "venv\\Scripts\\pip.exe install devpi-client --upgrade-strategy only-if-needed"
               
   
               tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
@@ -255,7 +285,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
       steps {
         tee("${LOGS_DIR}/build.log") {
           dir("${SOURCE_DIR}"){
-            bat script: "${VENV_PYTHON} setup.py build -b ${BUILD_DIR}"
+            bat script: "pipenv run python setup.py build -b ${BUILD_DIR}"
           }
         }
       }
@@ -282,7 +312,8 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         }
         tee("${LOGS_DIR}/build_sphinx.log") {
           // dir("build/lib"){
-            bat "${VENV_ROOT}\\Scripts\\sphinx-build.exe -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees"
+            bat "pipenv run sphinx-build -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees"
+            // bat "${VENV_ROOT}\\Scripts\\sphinx-build.exe -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees"
           // }
         }
       }
@@ -324,7 +355,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             }
             dir("source"){
               script {
-                bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
+                bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --integration --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
                 
               }
             }
@@ -333,8 +364,15 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
           post{
             always{
               dir("${REPORT_DIR}"){
-                junit "${junit_filename}"
-              }              
+                bat "dir"
+                script {
+                  def xml_files = findFiles glob: "**/*.xml"
+                  xml_files.each { junit_xml_file ->
+                    echo "Found ${junit_xml_file}"
+                    junit "${junit_xml_file}"
+                  }
+                }
+              }                      
               publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
             }
             failure{
@@ -342,13 +380,6 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
               dir("${WORKSPACE}\\.tox\\PyTest"){
                 deleteDir()
               }
-            }
-          }
-        }
-        stage("Integration Test"){
-          steps{
-            dir("${SOURCE_DIR}"){
-              bat "${VENV_PYTHON} -m pytest --integration"
             }
           }
         }
@@ -362,7 +393,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                 echo "Cleaning doctest reports directory"
                 deleteDir()
               }
-              bat "${VENV_ROOT}\\Scripts\\sphinx-build.exe -b doctest docs\\source ${BUILD_DIR}\\docs -d ${BUILD_DIR}\\docs\\doctrees -v" 
+              bat "pipenv run sphinx-build -b doctest docs\\source ${BUILD_DIR}\\docs -d ${BUILD_DIR}\\docs\\doctrees -v" 
             }
             bat "move ${BUILD_DIR}\\docs\\output.txt ${REPORT_DIR}\\doctest.txt"
           }
@@ -388,7 +419,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                 try{
                   dir("${SOURCE_DIR}"){
                     bat "dir"
-                    bat "${VENV_ROOT}\\Scripts\\mypy.exe -p uiucprescon --html-report ${REPORT_DIR}\\mypy\\html"
+                    bat "pipenv run mypy -p uiucprescon --html-report ${REPORT_DIR}\\mypy\\html"
                   }
                 } catch (exc) {
                   echo "MyPy found some warnings"
@@ -414,7 +445,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
               try{
                 tee("${LOGS_DIR}/flake8.log") {
                   dir("source"){
-                    bat "${VENV_ROOT}\\Scripts\\flake8.exe uiucprescon --format=pylint"
+                    bat "pipenv run flake8 uiucprescon --format=pylint"
                   }
                 }
               } catch (exc) {
@@ -439,7 +470,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         dir("${SOURCE_DIR}"){
 
           // bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist"
-          bat "${VENV_PYTHON} setup.py bdist_wheel sdist -d ${DIST_DIR} bdist_wheel -d ${DIST_DIR}"
+          bat "pipenv run python setup.py bdist_wheel sdist -d ${DIST_DIR} bdist_wheel -d ${DIST_DIR}"
         }
       }
       post{
