@@ -52,7 +52,8 @@ def sample_data():
 @pytest.mark.integration
 def test_bitdepth(sample_data):
     test_image = os.path.join(sample_data, "bitdepth", "0000001.tif")
-    hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiff())
+    profile_name = imagevalidate.get_profile("HathiTiff")
+    hathi_tiff_profile = imagevalidate.Profile(profile_name)
     report = hathi_tiff_profile.validate(file=test_image)
     print(report)
     assert len(report.issues()) == 1
@@ -63,7 +64,8 @@ def test_bitdepth(sample_data):
 @pytest.mark.integration
 def test_colorspace(sample_data):
     test_image = os.path.join(sample_data, "colorspace", "0000001.tif")
-    hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiff())
+    profile_name = imagevalidate.get_profile("HathiTiff")
+    hathi_tiff_profile = imagevalidate.Profile(profile_name)
     report = hathi_tiff_profile.validate(file=test_image)
     print(report)
     assert len(report.issues()) == 1
@@ -76,7 +78,8 @@ def test_colorspace(sample_data):
 @pytest.mark.integration
 def test_correct(sample_data):
     test_image = os.path.join(sample_data, "correct", "0000001.tif")
-    hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiff())
+    profile_name = imagevalidate.get_profile("HathiTiff")
+    hathi_tiff_profile = imagevalidate.Profile(profile_name)
     report = hathi_tiff_profile.validate(file=test_image)
     print(report)
     assert "No issues discovered" in str(report)
@@ -116,7 +119,8 @@ def test_empty_city(sample_data):
 @pytest.mark.integration
 def test_empty_country(sample_data):
     test_image = os.path.join(sample_data, "empty_country", "0000001.tif")
-    hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiff())
+    profile_name = imagevalidate.get_profile("HathiTiff")
+    hathi_tiff_profile = imagevalidate.Profile(profile_name)
     report = hathi_tiff_profile.validate(file=test_image)
     print(report)
     assert len(report.issues()) == 1
@@ -129,7 +133,8 @@ def test_empty_country(sample_data):
 @pytest.mark.integration
 def test_missing_creator(sample_data):
     test_image = os.path.join(sample_data, "missing_creator", "0000001.tif")
-    hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiff())
+    profile_name = imagevalidate.get_profile("HathiTiff")
+    hathi_tiff_profile = imagevalidate.Profile(profile_name)
     report = hathi_tiff_profile.validate(file=test_image)
     print(report)
     assert len(report.issues()) == 1
@@ -155,7 +160,8 @@ def test_empty_state(sample_data):
 @pytest.mark.integration
 def test_empty_zip(sample_data):
     test_image = os.path.join(sample_data, "empty_zip", "0000001.tif")
-    hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiff())
+    profile_name = imagevalidate.get_profile("HathiTiff")
+    hathi_tiff_profile = imagevalidate.Profile(profile_name)
     report = hathi_tiff_profile.validate(file=test_image)
     print(report)
     assert len(report.issues()) == 1
@@ -168,7 +174,8 @@ def test_empty_zip(sample_data):
 @pytest.mark.integration
 def test_empty_phonenumber(sample_data):
     test_image = os.path.join(sample_data, "empty_phonenumber", "0000001.tif")
-    hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiff())
+    profile_name = imagevalidate.get_profile("HathiTiff")
+    hathi_tiff_profile = imagevalidate.Profile(profile_name)
     report = hathi_tiff_profile.validate(file=test_image)
     print(report)
     assert len(report.issues()) == 1
@@ -182,7 +189,8 @@ def test_empty_phonenumber(sample_data):
 def test_pixelarray(sample_data):
 
     test_image = os.path.join(sample_data, "pixelarray", "0000001.tif")
-    hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiff())
+    profile_name = imagevalidate.get_profile("HathiTiff")
+    hathi_tiff_profile = imagevalidate.Profile(profile_name)
     report = hathi_tiff_profile.validate(file=test_image)
     print(report)
     assert len(report.issues()) == 1
