@@ -1,7 +1,7 @@
 import abc
 
 import py3exiv2bind
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 from uiucprescon.imagevalidate import Report, IssueCategory, messages
 from uiucprescon.imagevalidate.report import Result, ResultCategory
 
@@ -12,6 +12,12 @@ class AbsProfile(metaclass=abc.ABCMeta):
 
     expected_metadata_constants: Dict[str, str] = dict()
     expected_metadata_any_value: List[str] = list()
+    valid_extensions: Set[str] = set()
+
+    @staticmethod
+    @abc.abstractmethod
+    def profile_name() -> str:
+        pass
 
     @abc.abstractmethod
     def validate(self, file: str) -> Report:
@@ -24,6 +30,9 @@ class AbsProfile(metaclass=abc.ABCMeta):
             Returns a report object
         """
         pass
+    # @abc.abstractmethod
+    # def valid_extensions(cls)-> Iterable:
+    #     return list()
 
     @classmethod
     def _get_metadata_static_values(cls, image: py3exiv2bind.Image)\

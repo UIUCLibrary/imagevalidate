@@ -37,4 +37,4 @@ profiles = inspect.getmembers(
     profile_pkg, lambda m: inspect.isclass(m) and not inspect.isabstract(m))
 
 for profile in profiles:
-    known_profiles[profile[0]] = profile[1]
+    known_profiles[profile[1].profile_name()] = profile[1]
