@@ -8,5 +8,5 @@ def test_get_all_profiles():
 
 #
 def test_get_hathi_tiff_profile():
-    hathi_tiff_profile = imagevalidate.get_profile("HathiTiff")
+    hathi_tiff_profile = imagevalidate.get_profile("HathiTrust JPEG 2000")
     assert isinstance(hathi_tiff_profile, imagevalidate.profiles.AbsProfile)
