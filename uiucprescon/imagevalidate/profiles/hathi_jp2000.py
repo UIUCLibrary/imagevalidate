@@ -3,14 +3,14 @@ import sys
 
 import py3exiv2bind
 import typing
-from uiucprescon.imagevalidate import IssueCategory
-from uiucprescon.imagevalidate import Report, common
+from uiucprescon.imagevalidate import IssueCategory, common
+from uiucprescon.imagevalidate import Report
 from uiucprescon.imagevalidate.report import Result
 from . import AbsProfile
 
 
-class HathiTiff(AbsProfile):
-    """Profile for validating Tiff files for HathiTrust"""
+class HathiJP2000(AbsProfile):
+    """Profile for validating .jp2 files for HathiTrust"""
     expected_metadata_any_value = [
         'Xmp.dc.creator',
 
@@ -59,13 +59,20 @@ class HathiTiff(AbsProfile):
         return report
 
     @classmethod
-    def get_data_from_image(cls, filename: str) -> typing.Dict[str, Result]:
+    def get_data_from_image(cls, filename: str) \
+            -> typing.Dict[str, Result]:
 
         image = py3exiv2bind.Image(filename)
         data = super().get_data_from_image(filename)
 
-        color_space = cls.determine_color_space(filename)
-        data['Color Space'] = Result(expected="sRGB", actual=color_space)
+        # Currently unable to properly extract enumerated color space
+        #
+        # color_space = cls.determine_color_space(image)
+        # if color_space:
+        #     data['Color Space'] = Result(expected="sRGB", actual=color_space)
+        # else:
+        #     data['Color Space'] = Result(expected="sRGB",
+        #                                  actual="Unknown")
 
         longest_side = max(image.pixelHeight, image.pixelWidth)
 
@@ -77,19 +84,18 @@ class HathiTiff(AbsProfile):
         return data
 
     @staticmethod
-    def determine_color_space(filename: str)->typing.Optional[str]:
+    def determine_color_space(image: str)->typing.Optional[str]:
         strategies = [
             common.ColorSpaceIccDeviceModelCheck,
             common.ColorSpaceIccPrefCcmCheck,
 
         ]
-        filename = py3exiv2bind.Image(filename)
         for strategy in strategies:
             try:
                 colorspace_extractor = common.ExtractColorSpace(strategy())
-                return colorspace_extractor.check(filename)
+                return colorspace_extractor.check(image)
             except common.InvalidStrategy as e:
-                print(f"Unable to determine color space using "
+                print(f"Unable to determine colorspace using "
                       f"{strategy.__name__}. Reason given: {e}",
                       file=sys.stderr)
         return None
