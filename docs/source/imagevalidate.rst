@@ -2,12 +2,19 @@ imagevalidate
 -------------
 
 .. automodule:: uiucprescon.imagevalidate
-    :members: Profile
-    :undoc-members:
+    :members: Profile, get_profile
 
-profiles
+
+Profiles
 ________
 
-.. automodule:: uiucprescon.imagevalidate.profiles
-    :members: hathi_tiff
+.. autoclass:: uiucprescon.imagevalidate.profiles.hathi_jp2000.HathiJP2000
 
+.. autoclass:: uiucprescon.imagevalidate.profiles.hathi_tiff.HathiTiff
+
+
+Profile Base Class
+__________________
+
+.. automodule:: uiucprescon.imagevalidate.profiles
+    :members: AbsProfile
