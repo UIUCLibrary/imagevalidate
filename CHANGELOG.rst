@@ -7,7 +7,8 @@ Change Log
 +++++
 
 * Profiles added:
-      * HathiTrust jp2000
+      * HathiTrust JPEG 2000
+            - Note: Currently no checks performed for color space
       * HathiTrust Tiff
 
 Dev
