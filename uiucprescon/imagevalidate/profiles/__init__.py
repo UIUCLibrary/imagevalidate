@@ -9,6 +9,8 @@ __all__ = [
     "AbsProfile",
 ]
 
+valid_profiles = []
+
 
 def _load():
     """Dynamically load all the profiles with AbsProfile in into the
@@ -26,7 +28,9 @@ def _load():
         for name, module_class in inspect.getmembers(mod, is_profile):
             if issubclass(module_class, AbsProfile):
                 globals()[module_class.__name__] = module_class
-                __all__.append(module_class.__name__)
+                # __all__.append(module_class.__name__)
+                valid_profiles.append(module_class.__name__)
 
 
 _load()
+__all__ += valid_profiles

@@ -38,6 +38,11 @@ class HathiJP2000(AbsProfile):
         "Exif.Image.YResolution": "400/1",
         'Exif.Image.BitsPerSample': "8 8 8",
     }
+    valid_extensions = {".jp2"}
+
+    @staticmethod
+    def profile_name() -> str:
+        return "HathiTrust JPEG 2000"
 
     def validate(self, file: str) -> Report:
         report = Report()

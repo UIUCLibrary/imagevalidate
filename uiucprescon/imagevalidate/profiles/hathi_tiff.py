@@ -38,6 +38,11 @@ class HathiTiff(AbsProfile):
         "Exif.Image.YResolution": "400/1",
         'Exif.Image.BitsPerSample': "8 8 8",
     }
+    valid_extensions = {".tif"}
+
+    @staticmethod
+    def profile_name() -> str:
+        return "HathiTrust Tiff"
 
     def validate(self, file: str) -> Report:
         report = Report()
