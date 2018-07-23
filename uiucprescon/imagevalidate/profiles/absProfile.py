@@ -7,12 +7,15 @@ from uiucprescon.imagevalidate.report import Result, ResultCategory
 
 
 class AbsProfile(metaclass=abc.ABCMeta):
+    """Base class for metadata validation.
+    Implement the validate method when creating new profile"""
+
     expected_metadata_constants: Dict[str, str] = dict()
     expected_metadata_any_value: List[str] = list()
 
     @abc.abstractmethod
     def validate(self, file: str) -> Report:
-        """ Validate a file
+        """Validate a file
 
         Args:
             file: file path to the file to be validate
@@ -81,9 +84,9 @@ class AbsProfile(metaclass=abc.ABCMeta):
         return None
 
     @classmethod
-    def get_data_from_image(cls, image: py3exiv2bind.Image) \
+    def get_data_from_image(cls, filename: str) \
             -> Dict[str, Result]:
-
+        image = py3exiv2bind.Image(filename)
         data: Dict[str, Result] = dict()
         data.update(cls._get_metadata_has_values(image))
         data.update(cls._get_metadata_static_values(image))

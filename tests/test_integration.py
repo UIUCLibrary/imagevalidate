@@ -3,7 +3,6 @@ import os
 import pytest
 
 from uiucprescon import imagevalidate
-from uiucprescon.imagevalidate import profiles
 from uiucprescon.imagevalidate import IssueCategory
 import os
 import tarfile
@@ -52,7 +51,7 @@ def sample_data():
 @pytest.mark.integration
 @pytest.mark.parametrize("test_file,profile_name", [
     (os.path.join("bitdepth", "0000001.tif"), "HathiTiff"),
-    (os.path.join("bitdepth", "0000001.jp2"), "HathiJP200"),
+    (os.path.join("bitdepth", "0000001.jp2"), "HathiJP2000"),
 ])
 def test_bitdepth(sample_data, test_file, profile_name):
     test_image = os.path.join(sample_data, test_file)
@@ -68,7 +67,6 @@ def test_bitdepth(sample_data, test_file, profile_name):
 @pytest.mark.integration
 @pytest.mark.parametrize("test_file,profile_name", [
     (os.path.join("colorspace", "0000001.tif"), "HathiTiff"),
-    (os.path.join("colorspace", "0000001.jp2"), "HathJP2000"),
 ])
 def test_colorspace(sample_data, test_file, profile_name):
     test_image = os.path.join(sample_data, test_file)
@@ -81,12 +79,13 @@ def test_colorspace(sample_data, test_file, profile_name):
     assert len(report.issues(issue_type=IssueCategory.EMPTY_DATA)) == 0
     assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 0
     assert not report.valid
+    assert report._properties['Color Space'].actual != "Unknown"
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize("test_file,profile_name", [
     (os.path.join("correct", "0000001.tif"), "HathiTiff"),
-    (os.path.join("correct", "0000001.jp2"), "HathJP2000"),
+    (os.path.join("correct", "0000001.jp2"), "HathiJP2000"),
 ])
 def test_correct(sample_data, test_file, profile_name):
     test_image = os.path.join(sample_data, test_file)
@@ -105,7 +104,7 @@ def test_correct(sample_data, test_file, profile_name):
 @pytest.mark.integration
 @pytest.mark.parametrize("test_file,profile_name", [
     (os.path.join("empty_address", "0000001.tif"), "HathiTiff"),
-    (os.path.join("empty_address", "0000001.jp2"), "HathJP2000"),
+    (os.path.join("empty_address", "0000001.jp2"), "HathiJP2000"),
 ])
 def test_empty_address(sample_data, test_file, profile_name):
     test_image = os.path.join(sample_data, test_file)
@@ -123,7 +122,7 @@ def test_empty_address(sample_data, test_file, profile_name):
 @pytest.mark.integration
 @pytest.mark.parametrize("test_file,profile_name", [
     (os.path.join("empty_city", "0000001.tif"), "HathiTiff"),
-    (os.path.join("empty_city", "0000001.jp2"), "HathJP2000"),
+    (os.path.join("empty_city", "0000001.jp2"), "HathiJP2000"),
 ])
 def test_empty_city(sample_data, test_file, profile_name):
     test_image = os.path.join(sample_data, test_file)
@@ -141,7 +140,7 @@ def test_empty_city(sample_data, test_file, profile_name):
 @pytest.mark.integration
 @pytest.mark.parametrize("test_file,profile_name", [
     (os.path.join("empty_country", "0000001.tif"), "HathiTiff"),
-    (os.path.join("empty_country", "0000001.jp2"), "HathJP2000"),
+    (os.path.join("empty_country", "0000001.jp2"), "HathiJP2000"),
 ])
 def test_empty_country(sample_data, test_file, profile_name):
     test_image = os.path.join(sample_data, test_file)
@@ -159,7 +158,7 @@ def test_empty_country(sample_data, test_file, profile_name):
 @pytest.mark.integration
 @pytest.mark.parametrize("test_file,profile_name", [
     (os.path.join("missing_creator", "0000001.tif"), "HathiTiff"),
-    (os.path.join("missing_creator", "0000001.jp2"), "HathJP2000"),
+    (os.path.join("missing_creator", "0000001.jp2"), "HathiJP2000"),
 ])
 def test_missing_creator(sample_data, test_file, profile_name):
     test_image = os.path.join(sample_data, test_file)
@@ -177,7 +176,7 @@ def test_missing_creator(sample_data, test_file, profile_name):
 @pytest.mark.integration
 @pytest.mark.parametrize("test_file,profile_name", [
     (os.path.join("empty_state", "0000001.tif"), "HathiTiff"),
-    (os.path.join("empty_state", "0000001.jp2"), "HathJP2000"),
+    (os.path.join("empty_state", "0000001.jp2"), "HathiJP2000"),
 ])
 def test_empty_state(sample_data, test_file, profile_name):
     test_image = os.path.join(sample_data, test_file)
@@ -195,7 +194,7 @@ def test_empty_state(sample_data, test_file, profile_name):
 @pytest.mark.integration
 @pytest.mark.parametrize("test_file,profile_name", [
     (os.path.join("empty_zip", "0000001.tif"), "HathiTiff"),
-    (os.path.join("empty_zip", "0000001.jp2"), "HathJP2000"),
+    (os.path.join("empty_zip", "0000001.jp2"), "HathiJP2000"),
 ])
 def test_empty_zip(sample_data, test_file, profile_name):
     test_image = os.path.join(sample_data, test_file)
@@ -213,7 +212,7 @@ def test_empty_zip(sample_data, test_file, profile_name):
 @pytest.mark.integration
 @pytest.mark.parametrize("test_file,profile_name", [
     (os.path.join("empty_phonenumber", "0000001.tif"), "HathiTiff"),
-    (os.path.join("empty_phonenumber", "0000001.jp2"), "HathJP2000"),
+    (os.path.join("empty_phonenumber", "0000001.jp2"), "HathiJP2000"),
 ])
 def test_empty_phonenumber(sample_data, test_file, profile_name):
     test_image = os.path.join(sample_data, test_file)
@@ -231,7 +230,7 @@ def test_empty_phonenumber(sample_data, test_file, profile_name):
 @pytest.mark.integration
 @pytest.mark.parametrize("test_file,profile_name", [
     (os.path.join("pixelarray", "0000001.tif"), "HathiTiff"),
-    (os.path.join("pixelarray", "0000001.jp2"), "HathJP2000"),
+    (os.path.join("pixelarray", "0000001.jp2"), "HathiJP2000"),
 ])
 def test_pixelarray(sample_data, test_file, profile_name):
 

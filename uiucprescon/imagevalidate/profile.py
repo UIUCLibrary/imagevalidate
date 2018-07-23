@@ -8,9 +8,10 @@ known_profiles: Dict[str, Type[profile_pkg.AbsProfile]] = {}
 
 
 class Profile:
+    """Profile loader for validating embedded metadata in image files"""
 
-    def __init__(self, profile: profile_pkg.AbsProfile) -> None:
-        self._profile = profile
+    def __init__(self, validation_profile: profile_pkg.AbsProfile) -> None:
+        self._profile = validation_profile
 
     def validate(self, file: str) -> imagevalidate.Report:
         if not os.path.exists(file):
@@ -19,8 +20,7 @@ class Profile:
 
 
 def available_profiles()-> Set[str]:
-    """
-    Get the names of all available profiles
+    """Get the names of all available profiles
 
     Returns: List of available profiles accessible in this version
 
@@ -28,7 +28,8 @@ def available_profiles()-> Set[str]:
     return set(known_profiles.keys())
 
 
-def get_profile(name: str):
+def get_profile(name: str) -> profile_pkg.AbsProfile:
+    """Locate a profile based on the name of the class"""
     return known_profiles[name]()
 
 
