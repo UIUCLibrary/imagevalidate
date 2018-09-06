@@ -28,6 +28,7 @@ pipeline {
     PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
     PIPENV_CACHE_DIR="${WORKSPACE}\\..\\.virtualenvs\\cache\\"
     WORKON_HOME ="${WORKSPACE}\\pipenv\\"
+    PATH = "${tool 'cmake3.12'};$PATH"
   }
   parameters {
     booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
