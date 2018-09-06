@@ -6,9 +6,8 @@ import shutil
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
-# TODO remove fixed location
 # TODO Add CMake location option
-SOURCE_DIR = r"C:\Users\hborcher\PycharmProjects\imagevalidate"
+SOURCE_DIR = os.path.abspath(os.path.dirname(__file__))
 CMAKE = shutil.which("cmake")
 
 # Idea comes from https://stackoverflow.com/questions/42585210/extending-setuptools-extension-to-use-cmake-in-setup-py
