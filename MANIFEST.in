@@ -5,6 +5,9 @@ include LICENSE
 include README.rst
 include CHANGELOG.rst
 
+include CMakeLists.txt
+recursive-include uiucprescon/imagevalidate CMakeLists.txt *.cpp *.h
+
 # Running requirements
 include requirements.txt
 
