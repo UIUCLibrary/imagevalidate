@@ -13,7 +13,11 @@ def VENV_PIP = ""
 
 pipeline {
   agent {
-    label 'Windows && longfilenames && VS2015'
+    node{
+        label 'Windows && longfilenames && VS2015'
+        customWorkspace "c:/Jenkins/temp/${JOB_NAME}/${BUILD_NUMBER}"
+
+    }
   }
   triggers {
         cron('@daily')
