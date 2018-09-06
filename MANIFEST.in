@@ -9,7 +9,7 @@ include CMakeLists.txt
 recursive-include uiucprescon/imagevalidate CMakeLists.txt *.cpp *.h
 
 # Running requirements
-include requirements.txt
+include requirements.txt Pipfile Pipfile.lock
 
 # Tox configuration setting
 include tox.ini
