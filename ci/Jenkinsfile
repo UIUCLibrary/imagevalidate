@@ -13,7 +13,7 @@ def VENV_PIP = ""
 
 pipeline {
   agent {
-    label 'Windows && longfilenames'
+    label 'Windows && longfilenames && VS2015'
   }
   triggers {
         cron('@daily')
