@@ -15,7 +15,8 @@ include requirements.txt Pipfile Pipfile.lock
 include tox.ini
 
 # Pytest tests
-recursive-include tests *.py
+recursive-include tests *.py *.cpp
+include tests/CMakeLists.txt
 
 # Documentation
 include docs/Makefile
