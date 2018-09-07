@@ -42,7 +42,11 @@ class BuildCMakeExt(build_ext):
         for extension in self.extensions:
             self.configure_cmake(extension)
             self.build_cmake(extension)
+            self.bundle_shared_library_deps(extension)
 
+    def bundle_shared_library_deps(self, extension: Extension):
+        print("bundling")
+        pass
 
     def configure_cmake(self, extension: Extension):
 
@@ -58,12 +62,16 @@ class BuildCMakeExt(build_ext):
         # print(self.get_ext_fullpath(extension.name))
         # print()
 
+        dll_library_dest = os.path.abspath(
+            os.path.join(install_prefix, "uiucprescon", "imagevalidate")
+        )
+
         configure_command = [
             CMAKE,
             f'-H{SOURCE_DIR}',
             f'-DCMAKE_INSTALL_PREFIX={install_prefix}',
             f'-B{self.build_temp}',
-            f'-DOPENJPEG_INSTALL_BIN_DIR={install_prefix}/uiucprescon/imagevalidate',
+            f'-DOPENJPEG_INSTALL_BIN_DIR={dll_library_dest}',
             f'-G{self.get_build_generator_name()}',
             # f'-DPYTHON_EXTENSION_OUTPUT={os.path.splitext(self.get_ext_filename(extension.name))[0]}',
         ]
