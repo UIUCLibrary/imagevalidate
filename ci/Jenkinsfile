@@ -56,9 +56,9 @@ pipeline {
           steps {
             // Set up the reports directory variable 
             script{
-                REPORT_DIR = "${pwd tmp: true}\\reports"
-                LOGS_DIR = "${pwd tmp: true}\\logs"
-                BUILD_DIR = "${pwd tmp: true}\\build"
+                REPORT_DIR = "${WORKSPACE}\\reports"
+                LOGS_DIR = "${WORKSPACE}\\logs"
+                BUILD_DIR = "${WORKSPACE}\\build"
                 DIST_DIR = "${WORKSPACE}\\dist"
                 SOURCE_DIR = "${WORKSPACE}\\source"
                 
