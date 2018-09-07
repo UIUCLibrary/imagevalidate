@@ -209,7 +209,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
               bat "venv\\Scripts\\pip.exe install devpi-client --upgrade-strategy only-if-needed"
               
   
-              tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
+              tee("${WORKSPACE}/logs/pippackages_venv_${NODE_NAME}.log") {
                   bat "venv\\Scripts\\pip.exe list"
               }
               script {
@@ -225,7 +225,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
           post{
             always{
-              dir(pwd(tmp: true)){
+              dir(${WORKSPACE}){
                   script{
                       def log_files = findFiles glob: '**/pippackages_venv_*.log'
                       log_files.each { log_file ->
