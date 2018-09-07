@@ -57,3 +57,8 @@ class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
         if not pref_ccm:
             raise InvalidStrategy("No pref_ccm key found in icc profile")
         return str(pref_ccm)
+
+
+class ColorSpaceOJPCheck(AbsColorSpaceExtractor):
+    def check(self, image: str)->str:
+        return "SRGB"

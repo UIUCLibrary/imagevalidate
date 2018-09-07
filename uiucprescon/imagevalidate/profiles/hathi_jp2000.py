@@ -72,12 +72,12 @@ class HathiJP2000(AbsProfile):
 
         # Currently unable to properly extract enumerated color space
         #
-        # color_space = cls.determine_color_space(image)
-        # if color_space:
-        #     data['Color Space'] = Result(expected="sRGB", actual=color_space)
-        # else:
-        #     data['Color Space'] = Result(expected="sRGB",
-        #                                  actual="Unknown")
+        color_space = cls.determine_color_space(image)
+        if color_space:
+            data['Color Space'] = Result(expected="SRGB", actual=color_space)
+        else:
+            data['Color Space'] = Result(expected="SRGB",
+                                         actual="Unknown")
 
         longest_side = max(image.pixelHeight, image.pixelWidth)
 
@@ -93,6 +93,7 @@ class HathiJP2000(AbsProfile):
         strategies = [
             common.ColorSpaceIccDeviceModelCheck,
             common.ColorSpaceIccPrefCcmCheck,
+            common.ColorSpaceOJPCheck
 
         ]
         for strategy in strategies:
