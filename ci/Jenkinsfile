@@ -225,7 +225,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
           post{
             always{
-              dir(${WORKSPACE}){
+              dir("${WORKSPACE}"){
                   script{
                       def log_files = findFiles glob: '**/pippackages_venv_*.log'
                       log_files.each { log_file ->
