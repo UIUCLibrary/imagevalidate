@@ -15,7 +15,7 @@ pipeline {
   agent {
     node{
         label 'Windows && longfilenames && VS2015'
-        customWorkspace "c:/Jenkins/temp/${JOB_NAME}/${BUILD_NUMBER}"
+        // customWorkspace "c:/Jenkins/temp/${JOB_NAME}/${BUILD_NUMBER}"
 
     }
   }
