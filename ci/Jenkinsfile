@@ -288,7 +288,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
       steps {
         tee("${LOGS_DIR}/build.log") {
           dir("${SOURCE_DIR}"){
-            bat script: "pipenv run python setup.py build -b ${BUILD_DIR}"
+            bat script: "pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib"
           }
         }
       }
@@ -473,7 +473,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         dir("${SOURCE_DIR}"){
 
           // bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist"
-          bat "pipenv run python setup.py build -b ${BUILD_DIR} sdist -d ${DIST_DIR} bdist_wheel -d ${DIST_DIR}"
+          bat "pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib sdist -d ${DIST_DIR} bdist_wheel -d ${DIST_DIR}"
         }
       }
       post{
