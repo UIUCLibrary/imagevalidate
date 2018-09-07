@@ -10,6 +10,7 @@ from setuptools.command.build_ext import build_ext
 SOURCE_DIR = os.path.abspath(os.path.dirname(__file__))
 CMAKE = shutil.which("cmake")
 
+
 # Idea comes from https://stackoverflow.com/questions/42585210/extending-setuptools-extension-to-use-cmake-in-setup-py
 
 class CMakeExtension(Extension):
@@ -72,6 +73,12 @@ class BuildCMakeExt(build_ext):
             f'-DCMAKE_INSTALL_PREFIX={install_prefix}',
             f'-B{self.build_temp}',
             f'-DOPENJPEG_INSTALL_BIN_DIR={dll_library_dest}',
+            f'-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE={dll_library_dest}',
+            f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE={dll_library_dest}',
+            f'-DBUILD_STATIC_LIBS:BOOL=OFF',
+            '-DBUILD_THIRDPARTY:BOOL=ON',
+            # f'-DCMAKE_INSTALL_INCLUDEDIR={self.build_temp}/include',
+            # f'-DCMAKE_INSTALL_LIBDIR={self.build_temp}/lib',
             f'-G{self.get_build_generator_name()}',
             # f'-DPYTHON_EXTENSION_OUTPUT={os.path.splitext(self.get_ext_filename(extension.name))[0]}',
         ]
@@ -79,11 +86,17 @@ class BuildCMakeExt(build_ext):
 
     def build_cmake(self, extension: Extension):
         self.announce("Building binaries", level=3)
+        build_command = [
+            "cmake", "--build", self.build_temp,
+            "--config", "Release",
 
-        self.spawn(["cmake", "--build", self.build_temp, "--target", "INSTALL",
-                    "--config", "Release"])
+            # "--target", "INSTALL",
 
+        ]
+        if self.parallel:
+            build_command.extend(["-j", str(self.parallel)])
 
+        self.spawn(build_command)
 
 
 open_jpeg_extension = CMakeExtension("openjp2wrapper")
