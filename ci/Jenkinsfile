@@ -360,10 +360,10 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
               script {
                 // bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -v -- --integration --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
                 try{
-                    bat "pipenv run tox --workdir ..\\.tox\\PyTest"
+                    bat "pipenv run tox --workdir ${WORKSPACE}\\..\\.tox\\PyTest"
 //                  bat "pipenv run tox -vv --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=ocr"
                 } catch (exc) {
-                    bat "pipenv run tox -vv --recreate --workdir ..\\.tox\\PyTest"
+                    bat "pipenv run tox -vv --recreate --workdir ${WORKSPACE}\\..\\.tox\\PyTest"
                 }
                 
               }
