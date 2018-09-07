@@ -18,6 +18,7 @@ if(BUILD_TESTING)
     target_include_directories(Catch2 INTERFACE ${libcatch2_SOURCE_DIR}/single_include)
     include(Catch)
     add_executable(tester test-main.cpp test-basic.cpp)
+    set_target_properties(tester PROPERTIES CXX_STANDARD 11)
     target_link_libraries(tester PRIVATE Catch2 glue)
     catch_discover_tests(tester)
 
