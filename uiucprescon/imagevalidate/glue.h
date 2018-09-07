@@ -3,7 +3,6 @@
 
 #include <string>
 
-int get_five();
 std::string open_jpeg_version();
 
 #endif /*OPENJP2WRAP*/
