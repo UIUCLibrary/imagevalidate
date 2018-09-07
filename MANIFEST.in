@@ -5,6 +5,7 @@ include LICENSE
 include README.rst
 include CHANGELOG.rst
 
+# C++ Source files
 include CMakeLists.txt
 recursive-include uiucprescon/imagevalidate CMakeLists.txt *.cpp *.h
 
@@ -23,3 +24,8 @@ include docs/Makefile
 include docs/make.bat
 recursive-include docs/source *
 prune docs/build
+
+# Exclude binary files from source distribution
+recursive-exclude * __pycache__
+recursive-exclude * *.pyc
+recursive-exclude * *.dll
