@@ -5,6 +5,7 @@ import py3exiv2bind
 import typing
 from uiucprescon.imagevalidate import IssueCategory, common
 from uiucprescon.imagevalidate import Report
+from uiucprescon.imagevalidate.common import AbsColorSpaceExtractor
 from uiucprescon.imagevalidate.report import Result
 from . import AbsProfile
 
@@ -72,11 +73,11 @@ class HathiJP2000(AbsProfile):
 
         # Currently unable to properly extract enumerated color space
         #
-        color_space = cls.determine_color_space(image)
+        color_space = cls.determine_color_space(filename)
         if color_space:
-            data['Color Space'] = Result(expected="SRGB", actual=color_space)
+            data['Color Space'] = Result(expected="sRGB", actual=color_space)
         else:
-            data['Color Space'] = Result(expected="SRGB",
+            data['Color Space'] = Result(expected="sRGB",
                                          actual="Unknown")
 
         longest_side = max(image.pixelHeight, image.pixelWidth)
@@ -97,6 +98,7 @@ class HathiJP2000(AbsProfile):
 
         ]
         for strategy in strategies:
+
             try:
                 colorspace_extractor = common.ExtractColorSpace(strategy())
                 return colorspace_extractor.check(image)

@@ -1,5 +1,5 @@
 import inspect
-
+import abc
 from .absProfile import AbsProfile
 import importlib
 import importlib.util
@@ -12,11 +12,11 @@ __all__ = [
 valid_profiles = []
 
 
-def _load():
+def _load() -> None:
     """Dynamically load all the profiles with AbsProfile in into the
     profiles namespace"""
 
-    def is_profile(i):
+    def is_profile(i: abc.ABCMeta)->bool:
         if not inspect.isclass(i):
             return False
         if inspect.isabstract(i):
