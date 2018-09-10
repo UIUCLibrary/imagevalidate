@@ -572,7 +572,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
 
             bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s tar.gz  --verbose"
-            }
+
             echo "Finished testing Source Distribution: .tar.gz"
           }
           post {
@@ -580,34 +580,43 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
               echo "Tests for .tar.gz source on DevPi failed."
             }
           }
-
         }
-        stage("Source Distribution: .zip") {
-          agent {
-            node {
-              label "Windows && Python3 && VS2015"
-            }
-          }
-          options {
-            skipDefaultCheckout(true)
-          }
-          steps {
-            echo "Testing Source zip package in devpi"
-            bat "${tool 'CPython-3.6'} -m venv venv"
-            bat "venv\\Scripts\\pip.exe install tox devpi-client"
-            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-              bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-            }
-            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-            bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s zip --verbose"
 
-            echo "Finished testing Source Distribution: .zip"
-          }
-          post {
-            failure {
-              echo "Tests for .zip source on DevPi failed."
-            }
-          }
+//        }
+        stage("Source Distribution: .zip") {
+              agent {
+                    node {
+                        label "Windows && Python3 && VS2015"
+                    }
+              }
+              options {
+                skipDefaultCheckout(true)
+              }
+              stages{
+                    stage("Setting up DevPi Test Environment for sdist zip"){
+                        steps {
+                            echo "Testing Source zip package in devpi"
+                            bat "${tool 'CPython-3.6'} -m venv venv"
+                            bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                              bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            }
+                            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                        }
+
+                    }
+                    stage("Testing sdist devpi package"){
+                        steps{
+                            bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s zip --verbose"
+                        }
+                        post {
+                            failure {
+                                echo "Tests for .zip source on DevPi failed."
+                            }
+                        }
+                    }
+              }
+
         }
         stage("Built Distribution: .whl") {
           agent {
