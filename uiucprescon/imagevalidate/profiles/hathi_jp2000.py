@@ -5,7 +5,6 @@ import py3exiv2bind
 import typing
 from uiucprescon.imagevalidate import IssueCategory, common
 from uiucprescon.imagevalidate import Report
-# from uiucprescon.imagevalidate.common import AbsColorSpaceExtractor
 from uiucprescon.imagevalidate.report import Result
 from . import AbsProfile
 

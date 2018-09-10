@@ -65,4 +65,3 @@ class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
 class ColorSpaceOJPCheck(AbsColorSpaceExtractor):
     def check(self, image: str)->str:
         return openjp2wrap.get_colorspace(image)
-        # return "sRGB"
