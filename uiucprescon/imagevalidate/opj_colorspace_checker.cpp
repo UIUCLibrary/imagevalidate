@@ -18,7 +18,7 @@ opj_colorspace_checker::opj_colorspace_checker(const std::string &filename):
 std::string opj_colorspace_checker::convert_enum_to_string(COLOR_SPACE colorSpace) {
     switch(colorSpace){
         case OPJ_CLRSPC_SRGB:
-            return "SRGB";
+            return "sRGB";
         case OPJ_CLRSPC_UNKNOWN:
             return "Unknown";
         case OPJ_CLRSPC_UNSPECIFIED:
