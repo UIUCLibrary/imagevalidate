@@ -651,6 +651,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
               post{
                     failure{
                         echo "whl failed test on ${env.NODE_NAME}"
+                        bat "venv\\Scripts\\pip.exe list"
                     }
 
               }
