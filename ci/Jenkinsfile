@@ -740,6 +740,16 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         deleteDir()
       }
       script {
+
+      //        remove any shared library built in place
+        dir("${SOURCE_DIR}"){
+            def generated_c_libraries = findFiles glob: '**/*.dll,**/*.pyd,**.so,**/*.dylib'
+            generated_c_libraries .each { c_library ->
+                echo "Deleting ${pwd()}\\${c_library}"
+                bat "del ${c_library}"
+            }
+        }
+
         if(fileExists("${SOURCE_DIR}/setup.py")){
           dir("${SOURCE_DIR}"){
             try{
@@ -751,14 +761,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             bat "dir"
           }
         }
-//        remove any shared library built in place
-        dir("${SOURCE_DIR}"){
-            def generated_c_libraries = findFiles glob: '**/*.dll,**/*.pyd,**.so,**/*.dylib'
-            generated_c_libraries .each { c_library ->
-                echo "Deleting ${pwd()}\\${c_library}"
-                bat "del ${c_library}"
-            }
-        }
+
 
         if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
           withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
