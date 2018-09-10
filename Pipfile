@@ -14,7 +14,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-py3exiv2bind = "==0.1.0"
+py3exiv2bind = ">=0.1.0"
 mypy = "==0.620"
 
 [dev-packages]
