@@ -755,8 +755,8 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         dir("${SOURCE_DIR}"){
             def generated_c_libraries = findFiles glob: '**/*.dll,**/*.pyd,**.so,**/*.dylib'
             generated_c_libraries .each { c_library ->
-                echo "Deleting ${pwd()}/${c_library}"
-    //            bat "del ${log_file}"
+                echo "Deleting ${pwd()}\\${c_library}"
+                bat "del ${c_library}"
             }
         }
 
