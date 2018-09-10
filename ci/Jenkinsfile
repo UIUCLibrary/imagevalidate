@@ -57,7 +57,9 @@ pipeline {
             }
             steps{
                 deleteDir()
-                checkout scm
+                dir("source"){
+                    checkout scm
+                }
             }
         }
         stage("Setting Global Job Variables"){
