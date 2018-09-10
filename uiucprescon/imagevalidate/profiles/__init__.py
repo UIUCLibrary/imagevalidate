@@ -25,8 +25,10 @@ def _load() -> None:
             return False
         return True
 
+    module_path = __path__  # type: ignore
+
     for loader, module_name, is_pkgin in \
-            pkgutil.walk_packages(os.path.dirname(__file__)):
+            pkgutil.walk_packages(module_path):
 
         mod = importlib.import_module(f".{module_name}", __package__)
         for name, module_class in inspect.getmembers(mod, is_profile):
