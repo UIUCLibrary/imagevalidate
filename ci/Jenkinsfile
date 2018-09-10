@@ -286,15 +286,12 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         }
       }
     }
-    stage("Python Package"){
+    stage("Build"){
       steps {
         tee("${LOGS_DIR}/build.log") {
           dir("${SOURCE_DIR}"){
             bat script: "pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp build_ext --inplace"
           }
-        }
-        dir("build\\lib\\tests"){
-            bat "copy ${WORKSPACE}\\source\\tests\\*.py"
         }
       }
       post{
@@ -423,11 +420,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                     bat "del reports\\coverage.xml"
 
                 }
-                failure{
-                    dir("build"){
-                        bat "tree /A /F"
-                    }
-                }
+
             }
         }
         stage("Run Doctest Tests"){
