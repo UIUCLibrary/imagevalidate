@@ -7,7 +7,8 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
 # TODO Add CMake location option
-SOURCE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+
 CMAKE = shutil.which("cmake")
 
 
@@ -50,6 +51,7 @@ class BuildCMakeExt(build_ext):
         pass
 
     def configure_cmake(self, extension: Extension):
+        source_dir = os.path.abspath(os.path.dirname(__file__))
 
         self.announce("Configuring cmake project", level=3)
         os.makedirs(self.build_temp, exist_ok=True)
@@ -69,7 +71,7 @@ class BuildCMakeExt(build_ext):
 
         configure_command = [
             CMAKE,
-            f'-H{SOURCE_DIR}',
+            f'-H{source_dir}',
             f'-DCMAKE_INSTALL_PREFIX={install_prefix}',
             f'-B{self.build_temp}',
             f'-DOPENJPEG_INSTALL_BIN_DIR={dll_library_dest}',
