@@ -67,8 +67,9 @@ def test_bitdepth(sample_data, test_file, profile_name):
 @pytest.mark.integration
 @pytest.mark.parametrize("test_file,profile_name", [
     (os.path.join("colorspace", "0000001.tif"), "HathiTrust Tiff"),
+    # (os.path.join("colorspace", "0000001.jp2"), "HathiTrust JPEG 2000"),
 ])
-def test_colorspace(sample_data, test_file, profile_name):
+def test_invalid_colorspace(sample_data, test_file, profile_name):
     test_image = os.path.join(sample_data, test_file)
     profile_type = imagevalidate.get_profile(profile_name)
     hathi_tiff_profile = imagevalidate.Profile(profile_type)
@@ -80,6 +81,24 @@ def test_colorspace(sample_data, test_file, profile_name):
     assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 0
     assert not report.valid
     assert report._properties['Color Space'].actual != "Unknown"
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("test_file,profile_name", [
+    (os.path.join("colorspace", "0000001.jp2"), "HathiTrust JPEG 2000"),
+])
+def test_valid_colorspace(sample_data, test_file, profile_name):
+    test_image = os.path.join(sample_data, test_file)
+    profile_type = imagevalidate.get_profile(profile_name)
+    validation_profile = imagevalidate.Profile(profile_type)
+    report = validation_profile.validate(file=test_image)
+    print(report)
+    assert len(report.issues()) == 0
+    assert len(report.issues(issue_type=IssueCategory.INVALID_DATA)) == 0
+    assert len(report.issues(issue_type=IssueCategory.EMPTY_DATA)) == 0
+    assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 0
+    assert report.valid
+    assert report._properties['Color Space'].actual == "sRGB"
 
 
 @pytest.mark.integration

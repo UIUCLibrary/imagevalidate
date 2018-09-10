@@ -88,7 +88,6 @@ class HathiTiff(AbsProfile):
             common.ColorSpaceIccPrefCcmCheck,
 
         ]
-        filename = py3exiv2bind.Image(filename)
         for strategy in strategies:
             try:
                 colorspace_extractor = common.ExtractColorSpace(strategy())
