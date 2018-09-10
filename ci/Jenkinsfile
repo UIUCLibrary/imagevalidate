@@ -640,7 +640,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                     }
                     stage("Testing bdist wheel DevPi package"){
                         steps{
-                            bat "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s whl"
+                            bat "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s whl --verbose"
                         }
 
                     }
