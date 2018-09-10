@@ -465,7 +465,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                 try{
                   dir("${SOURCE_DIR}"){
                     bat "dir"
-                    bat "pipenv run mypy -p uiucprescon --html-report ${REPORT_DIR}\\mypy\\html"
+                    bat "pipenv run mypy ${WORKSPACE}\\build\\lib\\uiucprescon --html-report ${REPORT_DIR}\\mypy\\html"
                   }
                 } catch (exc) {
                   echo "MyPy found some warnings"
