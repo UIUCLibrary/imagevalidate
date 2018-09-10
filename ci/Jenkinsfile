@@ -307,7 +307,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         }
       }
     }
-    stage("Sphinx documentation"){
+    stage("Sphinx Documentation"){
       steps {
         echo "Building docs on ${env.NODE_NAME}"
         script{
