@@ -1,6 +1,5 @@
 import inspect
 import abc
-import os
 
 from .absProfile import AbsProfile
 import importlib
