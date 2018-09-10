@@ -553,7 +553,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         stage("Source Distribution: .tar.gz") {
           agent {
             node {
-              label "Windows && Python3"
+              label "Windows && Python3 && VS2015"
             }
           }
           options {
@@ -587,7 +587,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         stage("Source Distribution: .zip") {
           agent {
             node {
-              label "Windows && Python3"
+              label "Windows && Python3 && VS2015"
             }
           }
           options {
