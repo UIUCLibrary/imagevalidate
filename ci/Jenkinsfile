@@ -605,7 +605,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                         }
 
                     }
-                    stage("Testing sdist devpi package"){
+                    stage("Testing sdist DevPi package"){
                         steps{
                             bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s zip --verbose"
                         }
