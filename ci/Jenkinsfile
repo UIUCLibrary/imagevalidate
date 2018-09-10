@@ -38,6 +38,7 @@ pipeline {
     booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
       booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
       booleanParam(name: "TEST_UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
+      booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
       booleanParam(name: "TEST_DOCTEST", defaultValue: true, description: "Run Doctest on the documentation")
       booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy Tests")
       booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 Tests")
@@ -265,7 +266,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             // tee("${LOGS_DIR}/pippackages_venv_${NODE_NAME}.log") {
             //   bat "${VENV_PIP} list"
             // }
-        stage("Configure devpi login"){
+        stage("Configure DevPi login"){
           steps{    
             bat "${VENV_ROOT}\\Scripts\\devpi use https://devpi.library.illinois.edu"
             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
@@ -291,6 +292,9 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
           dir("${SOURCE_DIR}"){
             bat script: "pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp"
           }
+        }
+        dir("build\\lib\\tests"){
+            bat "copy ${WORKSPACE}\\source\\tests\\*.py"
         }
       }
       post{
@@ -351,7 +355,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
       parallel {
         stage("Tox") {
           when {
-            equals expected: true, actual: params.TEST_UNIT_TESTS
+            equals expected: true, actual: params.TEST_RUN_TOX
           }
           steps {
             dir("${REPORT_DIR}\\coverage\\"){
@@ -371,21 +375,59 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             }
             
           }
-          post{
-            always{
-              dir("${REPORT_DIR}"){
-                bat "dir"
-                script {
-                  def xml_files = findFiles glob: "**/*.xml"
-                  xml_files.each { junit_xml_file ->
-                    echo "Found ${junit_xml_file}"
-                    junit "${junit_xml_file}"
-                  }
-                }
-              }                      
-              publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+//          post{
+//            always{
+//              dir("${REPORT_DIR}"){
+//                bat "dir"
+//                script {
+//                  def xml_files = findFiles glob: "**/*.xml"
+//                  xml_files.each { junit_xml_file ->
+//                    echo "Found ${junit_xml_file}"
+//                    junit "${junit_xml_file}"
+//                  }
+//                }
+//              }
+//              publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+//            }
+//          }
+        }
+        stage("Run PyTest Unit Tests"){
+            when {
+               equals expected: true, actual: params.TEST_RUN_PYTEST
             }
-          }
+            environment{
+                junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
+            }
+            steps{
+                dir("build\\lib"){
+                    bat "${WORKSPACE}\\venv\\Scripts\\python.exe -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/pytestcoverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --integration --cov-config=${WORKSPACE}/source/setup.cfg"
+                }
+            }
+            post {
+                always {
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/pytestcoverage", reportFiles: 'index.html', reportName: 'Coverage.py', reportTitles: ''])
+                    junit "reports/pytest/${junit_filename}"
+                    script {
+                        try{
+                            publishCoverage
+                                autoDetectPath: 'coverage*/*.xml'
+                                adapters: [
+                                    cobertura(coberturaReportFile:"reports/coverage.xml")
+                                ]
+                        } catch(exc){
+                            echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
+                            cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+                        }
+                    }
+                    bat "del reports\\coverage.xml"
+
+                }
+                failure{
+                    dir("build"){
+                        bat "tree /A /F"
+                    }
+                }
+            }
         }
         stage("Run Doctest Tests"){
           when {
