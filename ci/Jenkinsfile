@@ -208,7 +208,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                       bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                   }                           
               }
-              bat "venv\\Scripts\\pip.exe install devpi-client --upgrade-strategy only-if-needed"
+              bat "venv\\Scripts\\pip.exe install devpi-client pytest --upgrade-strategy only-if-needed"
               
   
               tee("${WORKSPACE}/logs/pippackages_venv_${NODE_NAME}.log") {
@@ -299,11 +299,13 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
       }
       post{
         always{
-          
-          dir("${LOGS_DIR}"){
-            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: "build.log"]]
-            archiveArtifacts artifacts: "*.log"
-          }
+            dir("${BUILD_DIR}"){
+                bat "tree /A /F > ${LOGS_DIR}/tree_build.log"
+            }
+            dir("${LOGS_DIR}"){
+                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: "build.log"]]
+                archiveArtifacts artifacts: "*.log"
+            }
         }
       }
     }
