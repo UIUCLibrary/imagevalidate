@@ -4,6 +4,7 @@ import py3exiv2bind
 import py3exiv2bind.core
 from uiucprescon.imagevalidate import openjp2wrap
 
+
 class InvalidStrategy(Exception):
     pass
 

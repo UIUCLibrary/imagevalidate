@@ -1,5 +1,7 @@
 import inspect
 import abc
+import os
+
 from .absProfile import AbsProfile
 import importlib
 import importlib.util
@@ -23,7 +25,9 @@ def _load() -> None:
             return False
         return True
 
-    for loader, module_name, is_pkgin in pkgutil.walk_packages(__path__):
+    for loader, module_name, is_pkgin in \
+            pkgutil.walk_packages(os.path.dirname(__file__)):
+
         mod = importlib.import_module(f".{module_name}", __package__)
         for name, module_class in inspect.getmembers(mod, is_profile):
             if issubclass(module_class, AbsProfile):
