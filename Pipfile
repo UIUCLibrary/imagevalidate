@@ -19,6 +19,7 @@ mypy = "==0.620"
 
 [dev-packages]
 pytest = "*"
+pytest-cov = "*"
 tox = "*"
 coverage = "*"
 lxml = "*"
