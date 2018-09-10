@@ -400,8 +400,8 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                 junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
             }
             steps{
-                dir("build\\lib"){
-                    bat "${WORKSPACE}\\venv\\Scripts\\python.exe -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/pytestcoverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --integration --cov-config=${WORKSPACE}/source/setup.cfg"
+                dir("source"){
+                    bat "pipenv run python -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/pytestcoverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --integration --cov-config=${WORKSPACE}/source/setup.cfg"
                 }
             }
             post {
@@ -466,7 +466,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                 try{
                   dir("${SOURCE_DIR}"){
                     bat "dir"
-                    bat "pipenv run mypy ${WORKSPACE}\\build\\lib\\uiucprescon --html-report ${REPORT_DIR}\\mypy\\html"
+                    bat "pipenv run mypy -p uiucprescon --html-report ${REPORT_DIR}\\mypy\\html"
                   }
                 } catch (exc) {
                   echo "MyPy found some warnings"
