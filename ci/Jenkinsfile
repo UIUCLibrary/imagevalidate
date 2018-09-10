@@ -620,6 +620,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
               agent {
                     node {
                         label "Windows && Python3"
+                        customWorkspace "c:/Jenkins/temp/${JOB_NAME}/devpi_testing/whl/"
                     }
               }
               options{
