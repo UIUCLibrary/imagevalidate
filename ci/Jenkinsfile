@@ -51,7 +51,7 @@ pipeline {
   stages {
     stage('Configure Environment') {
       stages{
-        stage("Purge all existing data in workspace"){
+        stage("Purge All Existing Data in Workspace"){
             when{
                 equals expected: true, actual: params.FRESH_WORKSPACE
             }
@@ -60,7 +60,7 @@ pipeline {
                 checkout scm
             }
         }
-        stage("Setting job path variables"){
+        stage("Setting Global Job Variables"){
 
         
           steps {
@@ -137,7 +137,7 @@ Distribution directory = ${DIST_DIR}"""
             }
           }
         }
-        stage("Setting project metadata variables"){
+        stage("Setting Project Metadata Variables"){
           steps{      
             script {
               dir("${SOURCE_DIR}"){
@@ -195,7 +195,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
             }
           }
         }
-        stage("Creating virtualenv for building"){
+        stage("Creating Virtualenv for Building"){
           steps {
               bat "${tool 'CPython-3.6'} -m venv venv"
               
@@ -266,7 +266,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             // tee("${LOGS_DIR}/pippackages_venv_${NODE_NAME}.log") {
             //   bat "${VENV_PIP} list"
             // }
-        stage("Configure DevPi login"){
+        stage("Configure DevPi Login"){
           steps{    
             bat "${VENV_ROOT}\\Scripts\\devpi use https://devpi.library.illinois.edu"
             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
@@ -529,7 +529,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         }
       }
     }
-    stage("Deploying to Devpi") {
+    stage("Deploying to DevPi Staging") {
       when {
         expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev")}
       }
@@ -551,7 +551,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         }
       }
     }
-    stage("Test Devpi packages") {
+    stage("Test DevPi Packages") {
       when {
           expression { params.DEPLOY_DEVPI == true  && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev")}
       }
@@ -658,7 +658,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
     }
     stage("Release") {
       parallel {
-        stage("Release to DevPi production") {
+        stage("Release to DevPi Production") {
           when {
             allOf{
               equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
@@ -676,7 +676,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             bat "${VENV_ROOT}\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
           }
         }
-        stage("Deploy online documentation") {
+        stage("Deploy Online Documentation") {
           when {
             allOf{
               equals expected: true, actual: params.DEPLOY_DOCS
