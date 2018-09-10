@@ -2,7 +2,7 @@ import abc
 
 import py3exiv2bind
 import py3exiv2bind.core
-
+from uiucprescon.imagevalidate import openjp2wrap
 
 class InvalidStrategy(Exception):
     pass
@@ -63,4 +63,5 @@ class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
 
 class ColorSpaceOJPCheck(AbsColorSpaceExtractor):
     def check(self, image: str)->str:
-        return "sRGB"
+        return openjp2wrap.get_colorspace(image)
+        # return "sRGB"

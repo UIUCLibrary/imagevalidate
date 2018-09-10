@@ -98,7 +98,7 @@ def test_valid_colorspace(sample_data, test_file, profile_name):
     assert len(report.issues(issue_type=IssueCategory.EMPTY_DATA)) == 0
     assert len(report.issues(issue_type=IssueCategory.MISSING_FIELD)) == 0
     assert report.valid
-    assert report._properties['Color Space'].actual == "SRGB"
+    assert report._properties['Color Space'].actual == "sRGB"
 
 
 @pytest.mark.integration
