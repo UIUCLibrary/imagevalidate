@@ -736,9 +736,9 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         deleteDir()
       }
 
-      dir("${BUILD_DIR}") {
-        deleteDir()
-      }
+//      dir("${BUILD_DIR}") {
+//        deleteDir()
+//      }
       script {
 
       //        remove any shared library built in place
