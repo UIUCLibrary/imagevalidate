@@ -1,4 +1,5 @@
 import inspect
+import abc
 
 from .absProfile import AbsProfile
 import importlib
@@ -12,18 +13,22 @@ __all__ = [
 valid_profiles = []
 
 
-def _load():
+def _load() -> None:
     """Dynamically load all the profiles with AbsProfile in into the
     profiles namespace"""
 
-    def is_profile(i):
+    def is_profile(i: abc.ABCMeta)->bool:
         if not inspect.isclass(i):
             return False
         if inspect.isabstract(i):
             return False
         return True
 
-    for loader, module_name, is_pkgin in pkgutil.walk_packages(__path__):
+    module_path = __path__  # type: ignore
+
+    for loader, module_name, is_pkgin in \
+            pkgutil.walk_packages(module_path):
+
         mod = importlib.import_module(f".{module_name}", __package__)
         for name, module_class in inspect.getmembers(mod, is_profile):
             if issubclass(module_class, AbsProfile):

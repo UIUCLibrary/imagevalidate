@@ -13,7 +13,11 @@ def VENV_PIP = ""
 
 pipeline {
   agent {
-    label 'Windows && longfilenames'
+    node{
+        label 'Windows && longfilenames && VS2015'
+        // customWorkspace "c:/Jenkins/temp/${JOB_NAME}/${BUILD_NUMBER}"
+
+    }
   }
   triggers {
         cron('@daily')
@@ -28,11 +32,13 @@ pipeline {
     PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
     PIPENV_CACHE_DIR="${WORKSPACE}\\..\\.virtualenvs\\cache\\"
     WORKON_HOME ="${WORKSPACE}\\pipenv\\"
+
   }
   parameters {
     booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
       booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
-      booleanParam(name: "TEST_UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
+      booleanParam(name: "TEST_RUN_PYTEST", defaultValue: true, description: "Run PyTest unit tests")
+      booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
       booleanParam(name: "TEST_DOCTEST", defaultValue: true, description: "Run Doctest on the documentation")
       booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy Tests")
       booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 Tests")
@@ -45,15 +51,26 @@ pipeline {
   stages {
     stage('Configure Environment') {
       stages{
-        stage("Setting job path variables"){
+        stage("Purge All Existing Data in Workspace"){
+            when{
+                equals expected: true, actual: params.FRESH_WORKSPACE
+            }
+            steps{
+                deleteDir()
+                dir("source"){
+                    checkout scm
+                }
+            }
+        }
+        stage("Setting Global Job Variables"){
 
         
           steps {
             // Set up the reports directory variable 
             script{
-                REPORT_DIR = "${pwd tmp: true}\\reports"
-                LOGS_DIR = "${pwd tmp: true}\\logs"
-                BUILD_DIR = "${pwd tmp: true}\\build"
+                REPORT_DIR = "${WORKSPACE}\\reports"
+                LOGS_DIR = "${WORKSPACE}\\logs"
+                BUILD_DIR = "${WORKSPACE}\\build"
                 DIST_DIR = "${WORKSPACE}\\dist"
                 SOURCE_DIR = "${WORKSPACE}\\source"
                 
@@ -69,15 +86,7 @@ Distribution directory = ${DIST_DIR}"""
             }
           }
         }
-        stage("Purge all existing data in workspace"){
-            when{
-                equals expected: true, actual: params.FRESH_WORKSPACE
-            }
-            steps{
-                deleteDir()
-                checkout scm
-            }
-        }
+        
         stage("Cleanup"){
           steps {
             dir("${LOGS_DIR}"){
@@ -130,7 +139,7 @@ Distribution directory = ${DIST_DIR}"""
             }
           }
         }
-        stage("Setting project metadata variables"){
+        stage("Setting Project Metadata Variables"){
           steps{      
             script {
               dir("${SOURCE_DIR}"){
@@ -188,7 +197,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
             }
           }
         }
-        stage("Creating virtualenv for building"){
+        stage("Creating Virtualenv for Building"){
           steps {
               bat "${tool 'CPython-3.6'} -m venv venv"
               
@@ -201,10 +210,10 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                       bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                   }                           
               }
-              bat "venv\\Scripts\\pip.exe install devpi-client --upgrade-strategy only-if-needed"
+              bat "venv\\Scripts\\pip.exe install devpi-client pytest --upgrade-strategy only-if-needed"
               
   
-              tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
+              tee("${WORKSPACE}/logs/pippackages_venv_${NODE_NAME}.log") {
                   bat "venv\\Scripts\\pip.exe list"
               }
               script {
@@ -220,14 +229,12 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
           post{
             always{
-              dir(pwd(tmp: true)){
-                  script{
-                      def log_files = findFiles glob: '**/pippackages_venv_*.log'
-                      log_files.each { log_file ->
-                          echo "Found ${log_file}"
-                          archiveArtifacts artifacts: "${log_file}"
-                          bat "del ${log_file}"
-                      }
+              script{
+                  def log_files = findFiles glob: '**/pippackages_venv_*.log'
+                  log_files.each { log_file ->
+                      echo "Found ${log_file}"
+                      archiveArtifacts artifacts: "${log_file}"
+                      bat "del ${log_file}"
                   }
               }
               echo """Python virtual environment path = ${VENV_ROOT}
@@ -261,7 +268,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             // tee("${LOGS_DIR}/pippackages_venv_${NODE_NAME}.log") {
             //   bat "${VENV_PIP} list"
             // }
-        stage("Configure devpi login"){
+        stage("Configure DevPi Login"){
           steps{    
             bat "${VENV_ROOT}\\Scripts\\devpi use https://devpi.library.illinois.edu"
             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
@@ -281,25 +288,27 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         }
       }
     }
-    stage("Python Package"){
-      steps {
-        tee("${LOGS_DIR}/build.log") {
-          dir("${SOURCE_DIR}"){
-            bat script: "pipenv run python setup.py build -b ${BUILD_DIR}"
-          }
+    stage("Build"){
+        environment{
+            PATH = "${tool 'cmake3.12'};$PATH"
         }
-      }
-      post{
-        always{
-          
-          dir("${LOGS_DIR}"){
-            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: "build.log"]]
-            archiveArtifacts artifacts: "*.log"
-          }
+        steps {
+            tee("${LOGS_DIR}/build.log") {
+                dir("${SOURCE_DIR}"){
+                    bat script: "pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp build_ext --inplace"
+                }
+            }
         }
-      }
+        post{
+            always{
+                dir("${LOGS_DIR}"){
+                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: "build.log"]]
+                    archiveArtifacts artifacts: "*.log"
+                }
+            }
+        }
     }
-    stage("Sphinx documentation"){
+    stage("Sphinx Documentation"){
       steps {
         echo "Building docs on ${env.NODE_NAME}"
         script{
@@ -347,7 +356,10 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
       parallel {
         stage("Tox") {
           when {
-            equals expected: true, actual: params.TEST_UNIT_TESTS
+            equals expected: true, actual: params.TEST_RUN_TOX
+          }
+          environment{
+            PATH = "${tool 'cmake3.12'};$PATH"
           }
           steps {
             dir("${REPORT_DIR}\\coverage\\"){
@@ -355,33 +367,67 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             }
             dir("source"){
               script {
-                bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --integration --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
+                // bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -v -- --integration --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
+                try{
+                    bat "pipenv run tox --workdir ..\\.tox\\PyTest"
+//                  bat "pipenv run tox -vv --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=ocr"
+                } catch (exc) {
+                    bat "pipenv run tox -vv --recreate --workdir ..\\.tox\\PyTest"
+                }
                 
               }
             }
             
           }
-          post{
-            always{
-              dir("${REPORT_DIR}"){
-                bat "dir"
-                script {
-                  def xml_files = findFiles glob: "**/*.xml"
-                  xml_files.each { junit_xml_file ->
-                    echo "Found ${junit_xml_file}"
-                    junit "${junit_xml_file}"
-                  }
+//          post{
+//            always{
+//              dir("${REPORT_DIR}"){
+//                bat "dir"
+//                script {
+//                  def xml_files = findFiles glob: "**/*.xml"
+//                  xml_files.each { junit_xml_file ->
+//                    echo "Found ${junit_xml_file}"
+//                    junit "${junit_xml_file}"
+//                  }
+//                }
+//              }
+//              publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+//            }
+//          }
+        }
+        stage("Run PyTest Unit Tests"){
+            when {
+               equals expected: true, actual: params.TEST_RUN_PYTEST
+            }
+            environment{
+                junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
+            }
+            steps{
+                dir("source"){
+                    bat "pipenv run python -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/pytestcoverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --integration --cov-config=${WORKSPACE}/source/setup.cfg"
                 }
-              }                      
-              publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
             }
-            failure{
-              echo "Tox test failed. Removing ${WORKSPACE}\\.tox\\PyTest"
-              dir("${WORKSPACE}\\.tox\\PyTest"){
-                deleteDir()
-              }
+            post {
+                always {
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/pytestcoverage", reportFiles: 'index.html', reportName: 'Coverage.py', reportTitles: ''])
+                    junit "reports/pytest/${junit_filename}"
+                    script {
+                        try{
+                            publishCoverage
+                                autoDetectPath: 'coverage*/*.xml'
+                                adapters: [
+                                    cobertura(coberturaReportFile:"reports/coverage.xml")
+                                ]
+                        } catch(exc){
+                            echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
+                            cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+                        }
+                    }
+                    bat "del reports\\coverage.xml"
+
+                }
+
             }
-          }
         }
         stage("Run Doctest Tests"){
           when {
@@ -466,11 +512,14 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
       }
     }
     stage('Package') {
+        environment{
+            PATH = "${tool 'cmake3.12'};$PATH"
+        }
       steps {
         dir("${SOURCE_DIR}"){
 
           // bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist"
-          bat "pipenv run python setup.py bdist_wheel sdist -d ${DIST_DIR} bdist_wheel -d ${DIST_DIR}"
+          bat "pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp sdist -d ${DIST_DIR} bdist_wheel -d ${DIST_DIR}"
         }
       }
       post{
@@ -483,7 +532,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         }
       }
     }
-    stage("Deploying to Devpi") {
+    stage("Deploying to DevPi Staging") {
       when {
         expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev")}
       }
@@ -505,95 +554,126 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         }
       }
     }
-    stage("Test Devpi packages") {
+    stage("Test DevPi Packages") {
       when {
           expression { params.DEPLOY_DEVPI == true  && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev")}
       }
       parallel {
         stage("Source Distribution: .tar.gz") {
-          agent {
-            node {
-              label "Windows && Python3"
-            }
-          }
-          options {
-            skipDefaultCheckout(true)
-          }
-          steps {
-              
-            echo "Testing Source tar.gz package in devpi"
-            
-            bat "${tool 'CPython-3.6'} -m venv venv"
-            bat "venv\\Scripts\\pip.exe install tox devpi-client"
-            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-              bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-        
-            }
-            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+              agent {
+                node {
+                  label "Windows && Python3 && VS2015"
+                }
+              }
+              environment{
+                    PATH = "${tool 'cmake3.12'};$PATH"
+              }
+              options {
+                skipDefaultCheckout(true)
+              }
+              stages{
+                    stage("Setting up DevPi Test Environment for sdist tar.gz"){
+                        steps{
+                            echo "Testing Source tar.gz package for DevPi"
 
-            script {                          
-              def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s tar.gz  --verbose"
-              echo "return code was ${devpi_test_return_code}"
-            }
-            echo "Finished testing Source Distribution: .tar.gz"
-          }
-          post {
-            failure {
-              echo "Tests for .tar.gz source on DevPi failed."
-            }
-          }
-
+                            bat "${tool 'CPython-3.6'} -m venv venv"
+                            bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                              bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            }
+                            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                        }
+                    }
+                    stage("Testing sdist tar.gz DevPi package"){
+                        steps {
+                            bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s tar.gz  --verbose"
+                        }
+                    }
+              }
         }
         stage("Source Distribution: .zip") {
-          agent {
-            node {
-              label "Windows && Python3"
-            }
-          }
-          options {
-            skipDefaultCheckout(true)
-          }
-          steps {
-            echo "Testing Source zip package in devpi"
-            bat "${tool 'CPython-3.6'} -m venv venv"
-            bat "venv\\Scripts\\pip.exe install tox devpi-client"
-            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-              bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-            }
-            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-            script {
-              def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s zip --verbose"
-              echo "return code was ${devpi_test_return_code}"
-            }
-            echo "Finished testing Source Distribution: .zip"
-          }
-          post {
-            failure {
-              echo "Tests for .zip source on DevPi failed."
-            }
-          }
+              agent {
+                    node {
+                        label "Windows && Python3 && VS2015"
+                    }
+              }
+              environment{
+                    PATH = "${tool 'cmake3.12'};$PATH"
+              }
+              options {
+                skipDefaultCheckout(true)
+              }
+              stages{
+                    stage("Setting up DevPi Test Environment for sdist zip"){
+                        steps {
+                            echo "Testing Source zip package for DevPi"
+                            bat "${tool 'CPython-3.6'} -m venv venv"
+                            bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                              bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            }
+                            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                        }
+
+                    }
+                    stage("Testing sdist zip DevPi package"){
+                        steps{
+                            bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s zip --verbose"
+                        }
+                        post {
+                            failure {
+                                echo "Tests for .zip source on DevPi failed."
+                            }
+                        }
+                    }
+              }
+
         }
         stage("Built Distribution: .whl") {
-          agent {
-            node {
-              label "Windows && Python3"
-            }
-          }
-          steps {
-            script {
-              // node("Windows") {
-                bat "${tool 'CPython-3.6'} -m venv venv"
-                bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
-                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                  bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                  bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                  echo "Testing Whl package in devpi"
-                  bat "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${PKG_NAME} -s whl"
-                }
-              // }
-            }
-          }
+              agent {
+                    node {
+                        label "Windows && Python3"
+                        customWorkspace "c:/Jenkins/temp/${JOB_NAME}/devpi_testing/whl/"
+                    }
+              }
+              options{
+                skipDefaultCheckout(true)
+              }
+              stages{
+                    stage("Setting up DevPi Test Environment for bdist wheel"){
+                          steps {
+                                script {
+                                    bat "${tool 'CPython-3.6'} -m venv venv"
+                                    bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
+                                    bat "venv\\Scripts\\pip.exe install --upgrade setuptools"
+                                    bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                                    bat "venv\\Scripts\\pip.exe list"
+                                    bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
+                                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                      bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                                      bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                                    }
+                                }
+                          }
+
+                    }
+                    stage("Testing bdist wheel DevPi package"){
+                        steps{
+                            bat "set"
+                            bat "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s whl --verbose --tox-args=\"-vv\""
+                        }
+
+                    }
+              }
+              post{
+                    failure{
+                        echo "whl failed test on ${env.NODE_NAME}"
+                        bat "venv\\Scripts\\pip.exe list"
+                    }
+
+              }
+
+
         }
       }
       post {
@@ -612,7 +692,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
     }
     stage("Release") {
       parallel {
-        stage("Release to DevPi production") {
+        stage("Release to DevPi Production") {
           when {
             allOf{
               equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
@@ -630,7 +710,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             bat "${VENV_ROOT}\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
           }
         }
-        stage("Deploy online documentation") {
+        stage("Deploy Online Documentation") {
           when {
             allOf{
               equals expected: true, actual: params.DEPLOY_DOCS
@@ -675,10 +755,20 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         deleteDir()
       }
 
-      dir("${BUILD_DIR}") {
-        deleteDir()
-      }
+//      dir("${BUILD_DIR}") {
+//        deleteDir()
+//      }
       script {
+
+      //        remove any shared library built in place
+        dir("${SOURCE_DIR}"){
+            def generated_c_libraries = findFiles glob: '**/*.dll,**/*.pyd,**.so,**/*.dylib'
+            generated_c_libraries .each { c_library ->
+                echo "Deleting ${pwd()}\\${c_library}"
+                bat "del ${c_library}"
+            }
+        }
+
         if(fileExists("${SOURCE_DIR}/setup.py")){
           dir("${SOURCE_DIR}"){
             try{
@@ -689,16 +779,18 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             }
             bat "dir"
           }
-        }                
-        if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
-          withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-            bat "${VENV_ROOT}\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-            bat "${VENV_ROOT}\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-          }
-
-          def devpi_remove_return_code = bat returnStatus: true, script:"${VENV_ROOT}\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
-          echo "Devpi remove exited with code ${devpi_remove_return_code}."
         }
+//
+//
+//        if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
+//          withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+//            bat "${VENV_ROOT}\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+//            bat "${VENV_ROOT}\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+//          }
+//
+//          def devpi_remove_return_code = bat returnStatus: true, script:"${VENV_ROOT}\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+//          echo "Devpi remove exited with code ${devpi_remove_return_code}."
+//        }
       }
       bat "dir"
     }

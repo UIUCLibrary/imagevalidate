@@ -2,6 +2,7 @@ import abc
 
 import py3exiv2bind
 import py3exiv2bind.core
+from uiucprescon.imagevalidate import openjp2wrap  # type: ignore
 
 
 class InvalidStrategy(Exception):
@@ -20,7 +21,7 @@ class ExtractColorSpace:
     def __init__(self, strategy: AbsColorSpaceExtractor) -> None:
         self.strategy = strategy
 
-    def check(self, image: str):
+    def check(self, image: str) -> str:
         return self.strategy.check(image)
 
 
@@ -29,9 +30,10 @@ class ColorSpaceIccDeviceModelCheck(AbsColorSpaceExtractor):
     ICC profile.
     Useful for identifying sRGB."""
 
-    def check(self, image: py3exiv2bind.Image) -> str:
+    def check(self, image: str) -> str:
+        exiv_image = py3exiv2bind.Image(image)
         try:
-            icc = image.icc()
+            icc = exiv_image.icc()
         except py3exiv2bind.core.NoICCError as e:
             raise InvalidStrategy("Unable to get ICC profile.")
 
@@ -46,9 +48,10 @@ class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
     """Extract the color space value by reading the pref_ccm from the header
     of the ICC profile."""
 
-    def check(self, image: py3exiv2bind.Image) -> str:
+    def check(self, image: str) -> str:
+        exiv2_image = py3exiv2bind.Image(image)
         try:
-            icc = image.icc()
+            icc = exiv2_image.icc()
         except py3exiv2bind.core.NoICCError as e:
             raise InvalidStrategy("Unable to get ICC profile."
                                   "Reason: {}".format(e))
@@ -57,3 +60,8 @@ class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
         if not pref_ccm:
             raise InvalidStrategy("No pref_ccm key found in icc profile")
         return str(pref_ccm)
+
+
+class ColorSpaceOJPCheck(AbsColorSpaceExtractor):
+    def check(self, image: str)->str:
+        return openjp2wrap.get_colorspace(image)

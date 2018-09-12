@@ -5,17 +5,27 @@ include LICENSE
 include README.rst
 include CHANGELOG.rst
 
+# C++ Source files
+include CMakeLists.txt
+recursive-include uiucprescon/imagevalidate CMakeLists.txt *.cpp *.h
+
 # Running requirements
-include requirements.txt
+include requirements.txt Pipfile Pipfile.lock
 
 # Tox configuration setting
 include tox.ini
 
 # Pytest tests
-recursive-include tests *.py
+recursive-include tests *.py *.cpp
+include tests/CMakeLists.txt
 
 # Documentation
 include docs/Makefile
 include docs/make.bat
 recursive-include docs/source *
 prune docs/build
+
+# Exclude binary files from source distribution
+recursive-exclude * __pycache__
+recursive-exclude * *.pyc
+recursive-exclude * *.dll
