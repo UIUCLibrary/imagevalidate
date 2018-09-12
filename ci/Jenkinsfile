@@ -766,17 +766,17 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             bat "dir"
           }
         }
-
-
-        if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
-          withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-            bat "${VENV_ROOT}\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-            bat "${VENV_ROOT}\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-          }
-
-          def devpi_remove_return_code = bat returnStatus: true, script:"${VENV_ROOT}\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
-          echo "Devpi remove exited with code ${devpi_remove_return_code}."
-        }
+//
+//
+//        if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
+//          withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+//            bat "${VENV_ROOT}\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+//            bat "${VENV_ROOT}\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+//          }
+//
+//          def devpi_remove_return_code = bat returnStatus: true, script:"${VENV_ROOT}\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+//          echo "Devpi remove exited with code ${devpi_remove_return_code}."
+//        }
       }
       bat "dir"
     }
