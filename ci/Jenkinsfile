@@ -576,7 +576,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                     }
                     stage("Testing sdist tar.gz DevPi package"){
                         steps {
-                            bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s tar.gz  --verbose --tox-args=\"-vv\""
+                            bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s tar.gz  --verbose"
                         }
                     }
               }
@@ -605,7 +605,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                     }
                     stage("Testing sdist zip DevPi package"){
                         steps{
-                            bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s zip --verbose"
+                            bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s zip --verbose --tox-args=\"-vv\""
                         }
                         post {
                             failure {
