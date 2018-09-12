@@ -32,7 +32,7 @@ pipeline {
     PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
     PIPENV_CACHE_DIR="${WORKSPACE}\\..\\.virtualenvs\\cache\\"
     WORKON_HOME ="${WORKSPACE}\\pipenv\\"
-    PATH = "${tool 'cmake3.12'};$PATH"
+
   }
   parameters {
     booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
@@ -289,23 +289,24 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
       }
     }
     stage("Build"){
-      steps {
-        tee("${LOGS_DIR}/build.log") {
-          dir("${SOURCE_DIR}"){
-            bat script: "pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp build_ext --inplace"
-          }
+        environment{
+            PATH = "${tool 'cmake3.12'};$PATH"
         }
-      }
-      post{
-        always{
-
-          dir("${LOGS_DIR}"){
-            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: "build.log"]]
-            archiveArtifacts artifacts: "*.log"
-          }
-
+        steps {
+            tee("${LOGS_DIR}/build.log") {
+                dir("${SOURCE_DIR}"){
+                    bat script: "pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp build_ext --inplace"
+                }
+            }
         }
-      }
+        post{
+            always{
+                dir("${LOGS_DIR}"){
+                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: "build.log"]]
+                    archiveArtifacts artifacts: "*.log"
+                }
+            }
+        }
     }
     stage("Sphinx Documentation"){
       steps {
@@ -508,6 +509,9 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
       }
     }
     stage('Package') {
+        environment{
+            PATH = "${tool 'cmake3.12'};$PATH"
+        }
       steps {
         dir("${SOURCE_DIR}"){
 
@@ -558,6 +562,9 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                   label "Windows && Python3 && VS2015"
                 }
               }
+              environment{
+                    PATH = "${tool 'cmake3.12'};$PATH"
+              }
               options {
                 skipDefaultCheckout(true)
               }
@@ -586,6 +593,9 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                     node {
                         label "Windows && Python3 && VS2015"
                     }
+              }
+              environment{
+                    PATH = "${tool 'cmake3.12'};$PATH"
               }
               options {
                 skipDefaultCheckout(true)
