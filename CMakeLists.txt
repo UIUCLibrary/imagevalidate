@@ -26,7 +26,7 @@ if (NOT libopenjpeg_POPULATED)
     set(BUILD_CODEC OFF CACHE BOOL "")
 #    set(BUILD_SHARED_LIBS OFF)
 #        -DBUILD_SHARED_LIBS:bool
-    add_subdirectory(${libopenjpeg_SOURCE_DIR} ${libopenjpeg_BINARY_DIR})
+    add_subdirectory(${libopenjpeg_SOURCE_DIR} ${libopenjpeg_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif ()
 
 add_subdirectory(uiucprescon/imagevalidate)
