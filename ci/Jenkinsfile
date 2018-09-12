@@ -358,6 +358,9 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
           when {
             equals expected: true, actual: params.TEST_RUN_TOX
           }
+          environment{
+            PATH = "${tool 'cmake3.12'};$PATH"
+          }
           steps {
             dir("${REPORT_DIR}\\coverage\\"){
               bat "dir"
