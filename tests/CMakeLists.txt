@@ -28,10 +28,39 @@ if(BUILD_TESTING)
         endif()
 
     add_executable(tester test-main.cpp test-basic.cpp)
+
     target_compile_definitions(tester PRIVATE TEST_IMAGE_PATH="${test_images_SOURCE_DIR}")
-    set_target_properties(tester PROPERTIES CXX_STANDARD 11)
+
+    set_target_properties(tester PROPERTIES
+            CXX_STANDARD 11
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            )
+
     target_link_libraries(tester PRIVATE Catch2 glue)
-    catch_discover_tests(tester)
+    catch_discover_tests(tester
+            TEST_PREFIX imagevalidate.
+            )
+
+    #############
+
+    add_executable(tester-internal test-main.cpp tester-internal.cpp)
+
+    target_compile_definitions(tester-internal
+            PRIVATE TEST_IMAGE_PATH="${test_images_SOURCE_DIR}")
+
+    set_target_properties(tester-internal PROPERTIES
+            CXX_STANDARD 11
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            )
+
+    target_link_libraries(tester-internal
+            PRIVATE
+                Catch2
+                glue
+            )
+    catch_discover_tests(tester-internal
+            TEST_PREFIX imagevalidate.
+            )
 
 endif()
 
