@@ -24,9 +24,9 @@ private:
 public:
     virtual ~opj_colorspace_checker();
     std::string read();
+    void setup();
 
 private:
-
     void setup_codec();
     void setup_stream();
 };

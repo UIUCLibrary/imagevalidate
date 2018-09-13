@@ -2,6 +2,13 @@
 
 Change Log
 ==========
+0.1.2
++++++
+
+Important:
+----------
+
+Do not use. Bad memory leak with bindings to open jpeg c library.
 
 0.1.0
 +++++

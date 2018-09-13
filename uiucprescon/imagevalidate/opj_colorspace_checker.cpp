@@ -10,9 +10,6 @@ opj_colorspace_checker::opj_colorspace_checker(const std::string &filename):
     filename(filename),
     l_codec(nullptr),
     l_stream(nullptr){
-
-    setup_codec();
-    setup_stream();
 }
 
 std::string opj_colorspace_checker::convert_enum_to_string(COLOR_SPACE colorSpace) {
@@ -31,6 +28,8 @@ std::string opj_colorspace_checker::convert_enum_to_string(COLOR_SPACE colorSpac
             return "EYCC";
         case OPJ_CLRSPC_CMYK:
             return "CMYK";
+        default:
+            return "invalid";
     }
 }
 
@@ -65,8 +64,21 @@ void opj_colorspace_checker::setup_stream() {
 
 std::string opj_colorspace_checker::read() {
     opj_image_t* image = nullptr;
+    opj_codestream_info_v2_t *  info;
+
     opj_read_header(l_stream, l_codec, &image);
-    auto  j = opj_get_cstr_info(l_codec);
+
+    info = opj_get_cstr_info(l_codec);
+
     opj_decode(l_codec,l_stream, image );
-    return opj_colorspace_checker::convert_enum_to_string(image->color_space);
+    std::string result = opj_colorspace_checker::convert_enum_to_string(image->color_space);
+    opj_image_destroy(image);
+    opj_destroy_cstr_info(&info);
+    return result;
+}
+
+void opj_colorspace_checker::setup() {
+
+    setup_codec();
+    setup_stream();
 }
