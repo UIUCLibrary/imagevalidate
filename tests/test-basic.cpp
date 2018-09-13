@@ -11,8 +11,8 @@ SCENARIO("Color space"){
     GIVEN("I need to know the color space of an image"){
         WHEN("a valid jp2 file encoded in SRGB"){
             std::string valid_srgb_jp2 = TEST_IMAGE_PATH "/colorspace/0000001.jp2";
-            THEN("I get the value SRGB"){
-                REQUIRE(color_space(valid_srgb_jp2) == "SRGB");
+            THEN("I get the value sRGB"){
+                REQUIRE(color_space(valid_srgb_jp2) == "sRGB");
             }
         }
         WHEN("the file is valid"){
