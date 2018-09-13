@@ -1,13 +1,16 @@
 Python3_add_library(openjp2wrap MODULE openjp2wrap.cpp)
 
-add_library(glue OBJECT glue.cpp glue.h opj_colorspace_checker.cpp opj_colorspace_checker.h exceptions.h)
+add_library(glue OBJECT
+        glue.cpp
+        opj_colorspace_checker.cpp
+        )
 
 target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(glue PROPERTIES CXX_STANDARD 11)
 
 target_link_libraries(glue PUBLIC openjp2)
 
-target_include_directories(glue PRIVATE
+target_include_directories(glue PUBLIC
         ${libopenjpeg_SOURCE_DIR}/src/lib/openjp2
         ${libopenjpeg_BINARY_DIR}/src/lib/openjp2
         )
