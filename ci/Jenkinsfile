@@ -411,6 +411,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                 always {
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/pytestcoverage", reportFiles: 'index.html', reportName: 'Coverage.py', reportTitles: ''])
                     junit "reports/pytest/${junit_filename}"
+                    archiveArtifacts 'reports/coverage.xml'
                     publishCoverage adapters: [coberturaAdapter('reports/coverage.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
                     bat "del reports\\coverage.xml"
 
