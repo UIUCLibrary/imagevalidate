@@ -115,7 +115,7 @@ Distribution directory = ${DIST_DIR}"""
         stage("Installing required system level dependencies"){
           steps{
             lock("system_python_${NODE_NAME}"){
-              bat "${tool 'CPython-3.6'} -m pip install --upgrade pip"
+              bat "${tool 'CPython-3.6'} -m pip install pip==18.0"
             }
             tee("${LOGS_DIR}/pippackages_system_${NODE_NAME}.log") {
                 bat "${tool 'CPython-3.6'} -m pip list"
@@ -203,11 +203,11 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
               
               script {
                   try {
-                      bat "call venv\\Scripts\\python.exe -m pip install -U pip"
+                      bat "call venv\\Scripts\\python.exe -m pip install pip==18.0"
                   }
                   catch (exc) {
                       bat "${tool 'CPython-3.6'} -m venv venv"
-                      bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                      bat "call venv\\Scripts\\python.exe -m pip install pip==18.0 --no-cache-dir"
                   }                           
               }
               bat "venv\\Scripts\\pip.exe install devpi-client pytest --upgrade-strategy only-if-needed"
