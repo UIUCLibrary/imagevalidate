@@ -638,7 +638,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                           steps {
                                 script {
                                     bat "${tool 'CPython-3.6'} -m venv venv"
-                                    bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
+                                    bat "venv\\Scripts\\python.exe -m pip install pip==18.0"
                                     bat "venv\\Scripts\\pip.exe install --upgrade setuptools"
                                     bat "venv\\Scripts\\pip.exe install tox devpi-client"
                                     bat "venv\\Scripts\\pip.exe list"
