@@ -203,11 +203,11 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
               
               script {
                   try {
-                      bat "call venv\\Scripts\\python.exe -m pip install pip==18.0"
+                      bat "call venv\\Scripts\\python.exe -m pip install pip --upgrade"
                   }
                   catch (exc) {
                       bat "${tool 'CPython-3.6'} -m venv venv"
-                      bat "call venv\\Scripts\\python.exe -m pip install pip==18.0 --no-cache-dir"
+                      bat "call venv\\Scripts\\python.exe -m pip install pip --upgrade --no-cache-dir"
                   }                           
               }
               bat "venv\\Scripts\\pip.exe install devpi-client pytest --upgrade-strategy only-if-needed"
@@ -638,7 +638,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
                           steps {
                                 script {
                                     bat "${tool 'CPython-3.6'} -m venv venv"
-                                    bat "venv\\Scripts\\python.exe -m pip install pip==18.0"
+                                    bat "venv\\Scripts\\python.exe -m pip install pip --upgrade"
                                     bat "venv\\Scripts\\pip.exe install --upgrade setuptools"
                                     bat "venv\\Scripts\\pip.exe install tox devpi-client"
                                     bat "venv\\Scripts\\pip.exe list"
