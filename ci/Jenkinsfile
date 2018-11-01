@@ -219,11 +219,12 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
       }
     }
     stage("Python Package"){
+        environment{
+            PATH = "${tool 'cmake3.12'};$PATH"
+          }
         steps {
-
-
             dir("source"){
-                powershell "&pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp build_ext --inplace  | tee ${WORKSPACE}\\logs\\build.log"
+                powershell "&pipenv run python setup.py build -b ${WORKSPACE}\\build --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp build_ext --inplace  | tee ${WORKSPACE}\\logs\\build.log"
             }
 
         }
