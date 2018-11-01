@@ -112,32 +112,50 @@ Distribution directory = ${DIST_DIR}"""
             }
           }
         }
+//        stage("Installing required system level dependencies"){
+//          steps{
+//            lock("system_python_${NODE_NAME}"){
+//              bat "${tool 'CPython-3.6'} -m pip install pip --upgrade"
+//            }
+//            tee("${LOGS_DIR}/pippackages_system_${NODE_NAME}.log") {
+//                bat "${tool 'CPython-3.6'} -m pip list"
+//            }
+//          }
+//          post{
+//            always{
+//                dir("${LOGS_DIR}"){
+//                    script{
+//                        def log_files = findFiles glob: '**/pippackages_system_*.log'
+//                        log_files.each { log_file ->
+//                            echo "Found ${log_file}"
+//                            archiveArtifacts artifacts: "${log_file}"
+//                            bat "del ${log_file}"
+//                        }
+//                    }
+//                }
+//            }
+//            failure {
+//                deleteDir()
+//            }
+//          }
+//        }
         stage("Installing required system level dependencies"){
-          steps{
-            lock("system_python_${NODE_NAME}"){
-              bat "${tool 'CPython-3.6'} -m pip install pip --upgrade"
-            }
-            tee("${LOGS_DIR}/pippackages_system_${NODE_NAME}.log") {
-                bat "${tool 'CPython-3.6'} -m pip list"
-            }
-          }
-          post{
-            always{
-                dir("${LOGS_DIR}"){
-                    script{
-                        def log_files = findFiles glob: '**/pippackages_system_*.log'
-                        log_files.each { log_file ->
-                            echo "Found ${log_file}"
-                            archiveArtifacts artifacts: "${log_file}"
-                            bat "del ${log_file}"
-                        }
-                    }
+            steps{
+                lock("system_python_${NODE_NAME}"){
+                    bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
                 }
             }
-            failure {
-                deleteDir()
+            post{
+                always{
+                    lock("system_python_${NODE_NAME}"){
+                        bat "${tool 'CPython-3.6'} -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
+                    }
+                    archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+                }
+                failure {
+                    deleteDir()
+                }
             }
-          }
         }
         stage("Setting Project Metadata Variables"){
           steps{      
@@ -168,84 +186,131 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
         // tee("${LOGS_DIR}/pippackages_system_${NODE_NAME}.log") {
         //   bat "${tool 'CPython-3.6'} -m pip list"
         // }
+//        stage("Installing Pipfile"){
+//          options{
+//            timeout(5)
+//          }
+//          steps {
+//            dir("source"){
+//              bat "pipenv install --dev --deploy"
+//            }
+//            tee("logs/pippackages_pipenv_${NODE_NAME}.log") {
+//              dir("source"){
+//                bat "pipenv run pip list"
+//              }
+//            }
+//          }
+//          post{
+//            always{
+//              dir("logs"){
+//                script{
+//                  def log_files = findFiles glob: '**/pippackages_pipenv_*.log'
+//                  log_files.each { log_file ->
+//                    echo "Found ${log_file}"
+//                    archiveArtifacts artifacts: "${log_file}"
+//                    bat "del ${log_file}"
+//                  }
+//                }
+//              }
+//            }
+//          }
+//        }
         stage("Installing Pipfile"){
-          options{
-            timeout(5)
-          }
-          steps {
-            dir("source"){
-              bat "pipenv install --dev --deploy"
-            }
-            tee("logs/pippackages_pipenv_${NODE_NAME}.log") {
-              dir("source"){
-                bat "pipenv run pip list"
-              }
-            }  
-          }
-          post{
-            always{
-              dir("logs"){
-                script{
-                  def log_files = findFiles glob: '**/pippackages_pipenv_*.log'
-                  log_files.each { log_file ->
-                    echo "Found ${log_file}"
-                    archiveArtifacts artifacts: "${log_file}"
-                    bat "del ${log_file}"
-                  }
+                options{
+                    timeout(5)
                 }
-              }
-            }
-          }
-        }
-        stage("Creating Virtualenv for Building"){
-          steps {
-              bat "${tool 'CPython-3.6'} -m venv venv"
-              
-              script {
-                  try {
-                      bat "call venv\\Scripts\\python.exe -m pip install pip --upgrade"
-                  }
-                  catch (exc) {
-                      bat "${tool 'CPython-3.6'} -m venv venv"
-                      bat "call venv\\Scripts\\python.exe -m pip install pip --upgrade --no-cache-dir"
-                  }                           
-              }
-              bat "venv\\Scripts\\pip.exe install devpi-client pytest --upgrade-strategy only-if-needed"
-              
-  
-              tee("${WORKSPACE}/logs/pippackages_venv_${NODE_NAME}.log") {
-                  bat "venv\\Scripts\\pip.exe list"
-              }
-              script {
-                VENV_ROOT = "${WORKSPACE}\\venv"
-                
-                // set python exe
-                VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
-                bat "${VENV_PYTHON} --version"
+                steps {
+                    dir("source"){
+                        bat "pipenv install --dev --deploy && pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log"
+                        bat "pipenv check"
 
-                VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
-                bat "${VENV_PIP} --version"
-              }
-          }
-          post{
-            always{
-              script{
-                  def log_files = findFiles glob: '**/pippackages_venv_*.log'
-                  log_files.each { log_file ->
-                      echo "Found ${log_file}"
-                      archiveArtifacts artifacts: "${log_file}"
-                      bat "del ${log_file}"
-                  }
-              }
-              echo """Python virtual environment path = ${VENV_ROOT}
-VirtualEnv Python executable    = ${VENV_PYTHON}
-VirtualEnv Pip executable       = ${VENV_PIP}"""
-            }
-            failure {
-              deleteDir()
-            }
-          }
+                    }
+                }
+                post{
+                    always{
+                        archiveArtifacts artifacts: "logs/pippackages_pipenv_*.log"
+                    }
+                    failure {
+                        deleteDir()
+                    }
+                    cleanup{
+                        cleanWs(patterns: [[pattern: "logs/pippackages_pipenv_*.log", type: 'INCLUDE']])
+                    }
+                }
         }
+        stage("Creating virtualenv for building"){
+            steps{
+                bat "${tool 'CPython-3.6'} -m venv venv"
+                script {
+                    try {
+                        bat "call venv\\Scripts\\python.exe -m pip install -U pip"
+                    }
+                    catch (exc) {
+                        bat "${tool 'CPython-3.6'} -m venv venv"
+                        bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                    }
+                }
+                bat "venv\\Scripts\\pip.exe install -U setuptools"
+//                        TODO: when detox is fixed, just use the most recent version
+                bat "venv\\Scripts\\pip.exe install devpi-client pytest pytest-cov lxml -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                bat "venv\\Scripts\\pip.exe install detox==0.13 tox==3.2.1"
+            }
+            post{
+                success{
+                    bat "venv\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
+                    archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
+                }
+            }
+        }
+//        stage("Creating Virtualenv for Building"){
+//          steps {
+//              bat "${tool 'CPython-3.6'} -m venv venv"
+//
+//              script {
+//                  try {
+//                      bat "call venv\\Scripts\\python.exe -m pip install pip --upgrade"
+//                  }
+//                  catch (exc) {
+//                      bat "${tool 'CPython-3.6'} -m venv venv"
+//                      bat "call venv\\Scripts\\python.exe -m pip install pip --upgrade --no-cache-dir"
+//                  }
+//              }
+//              bat "venv\\Scripts\\pip.exe install devpi-client pytest --upgrade-strategy only-if-needed"
+//
+//
+//              tee("${WORKSPACE}/logs/pippackages_venv_${NODE_NAME}.log") {
+//                  bat "venv\\Scripts\\pip.exe list"
+//              }
+//              script {
+//                VENV_ROOT = "${WORKSPACE}\\venv"
+//
+//                // set python exe
+//                VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
+//                bat "${VENV_PYTHON} --version"
+//
+//                VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
+//                bat "${VENV_PIP} --version"
+//              }
+//          }
+//          post{
+//            always{
+//              script{
+//                  def log_files = findFiles glob: '**/pippackages_venv_*.log'
+//                  log_files.each { log_file ->
+//                      echo "Found ${log_file}"
+//                      archiveArtifacts artifacts: "${log_file}"
+//                      bat "del ${log_file}"
+//                  }
+//              }
+//              echo """Python virtual environment path = ${VENV_ROOT}
+//VirtualEnv Python executable    = ${VENV_PYTHON}
+//VirtualEnv Pip executable       = ${VENV_PIP}"""
+//            }
+//            failure {
+//              deleteDir()
+//            }
+//          }
+//        }
             // bat "${tool 'CPython-3.6'} -m venv venv"
             
 
@@ -288,70 +353,116 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         }
       }
     }
-    stage("Build"){
-        environment{
-            PATH = "${tool 'cmake3.12'};$PATH"
-        }
+    stage("Python Package"){
         steps {
-            tee("${LOGS_DIR}/build.log") {
-                dir("${SOURCE_DIR}"){
-                    bat script: "pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp build_ext --inplace"
-                }
+
+
+            dir("source"){
+                powershell "&pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp build_ext --inplace  | tee ${WORKSPACE}\\logs\\build.log"
             }
+
         }
         post{
             always{
-                dir("${LOGS_DIR}"){
-                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: "build.log"]]
-                    archiveArtifacts artifacts: "*.log"
-                }
+                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
+                archiveArtifacts artifacts: "logs/build.log"
+            }
+            failure{
+                echo "Failed to build Python package"
+            }
+            success{
+                echo "Successfully built project is ./build."
             }
         }
     }
-    stage("Sphinx Documentation"){
-      steps {
-        echo "Building docs on ${env.NODE_NAME}"
-        script{
-            // Add a line to config file so auto docs look in the build folder
-            def sphinx_config_file = "${SOURCE_DIR}/docs/source/conf.py"
-            def extra_line = "sys.path.insert(0, os.path.abspath('${BUILD_DIR}/build/lib'))"
-            def readContent = readFile "${sphinx_config_file}"
-            echo "Adding \"${extra_line}\" to ${sphinx_config_file}."
-            writeFile file: "${sphinx_config_file}", text: readContent+"\r\n${extra_line}\r\n"
+//    stage("Build"){
+//        environment{
+//            PATH = "${tool 'cmake3.12'};$PATH"
+//        }
+//        steps {
+//            tee("${LOGS_DIR}/build.log") {
+//                dir("${SOURCE_DIR}"){
+//                    bat script: "pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp build_ext --inplace"
+//                }
+//            }
+//        }
+//        post{
+//            always{
+//                dir("${LOGS_DIR}"){
+//                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: "build.log"]]
+//                    archiveArtifacts artifacts: "*.log"
+//                }
+//            }
+//        }
+//    }
+//    stage("Sphinx Documentation"){
+//      steps {
+//        echo "Building docs on ${env.NODE_NAME}"
+//        script{
+//            // Add a line to config file so auto docs look in the build folder
+//            def sphinx_config_file = "${SOURCE_DIR}/docs/source/conf.py"
+//            def extra_line = "sys.path.insert(0, os.path.abspath('${BUILD_DIR}/build/lib'))"
+//            def readContent = readFile "${sphinx_config_file}"
+//            echo "Adding \"${extra_line}\" to ${sphinx_config_file}."
+//            writeFile file: "${sphinx_config_file}", text: readContent+"\r\n${extra_line}\r\n"
+//        }
+//        tee("${LOGS_DIR}/build_sphinx.log") {
+//           dir("source"){
+//                bat "pipenv run sphinx-build -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees"
+//            // bat "${VENV_ROOT}\\Scripts\\sphinx-build.exe -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees"
+//           }
+//        }
+//      }
+//      post{
+//        always {
+//
+//          dir("${LOGS_DIR}"){
+//            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Sphinx-build', pattern: "build_sphinx.log"]]
+//            archiveArtifacts artifacts: "build_sphinx.log"
+//          }
+//
+//        }
+//        success{
+//          publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${BUILD_DIR}/docs/html", reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+//          script{
+//            // // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
+//            // def alljob = env.JOB_NAME.tokenize("/") as String[]
+//            // def project_name = alljob[0]
+//            dir("${DIST_DIR}"){
+//              zip archive: true, dir: "${BUILD_DIR}/docs/html", glob: '', zipFile: "${DOC_ZIP_FILENAME}"
+//            }
+//          }
+//        }
+//        failure{
+//            echo "Failed to build Python package"
+//        }
+//      }
+//    }
+      stage("Sphinx documentation"){
+        steps {
+            echo "Building docs on ${env.NODE_NAME}"
+            // tee('logs/build_sphinx.log') {
+            dir("source"){
+                // bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
+                powershell "& pipenv run sphinx-build -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees | tee ${WORKSPACE}\\logs\\build_sphinx.log"
+            }
+        // }
         }
-        tee("${LOGS_DIR}/build_sphinx.log") {
-           dir("source"){
-                bat "pipenv run sphinx-build -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees"
-            // bat "${VENV_ROOT}\\Scripts\\sphinx-build.exe -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees"
-           }
+        post{
+            always {
+                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
+                archiveArtifacts artifacts: 'logs/build_sphinx.log'
+            }
+            success{
+                publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                stash includes: 'build/docs/html/**', name: 'docs'
+            }
+            failure{
+                echo "Failed to build Python package"
+            }
         }
-      }
-      post{
-        always {
-          
-          dir("${LOGS_DIR}"){
-            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Sphinx-build', pattern: "build_sphinx.log"]]
-            archiveArtifacts artifacts: "build_sphinx.log"
-          }
-          
-        }
-        success{
-          publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${BUILD_DIR}/docs/html", reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-          script{
-            // // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-            // def alljob = env.JOB_NAME.tokenize("/") as String[]
-            // def project_name = alljob[0]
-            dir("${DIST_DIR}"){
-              zip archive: true, dir: "${BUILD_DIR}/docs/html", glob: '', zipFile: "${DOC_ZIP_FILENAME}"
-            } 
-          }
-        }
-        failure{
-            echo "Failed to build Python package"
-        }
-      }
     }
-  
     stage('Test') {
       parallel {
         stage("Tox") {
@@ -455,16 +566,17 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
               bat "dir"
             }
             script{
-              tee("${LOGS_DIR}/mypy.log") {
+//              tee("${LOGS_DIR}/mypy.log") {
                 try{
                   dir("${SOURCE_DIR}"){
                     bat "dir"
-                    bat "pipenv run mypy -p uiucprescon --html-report ${REPORT_DIR}\\mypy\\html"
+//                    bat "pipenv run mypy -p uiucprescon --html-report ${REPORT_DIR}\\mypy\\html"
+                    bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                   }
                 } catch (exc) {
                   echo "MyPy found some warnings"
                 }
-              }
+//              }
             }
           }
           post {
@@ -476,33 +588,57 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
             }
           }
         }
-        stage("Flake8") {
-          when {
-              equals expected: true, actual: params.TEST_RUN_FLAKE8
-          }
-          steps{
-            script{
-              try{
-                tee("${LOGS_DIR}/flake8.log") {
-                  dir("source"){
-                    bat "pipenv run flake8 uiucprescon --format=pylint"
-                  }
+        stage("Run Flake8 Static Analysis") {
+            when {
+                equals expected: true, actual: params.TEST_RUN_FLAKE8
+            }
+            steps{
+                script{
+                    try{
+                        dir("source"){
+                            bat "${WORKSPACE}\\venv\\Scripts\\flake8.exe uiucprescon --format=pylint --tee --output-file=${WORKSPACE}\\logs\\flake8.log"
+                        }
+                    } catch (exc) {
+                        echo "flake8 found some warnings"
+                    }
                 }
-              } catch (exc) {
-                echo "flake8 found some warnings"
-              }
             }
-          }
-          post {
-            always {
-              dir("${LOGS_DIR}"){
-                warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'flake8.log']], unHealthy: ''
-                archiveArtifacts artifacts: 'flake8.log', fingerprint: true
-              }
-              
+            post {
+                always {
+                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'PyLint', pattern: 'logs/flake8.log']], unHealthy: ''
+                }
+                cleanup{
+                    cleanWs(patterns: [[pattern: 'logs/flake8.log', type: 'INCLUDE']])
+                }
             }
-          }
         }
+//        stage("Flake8") {
+//          when {
+//              equals expected: true, actual: params.TEST_RUN_FLAKE8
+//          }
+//          steps{
+//            script{
+//              try{
+//                tee("${LOGS_DIR}/flake8.log") {
+//                  dir("source"){
+//                    bat "pipenv run flake8 uiucprescon --format=pylint"
+//                  }
+//                }
+//              } catch (exc) {
+//                echo "flake8 found some warnings"
+//              }
+//            }
+//          }
+//          post {
+//            always {
+//              dir("${LOGS_DIR}"){
+//                warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'flake8.log']], unHealthy: ''
+//                archiveArtifacts artifacts: 'flake8.log', fingerprint: true
+//              }
+//
+//            }
+//          }
+//        }
       }
     }
     stage('Package') {
@@ -765,7 +901,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}"""
         if(fileExists("${SOURCE_DIR}/setup.py")){
           dir("${SOURCE_DIR}"){
             try{
-              bat "${VENV_PYTHON} setup.py clean --all"
+              bat "venv\\Scripts\\python.exe setup.py clean --all"
             } catch (Exception ex) {
               // echo "Unable to succesfully run clean. Purging source directory."
               deleteDir()
