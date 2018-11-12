@@ -20,4 +20,5 @@ Do not use. Bad memory leak with bindings to open jpeg c library.
 
 Dev
 +++
+* Support Python 3.7 in Windows
 
