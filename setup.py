@@ -117,7 +117,16 @@ class BuildCMakeExt(build_ext):
                 f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{build_configuration_name.upper()}={package_source}')
 
             configure_command.append(
+                f'-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_{build_configuration_name.upper()}={package_source}')
+
+            configure_command.append(
                 f'-DOPENJPEG_INSTALL_BIN_DIR={package_source}')
+        else:
+            configure_command.append(
+                f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{build_configuration_name.upper()}={os.path.abspath(os.path.join(self.build_lib, "uiucprescon", "imagevalidate"))}')
+
+            configure_command.append(
+                f'-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_{build_configuration_name.upper()}={os.path.abspath(os.path.join(self.build_lib, "uiucprescon", "imagevalidate"))}')
 
         configure_command.append(
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}')
