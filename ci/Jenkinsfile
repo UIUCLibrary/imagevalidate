@@ -601,9 +601,9 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           echo "It Worked. Pushing file to ${env.BRANCH_NAME} index"
           script {
             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-              bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-              bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-              bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+              bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+              bat "venv36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+              bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
             }
           }
         }
@@ -623,11 +623,11 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
             input "Release ${PKG_NAME} ${PKG_VERSION} to DevPi Production?"
             // script {
             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-              bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+              bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
             }
             // }
-            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-            bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
+            bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+            bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
           }
         }
         stage("Deploy Online Documentation") {
@@ -688,7 +688,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
         if(fileExists("source/setup.py")){
           dir("source"){
             try{
-              bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
+              bat "${WORKSPACE}\\venv36\\Scripts\\python.exe setup.py clean --all"
             } catch (Exception ex) {
               deleteDir()
             }
@@ -697,11 +697,11 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
         }
         if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
           withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-            bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+            bat "venv36\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+            bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
           }
 
-          def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+          def devpi_remove_return_code = bat returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
           echo "Devpi remove exited with code ${devpi_remove_return_code}."
         }
       }
