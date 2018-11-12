@@ -84,7 +84,7 @@ pipeline {
 Source directory       = ${SOURCE_DIR}
 Logs directory         = ${LOGS_DIR}
 Build directory        = ${BUILD_DIR}
-Distribution directory = ${DIST_DIR}"""
+Distribution directory = ${WORKSPACE}/dist"""
             }
           }
         }
@@ -101,7 +101,7 @@ Distribution directory = ${DIST_DIR}"""
               deleteDir()
             }
 
-            dir("${DIST_DIR}"){
+            dir("${WORKSPACE}/dist"){
               deleteDir()
               // echo "Cleaned out distrubution directory"
               // bat "dir"
@@ -485,8 +485,9 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
           post{
             success{
-              archiveArtifacts artifacts: 'dist/*.zip', fingerprint: true
-              archiveArtifacts artifacts: 'dist/*.tar.gz', fingerprint: true
+              archiveArtifacts artifacts: "dist/*.zip", fingerprint: true
+              // archiveArtifacts artifacts: 'dist/*.zip', fingerprint: true
+              // archiveArtifacts artifacts: 'dist/*.tar.gz', fingerprint: true
             }
           }
         }
@@ -497,14 +498,14 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
           steps {
             dir("source"){
-              bat "pipenv run python setup.py build -b ${WORKSPACE}\\build --build-lib ${WORKSPACE}\\build\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\temp bdist_wheel -d ${DIST_DIR}"
+              bat "pipenv run python setup.py build -b ${WORKSPACE}\\build --build-lib ${WORKSPACE}\\build\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\temp bdist_wheel -d ${WORKSPACE}\\dist"
             }
           }
           post{
             success {
-              dir("${DIST_DIR}") {
-                archiveArtifacts artifacts: '*.whl', fingerprint: true
-              }
+              
+              archiveArtifacts artifacts: 'dist/*.whl', fingerprint: true
+              
             }
           }
         }
@@ -528,9 +529,9 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
           dir("source"){
             script {
-              bat "${WORKSPACE}\\venv\\Scripts\\devpi.exe upload --from-dir ${DIST_DIR} --verbose"
+              bat "${WORKSPACE}\\venv\\Scripts\\devpi.exe upload --from-dir ${WORKSPACE}\\dist --verbose"
               try {
-                bat "${WORKSPACE}\\venv\\Scripts\\devpi.exe upload --only-docs ${DIST_DIR}\\${DOC_ZIP_FILENAME}"
+                bat "${WORKSPACE}\\venv\\Scripts\\devpi.exe upload --only-docs ${WORKSPACE}\\dist\\${DOC_ZIP_FILENAME}"
               } catch (exc) {
                 echo "Unable to upload to devpi with docs."
               }
@@ -776,7 +777,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
   post {
     cleanup {
       
-      dir("${DIST_DIR}") {
+      dir("${WORKSPACE}/dist") {
         deleteDir()
       }
 
