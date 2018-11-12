@@ -2,6 +2,12 @@
 
 Change Log
 ==========
+
+0.1.4
++++++
+
+* Support Python 3.7 in Windows
+
 0.1.2
 +++++
 
@@ -18,7 +24,4 @@ Do not use. Bad memory leak with bindings to open jpeg c library.
             - Note: Currently no checks performed for color space
       * HathiTrust Tiff
 
-Dev
-+++
-* Support Python 3.7 in Windows
 
