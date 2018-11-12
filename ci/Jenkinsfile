@@ -328,13 +328,11 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
               }
               bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v" 
             }
-            bat "move ${WORKSPACE}\\build\\docs\\output.txt ${REPORT_DIR}\\doctest.txt"
+            bat "move build\\docs\\output.txt reports\\doctest.txt"
           }
           post{
             always {
-              dir("${REPORT_DIR}"){
-                archiveArtifacts artifacts: "doctest.txt"
-              }
+              archiveArtifacts artifacts: "reports/doctest.txt"
             }
           }
         }
@@ -360,7 +358,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
           post {
             always {
-              dir("${LOGS_DIR}"){
+              dir("logs"){
                 warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: "mypy.log"]], unHealthy: ''
               }
               publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
