@@ -89,24 +89,26 @@ Distribution directory = ${WORKSPACE}/dist"""
         
         stage("Cleanup"){
           steps {
-            dir("${LOGS_DIR}"){
+            dir("logs"){
               deleteDir()
-              bat "dir"
+              bat "dir > null"
             }
             
 
-            dir("${WORKSPACE}\\build"){
+            dir("build"){
               deleteDir()
+              bat "dir > null"
             }
 
-            dir("${WORKSPACE}/dist"){
+            dir("dist"){
               deleteDir()
+              bat "dir > null"
             }
 
-            dir("${REPORT_DIR}"){
+            dir("reports"){
               deleteDir()
               echo "Cleaned out reports directory"
-              bat "dir"
+              bat "dir > nul"
             }
           }
         }
@@ -373,7 +375,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                 script{
                     try{
                         dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\flake8.exe uiucprescon --format=pylint --tee --output-file=${WORKSPACE}\\logs\\flake8.log"
+                            bat "${WORKSPACE}\\venv36\\Scripts\\flake8.exe uiucprescon --format=pylint --tee --output-file=${WORKSPACE}\\logs\\flake8.log"
                         }
                     } catch (exc) {
                         echo "flake8 found some warnings"
