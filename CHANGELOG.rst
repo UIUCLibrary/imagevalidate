@@ -8,6 +8,11 @@ Change Log
 
 * Support Python 3.7 in Windows
 
+0.1.3
++++++
+
+* Fix memory leak in 0.1.2
+
 0.1.2
 +++++
 
