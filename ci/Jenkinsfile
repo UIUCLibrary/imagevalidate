@@ -224,7 +224,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
         steps {
             dir("source"){
-                powershell "&pipenv run python setup.py build -b ${WORKSPACE}\\build --build-lib ${WORKSPACE}\\build\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\temp build_ext --inplace  | tee ${WORKSPACE}\\logs\\build.log"
+                powershell "&pipenv run python setup.py build -b ${WORKSPACE}\\36\\build --build-lib ${WORKSPACE}\\build\\36\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\36\\temp build_ext --inplace  | tee ${WORKSPACE}\\logs\\build.log"
             }
 
         }
@@ -496,7 +496,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
           steps {
             dir("source"){
-              bat "pipenv run python setup.py build -b ${WORKSPACE}\\build --build-lib ${WORKSPACE}\\build\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\temp bdist_wheel -d ${WORKSPACE}\\dist"
+              bat "pipenv run python setup.py build -b ${WORKSPACE}\\36\\build --build-lib ${WORKSPACE}\\build\\36\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\36\\temp bdist_wheel -d ${WORKSPACE}\\dist"
             }
           }
           post{
@@ -505,6 +505,28 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
               archiveArtifacts artifacts: 'dist/*.whl', fingerprint: true
               
             }
+          }
+        }
+        stage("Python 3.7 whl"){
+          agent {
+            node {
+              label "Windows && Python3"
+            }
+          }
+          environment {
+            PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.7'};$PATH"
+            CL = "/MP"
+          }
+          steps {
+              dir("source"){
+                  
+                  bat "${tool 'CPython-3.7'}\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+              }
+          }
+          post{
+              success{
+                  stash includes: 'dist/*.whl', name: "whl 3.7"
+              }
           }
         }
       }
