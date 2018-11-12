@@ -485,6 +485,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
           post{
             success{
+              stash includes: 'dist/*.tar.gz', name: "sdist"
               archiveArtifacts artifacts: "dist/*.tar.gz", fingerprint: true
             }
           }
@@ -501,8 +502,8 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
           post{
             success {
-              
-              archiveArtifacts artifacts: 'dist/*.whl', fingerprint: true
+              archiveArtifacts artifacts: "dist/*p36*.whl", fingerprint: true
+              stash includes: 'dist/*p36*.whl', name: "whl 3.6"
               
             }
           }
@@ -525,10 +526,19 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
           post{
               success{
-                  stash includes: 'dist/*.whl', name: "whl 3.7"
+                  stash includes: 'dist/*p37*.whl', name: "whl 3.7"
+                  archiveArtifacts artifacts: "dist/*p37*.whl", fingerprint: true
               }
           }
         }
+      }
+      post{
+        cleanup{
+          cleanWs(patterns: [[pattern: "dist/*.whl,dist/*.tar.gz,dist/*.zip", type: 'INCLUDE']])
+        }
+      //   success{
+      //     unstash "whl 3.7"
+      //   }
       }
     }
     stage("Deploying to DevPi Staging") {
@@ -542,6 +552,9 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
         }
       }
       steps {
+        unstash "whl 3.6"
+        unstash "whl 3.7"
+        unstash "sdist"
         unstash "DOCS_ARCHIVE"
         bat "venv36\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
