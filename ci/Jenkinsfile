@@ -190,10 +190,8 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                         bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                     }
                 }
-                bat "venv\\Scripts\\pip.exe install -U setuptools"
-//                        TODO: when detox is fixed, just use the most recent version
+                bat "venv\\Scripts\\pip.exe install -U setuptools tox detox"
                 bat "venv\\Scripts\\pip.exe install devpi-client pytest-cov lxml -r source\\requirements.txt --upgrade-strategy only-if-needed"
-                bat "venv\\Scripts\\pip.exe install detox==0.13 tox==3.2.1"
             }
             post{
                 success{
@@ -297,16 +295,27 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
               bat "dir"
             }
             dir("source"){
-              script {
-                // bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -v -- --integration --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
+              // bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
+              script{
                 try{
-                    bat "pipenv run tox --workdir ..\\.tox\\PyTest"
-//                  bat "pipenv run tox -vv --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=ocr"
+                    bat "${WORKSPACE}\\venv\\scripts\\detox.exe --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+
                 } catch (exc) {
-                    bat "pipenv run tox -vv --recreate --workdir ..\\.tox\\PyTest"
+                    bat "${WORKSPACE}\\venv\\scripts\\detox.exe --recreate --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                 }
-                
               }
+            }
+//             dir("source"){
+//               script {
+//                 // bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -v -- --integration --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
+//                 try{
+//                     bat "pipenv run tox --workdir ..\\.tox\\PyTest"
+// //                  bat "pipenv run tox -vv --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=ocr"
+//                 } catch (exc) {
+//                     bat "pipenv run tox -vv --recreate --workdir ..\\.tox\\PyTest"
+//                 }
+                
+//               }
             }
             
           }
@@ -325,7 +334,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
 //              publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
 //            }
 //          }
-        }
+        // }
         stage("Run PyTest Unit Tests"){
             when {
                equals expected: true, actual: params.TEST_RUN_PYTEST
@@ -511,15 +520,15 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
       }
       steps {
         unstash "DOCS_ARCHIVE"
-        bat "${VENV_ROOT}\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
+        bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-          bat "${VENV_ROOT}\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-          bat "${VENV_ROOT}\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-          dir("${SOURCE_DIR}"){
+          bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+          bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+          dir("source"){
             script {
-              bat "${VENV_ROOT}\\Scripts\\devpi.exe upload --from-dir ${DIST_DIR} --verbose"
+              bat "${WORKSPACE}\\venv\\Scripts\\devpi.exe upload --from-dir ${DIST_DIR} --verbose"
               try {
-                bat "${VENV_ROOT}\\Scripts\\devpi.exe upload --only-docs ${DIST_DIR}\\${DOC_ZIP_FILENAME}"
+                bat "${WORKSPACE}\\venv\\Scripts\\devpi.exe upload --only-docs ${DIST_DIR}\\${DOC_ZIP_FILENAME}"
               } catch (exc) {
                 echo "Unable to upload to devpi with docs."
               }
