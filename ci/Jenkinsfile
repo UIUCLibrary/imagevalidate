@@ -204,7 +204,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
         }
         stage("Configure DevPi Login"){
           steps{    
-            bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
+            bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
               bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
             }
@@ -253,18 +253,35 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
         }
         post{
             always {
-                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
+                recordIssues enabledForFailure: true, tools: [[name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', tool: pep8()]]
+                // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
                 archiveArtifacts artifacts: 'logs/build_sphinx.log'
             }
             success{
                 publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-                stash includes: 'build/docs/html/**', name: 'docs'
+                zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
+
             }
-            failure{
-                echo "Failed to build Python package"
+            cleanup{
+                cleanWs(patterns: [[pattern: 'logs/build_sphinx.log', type: 'INCLUDE']])
+                cleanWs(patterns: [[pattern: "dist/${DOC_ZIP_FILENAME}", type: 'INCLUDE']])
             }
         }
+        // post{
+        //     always {
+        //         warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
+        //         archiveArtifacts artifacts: 'logs/build_sphinx.log'
+        //     }
+        //     success{
+        //         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+        //         zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+        //         stash includes: 'build/docs/html/**', name: 'docs'
+        //     }
+        //     failure{
+        //         echo "Failed to build Python package"
+        //     }
+        // }
     }
     stage('Test') {
       parallel {
