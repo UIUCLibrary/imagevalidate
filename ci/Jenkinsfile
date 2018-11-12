@@ -574,44 +574,6 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                     }
               }
         }
-        stage("Source Distribution: .zip") {
-              agent {
-                    node {
-                        label "Windows && Python3 && VS2015"
-                    }
-              }
-              environment{
-                    PATH = "${tool 'cmake3.12'};$PATH"
-              }
-              options {
-                skipDefaultCheckout(true)
-              }
-              stages{
-                    stage("Setting up DevPi Test Environment for sdist zip"){
-                        steps {
-                            echo "Testing Source zip package for DevPi"
-                            bat "${tool 'CPython-3.6'} -m venv venv"
-                            bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                              bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                            }
-                            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        }
-
-                    }
-                    stage("Testing sdist zip DevPi package"){
-                        steps{
-                            bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s zip --verbose"
-                        }
-                        post {
-                            failure {
-                                echo "Tests for .zip source on DevPi failed."
-                            }
-                        }
-                    }
-              }
-
-        }
         stage("Built Distribution: .whl") {
               agent {
                     node {
