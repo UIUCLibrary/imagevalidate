@@ -1,4 +1,4 @@
-Python3_add_library(openjp2wrap MODULE openjp2wrap.cpp)
+add_library(openjp2wrap MODULE openjp2wrap.cpp)
 
 add_library(glue OBJECT
         glue.cpp
@@ -15,13 +15,12 @@ target_include_directories(glue PUBLIC
         ${libopenjpeg_BINARY_DIR}/src/lib/openjp2
         )
 
-if(PYTHON_EXTENSION_OUTPUT)
-    message(STATUS "Changing to ${PYTHON_EXTENSION_OUTPUT}")
-    set_target_properties(openjp2wrap PROPERTIES
-        LIBRARY_OUTPUT_NAME ${PYTHON_EXTENSION_OUTPUT}
-        RUNTIME_OUTPUT_NAME ${PYTHON_EXTENSION_OUTPUT}
+set_target_properties(openjp2wrap PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/uiucprescon/imagevalidate
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/uiucprescon/imagevalidate
+    PREFIX "${PYTHON_MODULE_PREFIX}"
+    SUFFIX "${PYTHON_MODULE_EXTENSION}"
     )
-endif(PYTHON_EXTENSION_OUTPUT)
 
 target_link_libraries(openjp2wrap
     PRIVATE

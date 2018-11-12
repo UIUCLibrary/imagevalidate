@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 3.12)
 project(OpenJpegWrapper)
 include(FetchContent)
 
-find_package(Python3 REQUIRED COMPONENTS Development)
+#find_package(Python3 REQUIRED COMPONENTS Development)
+find_package(PythonInterp 3)
+find_package(PythonLibs)
+
 FetchContent_Declare(libpybind11
         URL https://github.com/pybind/pybind11/archive/v2.2.3.tar.gz
         URL_HASH SHA1=0acaeb967f09dbef53a1e2a4366780548597beba
@@ -28,7 +31,13 @@ if (NOT libopenjpeg_POPULATED)
 #        -DBUILD_SHARED_LIBS:bool
     add_subdirectory(${libopenjpeg_SOURCE_DIR} ${libopenjpeg_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif ()
-
 add_subdirectory(uiucprescon/imagevalidate)
+set_target_properties(openjp2 PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}
+    LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE}
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG}
+
+    )
 include(CTest)
 add_subdirectory(tests)
