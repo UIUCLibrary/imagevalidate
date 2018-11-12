@@ -485,9 +485,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
           post{
             success{
-              archiveArtifacts artifacts: "dist/*.zip", fingerprint: true
-              // archiveArtifacts artifacts: 'dist/*.zip', fingerprint: true
-              // archiveArtifacts artifacts: 'dist/*.tar.gz', fingerprint: true
+              archiveArtifacts artifacts: "dist/*.tar.gz", fingerprint: true
             }
           }
         }
