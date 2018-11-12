@@ -445,22 +445,35 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
       }
     }
     stage('Package') {
-        environment{
-            PATH = "${tool 'cmake3.12'};$PATH"
-        }
-      steps {
-        dir("${SOURCE_DIR}"){
-
-          // bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist"
-          bat "pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp sdist -d ${DIST_DIR} bdist_wheel -d ${DIST_DIR}"
-        }
+      environment{
+          PATH = "${tool 'cmake3.12'};$PATH"
       }
-      post{
-        success {
-          dir("${DIST_DIR}") {
-            archiveArtifacts artifacts: '*.whl', fingerprint: true
-            archiveArtifacts artifacts: '*.zip', fingerprint: true
-            archiveArtifacts artifacts: '*.tar.gz', fingerprint: true
+      parallel{
+        stage("Python sdist"){
+          steps {
+            dir("source"){
+              bat "${tool 'CPython-3.6'} setup.py sdist -d ${WORKSPACE}\\dist"
+            }
+          }
+          post{
+            success{
+              archiveArtifacts artifacts: 'dist/*.zip', fingerprint: true
+              archiveArtifacts artifacts: 'dist/*.tar.gz', fingerprint: true
+            }
+          }
+        }
+        stage("Python 3.6 whl"){
+          steps {
+            dir("${SOURCE_DIR}"){
+              bat "pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp bdist_wheel -d ${DIST_DIR}"
+            }
+          }
+          post{
+            success {
+              dir("${DIST_DIR}") {
+                archiveArtifacts artifacts: '*.whl', fingerprint: true
+              }
+            }
           }
         }
       }
