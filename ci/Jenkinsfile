@@ -74,14 +74,12 @@ pipeline {
                 LOGS_DIR = "${WORKSPACE}\\logs"
                 BUILD_DIR = "${WORKSPACE}\\build"
                 DIST_DIR = "${WORKSPACE}\\dist"
-                SOURCE_DIR = "${WORKSPACE}\\source"
                 
             }
           }
           post{
             always{
               echo """Report Directory       = ${REPORT_DIR}
-Source directory       = ${SOURCE_DIR}
 Logs directory         = ${LOGS_DIR}
 Build directory        = ${BUILD_DIR}
 Distribution directory = ${WORKSPACE}/dist"""
@@ -103,8 +101,6 @@ Distribution directory = ${WORKSPACE}/dist"""
 
             dir("${WORKSPACE}/dist"){
               deleteDir()
-              // echo "Cleaned out distrubution directory"
-              // bat "dir"
             }
 
             dir("${REPORT_DIR}"){
@@ -135,7 +131,7 @@ Distribution directory = ${WORKSPACE}/dist"""
         stage("Setting Project Metadata Variables"){
           steps{      
             script {
-              dir("${SOURCE_DIR}"){
+              dir("source"){
                 PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
                 PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
               }
@@ -244,17 +240,13 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
       stage("Sphinx documentation"){
         steps {
             echo "Building docs on ${env.NODE_NAME}"
-            // tee('logs/build_sphinx.log') {
             dir("source"){
-                // bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
-                powershell "& pipenv run sphinx-build -b html ${SOURCE_DIR}\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees | tee ${WORKSPACE}\\logs\\build_sphinx.log"
+                powershell "& pipenv run sphinx-build -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees | tee ${WORKSPACE}\\logs\\build_sphinx.log"
             }
-        // }
         }
         post{
             always {
                 recordIssues enabledForFailure: true, tools: [[name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', tool: pep8()]]
-                // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
                 archiveArtifacts artifacts: 'logs/build_sphinx.log'
             }
             success{
@@ -268,20 +260,6 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                 cleanWs(patterns: [[pattern: "dist/${DOC_ZIP_FILENAME}", type: 'INCLUDE']])
             }
         }
-        // post{
-        //     always {
-        //         warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
-        //         archiveArtifacts artifacts: 'logs/build_sphinx.log'
-        //     }
-        //     success{
-        //         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-        //         zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-        //         stash includes: 'build/docs/html/**', name: 'docs'
-        //     }
-        //     failure{
-        //         echo "Failed to build Python package"
-        //     }
-        // }
     }
     stage('Test') {
       parallel {
@@ -297,7 +275,6 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
               bat "dir"
             }
             dir("source"){
-              // bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
               script{
                 try{
                     bat "${WORKSPACE}\\venv36\\scripts\\detox.exe --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
@@ -307,36 +284,8 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                 }
               }
             }
-//             dir("source"){
-//               script {
-//                 // bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -v -- --integration --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}\\coverage\\ --cov=uiucprescon.imagevalidate"
-//                 try{
-//                     bat "pipenv run tox --workdir ..\\.tox\\PyTest"
-// //                  bat "pipenv run tox -vv --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=ocr"
-//                 } catch (exc) {
-//                     bat "pipenv run tox -vv --recreate --workdir ..\\.tox\\PyTest"
-//                 }
-                
-//               }
-            }
-            
           }
-//          post{
-//            always{
-//              dir("${REPORT_DIR}"){
-//                bat "dir"
-//                script {
-//                  def xml_files = findFiles glob: "**/*.xml"
-//                  xml_files.each { junit_xml_file ->
-//                    echo "Found ${junit_xml_file}"
-//                    junit "${junit_xml_file}"
-//                  }
-//                }
-//              }
-//              publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
-//            }
-//          }
-        // }
+        }
         stage("Run PyTest Unit Tests"){
             when {
                equals expected: true, actual: params.TEST_RUN_PYTEST
@@ -370,7 +319,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
             equals expected: true, actual: params.TEST_DOCTEST
           }
           steps {
-            dir("${SOURCE_DIR}"){
+            dir("source"){
               dir("${REPORT_DIR}/doctests"){
                 echo "Cleaning doctest reports directory"
                 deleteDir()
@@ -397,17 +346,14 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
               bat "dir"
             }
             script{
-//              tee("${LOGS_DIR}/mypy.log") {
                 try{
-                  dir("${SOURCE_DIR}"){
+                  dir("source"){
                     bat "dir"
-//                    bat "pipenv run mypy -p uiucprescon --html-report ${REPORT_DIR}\\mypy\\html"
                     bat "${WORKSPACE}\\venv36\\Scripts\\mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                   }
                 } catch (exc) {
                   echo "MyPy found some warnings"
                 }
-//              }
             }
           }
           post {
@@ -443,33 +389,6 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                 }
             }
         }
-//        stage("Flake8") {
-//          when {
-//              equals expected: true, actual: params.TEST_RUN_FLAKE8
-//          }
-//          steps{
-//            script{
-//              try{
-//                tee("${LOGS_DIR}/flake8.log") {
-//                  dir("source"){
-//                    bat "pipenv run flake8 uiucprescon --format=pylint"
-//                  }
-//                }
-//              } catch (exc) {
-//                echo "flake8 found some warnings"
-//              }
-//            }
-//          }
-//          post {
-//            always {
-//              dir("${LOGS_DIR}"){
-//                warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'flake8.log']], unHealthy: ''
-//                archiveArtifacts artifacts: 'flake8.log', fingerprint: true
-//              }
-//
-//            }
-//          }
-//        }
       }
     }
     stage('Package') {
@@ -536,9 +455,6 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
         cleanup{
           cleanWs(patterns: [[pattern: "dist/*.whl,dist/*.tar.gz,dist/*.zip", type: 'INCLUDE']])
         }
-      //   success{
-      //     unstash "whl 3.7"
-      //   }
       }
     }
     stage("Deploying to DevPi Staging") {
@@ -670,20 +586,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                         detox: false,
                         toxEnvironment: "py37"
                     )
-                // bat "${tool 'CPython-3.6'} -m venv venv"
-                // bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                // bat "where python"
-                // bat "set"
-                // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                //     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"                        
-                // }
-                // bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                // script{
-                //     def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s \"36.*whl\" -e py36  --verbose"
-                //     if(devpi_test_return_code != 0){   
-                //         error "Devpi exit code for whl was ${devpi_test_return_code}"
-                //     }
-                // }
+
                 echo "Finished testing Built Distribution: .whl"
             }
             post {
@@ -771,14 +674,10 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
       dir("${WORKSPACE}/dist") {
         deleteDir()
       }
-
-//      dir("${BUILD_DIR}") {
-//        deleteDir()
-//      }
       script {
 
       //        remove any shared library built in place
-        dir("${SOURCE_DIR}"){
+        dir("source"){
             def generated_c_libraries = findFiles glob: '**/*.dll,**/*.pyd,**.so,**/*.dylib'
             generated_c_libraries .each { c_library ->
                 echo "Deleting ${pwd()}\\${c_library}"
@@ -786,28 +685,25 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
             }
         }
 
-        if(fileExists("${SOURCE_DIR}/setup.py")){
+        if(fileExists("source/setup.py")){
           dir("source"){
             try{
               bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
             } catch (Exception ex) {
-              // echo "Unable to succesfully run clean. Purging source directory."
               deleteDir()
             }
             bat "dir"
           }
         }
-//
-//
-//        if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
-//          withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-//            bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-//            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-//          }
-//
-//          def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
-//          echo "Devpi remove exited with code ${devpi_remove_return_code}."
-//        }
+        if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
+          withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+            bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+          }
+
+          def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+          echo "Devpi remove exited with code ${devpi_remove_return_code}."
+        }
       }
       bat "dir"
     }
