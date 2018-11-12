@@ -95,7 +95,7 @@ Distribution directory = ${DIST_DIR}"""
             }
             
 
-            dir("${BUILD_DIR}"){
+            dir("${WORKSPACE}\\build"){
               deleteDir()
             }
 
@@ -224,7 +224,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
         steps {
             dir("source"){
-                powershell "&pipenv run python setup.py build -b ${WORKSPACE}\\build --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp build_ext --inplace  | tee ${WORKSPACE}\\logs\\build.log"
+                powershell "&pipenv run python setup.py build -b ${WORKSPACE}\\build --build-lib ${WORKSPACE}\\build\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\temp build_ext --inplace  | tee ${WORKSPACE}\\logs\\build.log"
             }
 
         }
@@ -247,7 +247,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
             // tee('logs/build_sphinx.log') {
             dir("source"){
                 // bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
-                powershell "& pipenv run sphinx-build -b html ${SOURCE_DIR}\\docs\\source ${BUILD_DIR}\\docs\\html -d ${BUILD_DIR}\\docs\\doctrees | tee ${WORKSPACE}\\logs\\build_sphinx.log"
+                powershell "& pipenv run sphinx-build -b html ${SOURCE_DIR}\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees | tee ${WORKSPACE}\\logs\\build_sphinx.log"
             }
         // }
         }
@@ -347,9 +347,9 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                 echo "Cleaning doctest reports directory"
                 deleteDir()
               }
-              bat "pipenv run sphinx-build -b doctest docs\\source ${BUILD_DIR}\\docs -d ${BUILD_DIR}\\docs\\doctrees -v" 
+              bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v" 
             }
-            bat "move ${BUILD_DIR}\\docs\\output.txt ${REPORT_DIR}\\doctest.txt"
+            bat "move ${WORKSPACE}\\build\\docs\\output.txt ${REPORT_DIR}\\doctest.txt"
           }
           post{
             always {
@@ -463,9 +463,13 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
         }
         stage("Python 3.6 whl"){
+          environment {
+            PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;$PATH"
+            CL = "/MP"
+          }
           steps {
-            dir("${SOURCE_DIR}"){
-              bat "pipenv run python setup.py build -b ${BUILD_DIR} --build-lib ${BUILD_DIR}\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${BUILD_DIR}\\temp bdist_wheel -d ${DIST_DIR}"
+            dir("source"){
+              bat "pipenv run python setup.py build -b ${WORKSPACE}\\build --build-lib ${WORKSPACE}\\build\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\temp bdist_wheel -d ${DIST_DIR}"
             }
           }
           post{
@@ -480,9 +484,16 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
     }
     stage("Deploying to DevPi Staging") {
       when {
-        expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev")}
+        allOf{
+          equals expected: true, actual: params.DEPLOY_DEVPI
+          anyOf {
+            equals expected: "master", actual: env.BRANCH_NAME
+            equals expected: "dev", actual: env.BRANCH_NAME
+          }
+        }
       }
       steps {
+        unstash "DOCS_ARCHIVE"
         bat "${VENV_ROOT}\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
           bat "${VENV_ROOT}\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
@@ -663,7 +674,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
             }
           }
           steps {
-            dir("${BUILD_DIR}/docs/html/"){
+            dir("${WORKSPACE}\\build/docs/html/"){
               input 'Update project documentation?'
               sshPublisher(
                 publishers: [
