@@ -246,7 +246,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
         }
         post{
             always {
-                recordIssues enabledForFailure: true, tools: [[name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', tool: pep8()]]
+                recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log')])
                 archiveArtifacts artifacts: 'logs/build_sphinx.log'
             }
             success{
