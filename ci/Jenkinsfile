@@ -440,7 +440,10 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
               cleanup{
                   cleanWs(
                       deleteDirs: true,
-                      patterns: [[pattern: "dist", type: 'INCLUDE']]
+                      patterns: [
+                        [pattern: '*tmp', type: 'INCLUDE'],
+                        [pattern: "dist", type: 'INCLUDE']
+                      ]
                   )
               }
           }
@@ -525,6 +528,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                           cleanWs(
                             deleteDirs: true,
                             patterns: [
+                                [pattern: '*tmp', type: 'INCLUDE'],
                                 [pattern: 'certs', type: 'INCLUDE'],
                             ]
                           )
@@ -569,6 +573,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                           cleanWs(
                             deleteDirs: true,
                             patterns: [
+                                [pattern: '*tmp', type: 'INCLUDE'],
                                 [pattern: 'certs', type: 'INCLUDE'],
                             ]
                           )
