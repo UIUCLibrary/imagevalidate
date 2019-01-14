@@ -93,6 +93,7 @@ Distribution directory = ${WORKSPACE}/dist"""
         
         stage("Installing required system level dependencies"){
             steps{
+                bat "if not exist logs mkdir logs"
                 lock("system_python_${NODE_NAME}"){
                     bat "${tool 'CPython-3.6'}\\python -m pip install --upgrade pip --quiet"
                 }
