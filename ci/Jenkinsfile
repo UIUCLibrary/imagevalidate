@@ -423,7 +423,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
             }
           }
           environment {
-            PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.7'};$PATH"
+            PATH = "${tool 'cmake3.12'};${tool 'CPython-3.7'};$PATH"
             CL = "/MP"
           }
           steps {
