@@ -462,23 +462,23 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
       }
     }
     stage("Deploying to DevPi Staging") {
-      when {
-                allOf{
-                    anyOf{
-                        equals expected: true, actual: params.DEPLOY_DEVPI
-                        triggeredBy "TimerTriggerCause"
-                    }
-                    anyOf {
-                        equals expected: "master", actual: env.BRANCH_NAME
-                        equals expected: "dev", actual: env.BRANCH_NAME
-                    }
+        when {
+            allOf{
+                anyOf{
+                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    triggeredBy "TimerTriggerCause"
+                }
+                anyOf {
+                    equals expected: "master", actual: env.BRANCH_NAME
+                    equals expected: "dev", actual: env.BRANCH_NAME
                 }
             }
-            options{
-                timestamps()
-            }
-            stages{
-                stage("Upload to DevPi Staging"){
+        }
+        options{
+            timestamps()
+        }
+        stages{
+            stage("Upload to DevPi Staging"){
               steps {
                 unstash "whl 3.6"
                 unstash "whl 3.7"
@@ -500,6 +500,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                   }
                 }
               }
+
             }
             stage("Test DevPi Packages") {
               parallel {
@@ -603,44 +604,44 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                         echo "Tests for whl on DevPi failed."
                       }
                     }
-                  }
-              }
-              post {
-                success {
-                  echo "It Worked. Pushing file to ${env.BRANCH_NAME} index"
-                  script {
-                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                      bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                      bat "venv36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                      bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
-                    }
-                  }
                 }
               }
+          post {
+            success {
+              echo "It Worked. Pushing file to ${env.BRANCH_NAME} index"
+              script {
+                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                  bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                  bat "venv36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                  bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                }
+              }
+            }
           }
-      }
-
+        }
+            stage("Release to DevPi Production") {
+              when {
+                allOf{
+                  equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                  branch "master"
+                }
+              }
+              steps{
+                input "Release ${PKG_NAME} ${PKG_VERSION} to DevPi Production?"
+                // script {
+                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                  bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                }
+                // }
+                bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
+              }
+            }
+        }
     }
     stage("Release") {
       parallel {
-        stage("Release to DevPi Production") {
-          when {
-            allOf{
-              equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
-              branch "master"
-            }
-          }
-          steps{
-            input "Release ${PKG_NAME} ${PKG_VERSION} to DevPi Production?"
-            // script {
-            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-              bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-            }
-            // }
-            bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-            bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
-          }
-        }
+
         stage("Deploy Online Documentation") {
           when {
             allOf{
