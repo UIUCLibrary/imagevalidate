@@ -613,22 +613,31 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                       failure {
                         echo "Tests for whl on DevPi failed."
                       }
+                      cleanup{
+                          cleanWs(
+                            deleteDirs: true,
+                            patterns: [
+                                [pattern: '*tmp', type: 'INCLUDE'],
+                                [pattern: 'certs', type: 'INCLUDE'],
+                            ]
+                          )
+                      }
                     }
                 }
               }
-          post {
-            success {
-              echo "It Worked. Pushing file to ${env.BRANCH_NAME} index"
-              script {
-                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                  bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                  bat "venv36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                  bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+              post {
+                success {
+                  echo "It Worked. Pushing file to ${env.BRANCH_NAME} index"
+                  script {
+                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                      bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                      bat "venv36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                      bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                    }
+                  }
                 }
               }
             }
-          }
-        }
             stage("Release to DevPi Production") {
               when {
                 allOf{
