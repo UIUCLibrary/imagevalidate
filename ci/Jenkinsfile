@@ -34,6 +34,7 @@ pipeline {
     PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
     PIPENV_CACHE_DIR="${WORKSPACE}\\..\\.virtualenvs\\cache\\"
     WORKON_HOME ="${WORKSPACE}\\pipenv\\"
+    PIPENV_NOSPIN="DISABLED"
 
   }
   parameters {
