@@ -230,7 +230,12 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
         }
         post{
             always{
-                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
+                recordIssues(tools: [
+                                pyLint(name: 'Setuptools Build: PyLint', pattern: 'logs/build.log'),
+                                msBuild(name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log')
+                            ]
+                        )
+//                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
                 archiveArtifacts artifacts: "logs/build.log"
             }
             failure{
@@ -362,9 +367,10 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           }
           post {
             always {
-              dir("${LOGS_DIR}"){
-                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: "mypy.log"]], unHealthy: ''
-              }
+                recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+//              dir("${LOGS_DIR}"){
+//                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: "mypy.log"]], unHealthy: ''
+//              }
               publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
             }
           }
@@ -386,7 +392,8 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
             }
             post {
                 always {
-                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'PyLint', pattern: 'logs/flake8.log']], unHealthy: ''
+                    recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+//                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'PyLint', pattern: 'logs/flake8.log']], unHealthy: ''
                 }
                 cleanup{
                     cleanWs(patterns: [[pattern: 'logs/flake8.log', type: 'INCLUDE']])
