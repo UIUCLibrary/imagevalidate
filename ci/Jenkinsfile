@@ -682,31 +682,19 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
   }
   post {
     cleanup {
-      
-      dir("${WORKSPACE}/dist") {
-        deleteDir()
-      }
+
       script {
 
-      //        remove any shared library built in place
-        dir("source"){
-            def generated_c_libraries = findFiles glob: '**/*.dll,**/*.pyd,**.so,**/*.dylib'
-            generated_c_libraries .each { c_library ->
-                echo "Deleting ${pwd()}\\${c_library}"
-                bat "del ${c_library}"
-            }
-        }
-
-        if(fileExists("source/setup.py")){
-          dir("source"){
-            try{
-              bat "${WORKSPACE}\\venv36\\Scripts\\python.exe setup.py clean --all"
-            } catch (Exception ex) {
-              deleteDir()
-            }
-            bat "dir"
-          }
-        }
+//        if(fileExists("source/setup.py")){
+//          dir("source"){
+//            try{
+//              bat "${WORKSPACE}\\venv36\\Scripts\\python.exe setup.py clean --all"
+//            } catch (Exception ex) {
+//              deleteDir()
+//            }
+//            bat "dir"
+//          }
+//        }
         if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
           withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
             bat "venv36\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
@@ -717,7 +705,22 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
           echo "Devpi remove exited with code ${devpi_remove_return_code}."
         }
       }
-      bat "dir"
+      cleanWs(
+            deleteDirs: true,
+            disableDeferredWipeout: true,
+            patterns: [
+                [pattern: 'dist', type: 'INCLUDE'],
+//                    [pattern: 'build', type: 'INCLUDE'],
+                [pattern: 'reports', type: 'INCLUDE'],
+                [pattern: 'logs', type: 'INCLUDE'],
+                [pattern: 'certs', type: 'INCLUDE'],
+                [pattern: '*tmp', type: 'INCLUDE'],
+                [pattern: "source/**/*.dll", type: 'INCLUDE'],
+                [pattern: "source/**/*.pyd", type: 'INCLUDE'],
+                [pattern: "source/**/*.exe", type: 'INCLUDE'],
+                [pattern: "source/**/*.exe", type: 'INCLUDE']
+                ]
+            )
     }
   }
 }
