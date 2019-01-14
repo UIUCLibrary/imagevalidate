@@ -91,29 +91,6 @@ Distribution directory = ${WORKSPACE}/dist"""
           }
         }
         
-        stage("Cleanup"){
-          steps {
-            dir("${LOGS_DIR}"){
-              deleteDir()
-              bat "dir"
-            }
-            
-
-            dir("${WORKSPACE}\\build"){
-              deleteDir()
-            }
-
-            dir("${WORKSPACE}/dist"){
-              deleteDir()
-            }
-
-            dir("${REPORT_DIR}"){
-              deleteDir()
-              echo "Cleaned out reports directory"
-              bat "dir"
-            }
-          }
-        }
         stage("Installing required system level dependencies"){
             steps{
                 lock("system_python_${NODE_NAME}"){
