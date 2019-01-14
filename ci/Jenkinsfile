@@ -437,6 +437,12 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                   stash includes: 'dist/*p37*.whl', name: "whl 3.7"
                   archiveArtifacts artifacts: "dist/*p37*.whl", fingerprint: true
               }
+              cleanup{
+                  cleanWs(
+                      deleteDirs: true,
+                      patterns: [[pattern: "dist", type: 'INCLUDE']]
+                  )
+              }
           }
         }
       }
@@ -708,7 +714,6 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
       }
       cleanWs(
             deleteDirs: true,
-            disableDeferredWipeout: true,
             patterns: [
                 [pattern: 'dist', type: 'INCLUDE'],
 //                    [pattern: 'build', type: 'INCLUDE'],
