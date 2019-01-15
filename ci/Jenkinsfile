@@ -90,7 +90,7 @@ Distribution directory = ${WORKSPACE}/dist"""
             }
           }
         }
-        
+
         stage("Installing required system level dependencies"){
             steps{
                 bat "if not exist logs mkdir logs"
@@ -313,13 +313,11 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
               }
               bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v" 
             }
-            bat "move ${WORKSPACE}\\build\\docs\\output.txt ${REPORT_DIR}\\doctest.txt"
+            bat "move build\\docs\\output.txt reports\\doctest.txt"
           }
           post{
             always {
-              dir("${REPORT_DIR}"){
-                archiveArtifacts artifacts: "doctest.txt"
-              }
+              archiveArtifacts artifacts: "reports/doctest.txt"
             }
           }
         }
@@ -361,7 +359,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                 script{
                     try{
                         dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\flake8.exe uiucprescon --format=pylint --tee --output-file=${WORKSPACE}\\logs\\flake8.log"
+                            bat "${WORKSPACE}\\venv36\\Scripts\\flake8.exe uiucprescon --format=pylint --tee --output-file=${WORKSPACE}\\logs\\flake8.log"
                         }
                     } catch (exc) {
                         echo "flake8 found some warnings"
@@ -615,22 +613,31 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                       failure {
                         echo "Tests for whl on DevPi failed."
                       }
+                      cleanup{
+                          cleanWs(
+                            deleteDirs: true,
+                            patterns: [
+                                [pattern: '*tmp', type: 'INCLUDE'],
+                                [pattern: 'certs', type: 'INCLUDE'],
+                            ]
+                          )
+                      }
                     }
                 }
               }
-          post {
-            success {
-              echo "It Worked. Pushing file to ${env.BRANCH_NAME} index"
-              script {
-                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                  bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                  bat "venv36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                  bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+              post {
+                success {
+                  echo "It Worked. Pushing file to ${env.BRANCH_NAME} index"
+                  script {
+                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                      bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                      bat "venv36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                      bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                    }
+                  }
                 }
               }
             }
-          }
-        }
             stage("Release to DevPi Production") {
               when {
                 allOf{
