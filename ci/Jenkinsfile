@@ -417,7 +417,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
         stage("Python 3.7 whl"){
           agent {
             node {
-              label "Windows && Python3"
+              label "Windows && Python3 && VS2015"
             }
           }
           environment {
