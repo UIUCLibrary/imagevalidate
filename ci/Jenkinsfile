@@ -359,7 +359,7 @@ documentation zip file = ${DOC_ZIP_FILENAME}"""
                 script{
                     try{
                         dir("source"){
-                            bat "${WORKSPACE}\\venv36\\Scripts\\flake8.exe uiucprescon --format=pylint --tee --output-file=${WORKSPACE}\\logs\\flake8.log"
+                            bat "${WORKSPACE}\\venv36\\Scripts\\flake8.exe uiucprescon --tee --output-file=${WORKSPACE}\\logs\\flake8.log"
                         }
                     } catch (exc) {
                         echo "flake8 found some warnings"
