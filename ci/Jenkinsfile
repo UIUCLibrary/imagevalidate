@@ -109,11 +109,12 @@ pipeline {
 
             stage("Installing required system level dependencies"){
                 steps{
-                    bat "if not exist logs mkdir logs"
+
                     lock("system_python_${NODE_NAME}"){
                         bat "python -m pip install --upgrade pip --quiet"
                         bat "python -m pip install --upgrade devpi"
                     }
+                    bat "if not exist logs mkdir logs"
                 }
                 post{
                     always{
