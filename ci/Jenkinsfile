@@ -67,7 +67,7 @@ pipeline {
   stages {
     stage('Configure Environment') {
         environment{
-            PATH = "${tool 'CPython-3.6'}/Scripts;PATH"
+            PATH = "${tool 'CPython-3.6'}\\Scripts;PATH"
         }
         stages{
             stage("Purge All Existing Data in Workspace"){
@@ -111,7 +111,8 @@ pipeline {
                 steps{
                     bat "if not exist logs mkdir logs"
                     lock("system_python_${NODE_NAME}"){
-                        bat "${tool 'CPython-3.6'}\\python -m pip install --upgrade pip --quiet"
+                        bat "python -m pip install --upgrade pip --quiet"
+                        bat "python -m pip install --upgrade devpi"
                     }
                 }
                 post{
