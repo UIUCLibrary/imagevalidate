@@ -12,8 +12,6 @@ def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUse
 
     }
 }
-def PKG_NAME = "unknown"
-def PKG_VERSION = "unknown"
 def DOC_ZIP_FILENAME = "doc.zip"
 def junit_filename = "junit.xml"
 def REPORT_DIR = ""
@@ -131,23 +129,19 @@ pipeline {
             stage("Setting Project Metadata Variables"){
               steps{
                 script {
-                  dir("source"){
-                    PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}\\python  setup.py --name").trim()
-                    PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}\\python setup.py --version").trim()
-                  }
 
                   // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
                   def alljob = env.JOB_NAME.tokenize("/") as String[]
                   def project_name = alljob[0]
-                  DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
+                  DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
 
                   junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                 }
               }
               post{
                 always{
-                  echo """Name                   = ${PKG_NAME}
-    Version                = ${PKG_VERSION}
+                  echo """Name                   = ${env.PKG_NAME}
+    Version                = ${env.PKG_VERSION}
     documentation zip file = ${DOC_ZIP_FILENAME}"""
 
                 }
@@ -531,8 +525,8 @@ pipeline {
                           devpiExecutable: "venv36\\Scripts\\devpi.exe",
                           url: "https://devpi.library.illinois.edu",
                           index: "${env.BRANCH_NAME}_staging",
-                          pkgName: "${PKG_NAME}",
-                          pkgVersion: "${PKG_VERSION}",
+                          pkgName: "${env.PKG_NAME}",
+                          pkgVersion: "${env.PKG_VERSION}",
                           pkgRegex: "tar.gz",
                           detox: false
                       )
@@ -577,8 +571,8 @@ pipeline {
                               devpiExecutable: "venv36\\Scripts\\devpi.exe",
                               url: "https://devpi.library.illinois.edu",
                               index: "${env.BRANCH_NAME}_staging",
-                              pkgName: "${PKG_NAME}",
-                              pkgVersion: "${PKG_VERSION}",
+                              pkgName: "${env.PKG_NAME}",
+                              pkgVersion: "${env.PKG_VERSION}",
                               pkgRegex: "36.*whl",
                               detox: false,
                               toxEnvironment: "py36"
@@ -621,8 +615,8 @@ pipeline {
                                 devpiExecutable: "venv37\\Scripts\\devpi.exe",
                                 url: "https://devpi.library.illinois.edu",
                                 index: "${env.BRANCH_NAME}_staging",
-                                pkgName: "${PKG_NAME}",
-                                pkgVersion: "${PKG_VERSION}",
+                                pkgName: "${env.PKG_NAME}",
+                                pkgVersion: "${env.PKG_VERSION}",
                                 pkgRegex: "37.*whl",
                                 detox: false,
                                 toxEnvironment: "py37"
@@ -653,7 +647,7 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                       bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                       bat "venv36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                      bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                      bat "venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                     }
                   }
                 }
@@ -667,14 +661,14 @@ pipeline {
                 }
               }
               steps{
-                input "Release ${PKG_NAME} ${PKG_VERSION} to DevPi Production?"
+                input "Release ${env.PKG_NAME} ${env.PKG_VERSION} to DevPi Production?"
                 // script {
                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                   bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                 }
                 // }
                 bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
+                bat "venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} production/release"
               }
             }
         }
@@ -741,7 +735,7 @@ pipeline {
 //            bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
 //          }
 //
-//          def devpi_remove_return_code = bat returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+//          def devpi_remove_return_code = bat returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${env.PKG_NAME}==${env.PKG_VERSION}"
 //          echo "Devpi remove exited with code ${devpi_remove_return_code}."
 //        }
 //      }
