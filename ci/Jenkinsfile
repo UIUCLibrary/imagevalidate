@@ -211,58 +211,64 @@ pipeline {
             }
           }
         }
-    stage("Python Package"){
+    stage("Building"){
         environment{
-            PATH = "${tool 'cmake3.12'};$PATH"
-          }
-        steps {
-            dir("source"){
-                powershell "&pipenv run python setup.py build -b ${WORKSPACE}\\36\\build --build-lib ${WORKSPACE}\\build\\36\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\36\\temp build_ext --inplace  | tee ${WORKSPACE}\\logs\\build.log"
-            }
-
+            PATH = "${tool 'CPython-3.6'}\\Scripts;${tool 'cmake3.12'};$PATH"
         }
-        post{
-            always{
-                recordIssues(tools: [
-                                pyLint(name: 'Setuptools Build: PyLint', pattern: 'logs/build.log'),
-                                msBuild(name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log')
-                            ]
-                        )
-//                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
-                archiveArtifacts artifacts: "logs/build.log"
+        stages{
+            stage("Building Python Package"){
+
+                steps {
+                    dir("source"){
+                        powershell "&pipenv run python setup.py build -b ${WORKSPACE}\\36\\build --build-lib ${WORKSPACE}\\build\\36\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\36\\temp build_ext --inplace  | tee ${WORKSPACE}\\logs\\build.log"
+                    }
+
+                }
+                post{
+                    always{
+                        recordIssues(tools: [
+                                        pyLint(name: 'Setuptools Build: PyLint', pattern: 'logs/build.log'),
+                                        msBuild(name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log')
+                                    ]
+                                )
+        //                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
+                        archiveArtifacts artifacts: "logs/build.log"
+                    }
+                    failure{
+                        echo "Failed to build Python package"
+                    }
+                    success{
+                        echo "Successfully built project is ./build."
+                    }
+                }
             }
-            failure{
-                echo "Failed to build Python package"
-            }
-            success{
-                echo "Successfully built project is ./build."
+            stage("Sphinx documentation"){
+                steps {
+                    echo "Building docs on ${env.NODE_NAME}"
+                    dir("source"){
+                        powershell "& pipenv run sphinx-build -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees | tee ${WORKSPACE}\\logs\\build_sphinx.log"
+                    }
+                }
+                post{
+                    always {
+                        recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log')])
+                        archiveArtifacts artifacts: 'logs/build_sphinx.log'
+                    }
+                    success{
+                        publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                        zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                        stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
+
+                    }
+                    cleanup{
+                        cleanWs(patterns: [[pattern: 'logs/build_sphinx.log', type: 'INCLUDE']])
+                        cleanWs(patterns: [[pattern: "dist/${DOC_ZIP_FILENAME}", type: 'INCLUDE']])
+                    }
+                }
             }
         }
     }
-    stage("Sphinx documentation"){
-        steps {
-            echo "Building docs on ${env.NODE_NAME}"
-            dir("source"){
-                powershell "& pipenv run sphinx-build -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees | tee ${WORKSPACE}\\logs\\build_sphinx.log"
-            }
-        }
-        post{
-            always {
-                recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log')])
-                archiveArtifacts artifacts: 'logs/build_sphinx.log'
-            }
-            success{
-                publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-                stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
 
-            }
-            cleanup{
-                cleanWs(patterns: [[pattern: 'logs/build_sphinx.log', type: 'INCLUDE']])
-                cleanWs(patterns: [[pattern: "dist/${DOC_ZIP_FILENAME}", type: 'INCLUDE']])
-            }
-        }
-    }
     stage('Test') {
       parallel {
         stage("Tox") {
