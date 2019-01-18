@@ -46,6 +46,7 @@ pipeline {
     PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
     PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
     PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
+    DEVPI = credentials("DS_devpi")
 
   }
   parameters {
@@ -662,6 +663,9 @@ pipeline {
                       bat "venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                     }
                   }
+                }
+                cleanup{
+                    remove_from_devpi("venv36\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
                 }
               }
             }
