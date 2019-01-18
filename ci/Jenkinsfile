@@ -67,7 +67,7 @@ pipeline {
   stages {
     stage('Configure Environment') {
         environment{
-            PATH = "${tool 'CPython-3.6'}\\Scripts;PATH"
+            PATH = "${tool 'CPython-3.6'}\\Scripts;$PATH"
         }
         stages{
             stage("Purge All Existing Data in Workspace"){
@@ -723,7 +723,7 @@ pipeline {
   post {
     cleanup {
 
-      script {
+//      script {
 
 //        if(fileExists("source/setup.py")){
 //          dir("source"){
@@ -735,16 +735,17 @@ pipeline {
 //            bat "dir"
 //          }
 //        }
-        if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
-          withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-            bat "venv36\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-            bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-          }
-
-          def devpi_remove_return_code = bat returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
-          echo "Devpi remove exited with code ${devpi_remove_return_code}."
-        }
-      }
+//        if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
+//          withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+//            bat "venv36\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+//            bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+//          }
+//
+//          def devpi_remove_return_code = bat returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+//          echo "Devpi remove exited with code ${devpi_remove_return_code}."
+//        }
+//      }
+        remove_from_devpi("venv\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
       cleanWs(
             deleteDirs: true,
             patterns: [
