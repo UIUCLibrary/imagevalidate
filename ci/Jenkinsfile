@@ -402,27 +402,30 @@ pipeline {
         }
       }
     }
-    stage('Package') {
+    stage('Packaging') {
       environment{
           PATH = "${tool 'cmake3.12'};$PATH"
       }
       parallel{
         stage("Python sdist"){
-          steps {
-            dir("source"){
-              bat "${tool 'CPython-3.6'}\\python setup.py sdist -d ${WORKSPACE}\\dist"
+            environment{
+                PATH = "${tool 'CPython-3.6'};$PATH"
             }
-          }
-          post{
-            success{
-              stash includes: 'dist/*.tar.gz', name: "sdist"
-              archiveArtifacts artifacts: "dist/*.tar.gz", fingerprint: true
+            steps {
+                dir("source"){
+                    bat "python setup.py sdist -d ${WORKSPACE}\\dist"
+                }
             }
-          }
+            post{
+                success{
+                    stash includes: 'dist/*.tar.gz', name: "sdist"
+                    archiveArtifacts artifacts: "dist/*.tar.gz", fingerprint: true
+                }
+            }
         }
         stage("Python 3.6 whl"){
           environment {
-            PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'};$PATH"
+            PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.6'}\\Scripts;$PATH"
             CL = "/MP"
           }
           steps {
