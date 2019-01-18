@@ -12,7 +12,7 @@ def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUse
 
     }
 }
-def DOC_ZIP_FILENAME = "doc.zip"
+//def DOC_ZIP_FILENAME = "doc.zip"
 def junit_filename = "junit.xml"
 
 pipeline {
@@ -38,6 +38,7 @@ pipeline {
     PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
     PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
     PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
+    DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
     DEVPI = credentials("DS_devpi")
 
   }
@@ -103,19 +104,19 @@ pipeline {
                   // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
                   def alljob = env.JOB_NAME.tokenize("/") as String[]
                   def project_name = alljob[0]
-                  DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
+//                  DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
 
                   junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                 }
               }
-              post{
-                always{
-                  echo """Name                   = ${env.PKG_NAME}
-    Version                = ${env.PKG_VERSION}
-    documentation zip file = ${DOC_ZIP_FILENAME}"""
-
-                }
-              }
+//              post{
+//                always{
+//                  echo """Name                   = ${env.PKG_NAME}
+//    Version                = ${env.PKG_VERSION}
+//    documentation zip file = ${DOC_ZIP_FILENAME}"""
+//
+//                }
+//              }
             }
             stage("Installing Pipfile"){
                     options{
@@ -226,13 +227,13 @@ pipeline {
                     }
                     success{
                         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                        zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-                        stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
+                        zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${env.DOC_ZIP_FILENAME}"
+                        stash includes: "dist/${env.DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
 
                     }
                     cleanup{
                         cleanWs(patterns: [[pattern: 'logs/build_sphinx.log', type: 'INCLUDE']])
-                        cleanWs(patterns: [[pattern: "dist/${DOC_ZIP_FILENAME}", type: 'INCLUDE']])
+                        cleanWs(patterns: [[pattern: "dist/${env.DOC_ZIP_FILENAME}", type: 'INCLUDE']])
                     }
                 }
             }
@@ -481,7 +482,7 @@ pipeline {
                     script {
                       bat "${WORKSPACE}\\venv36\\Scripts\\devpi.exe upload --from-dir ${WORKSPACE}\\dist --verbose"
                       try {
-                        bat "${WORKSPACE}\\venv36\\Scripts\\devpi.exe upload --only-docs ${WORKSPACE}\\dist\\${DOC_ZIP_FILENAME}"
+                        bat "${WORKSPACE}\\venv36\\Scripts\\devpi.exe upload --only-docs ${WORKSPACE}\\dist\\${env.DOC_ZIP_FILENAME}"
                       } catch (exc) {
                         echo "Unable to upload to devpi with docs."
                       }
