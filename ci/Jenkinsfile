@@ -14,14 +14,6 @@ def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUse
 }
 def DOC_ZIP_FILENAME = "doc.zip"
 def junit_filename = "junit.xml"
-def REPORT_DIR = ""
-def LOGS_DIR = ""
-def BUILD_DIR = ""
-def DIST_DIR = ""
-def SOURCE_DIR = ""
-def VENV_ROOT = ""
-def VENV_PYTHON = ""
-def VENV_PIP = ""
 
 pipeline {
   agent {
@@ -83,29 +75,6 @@ pipeline {
                     }
                 }
             }
-            stage("Setting Global Job Variables"){
-
-
-              steps {
-                // Set up the reports directory variable
-                script{
-                    REPORT_DIR = "${WORKSPACE}\\reports"
-                    LOGS_DIR = "${WORKSPACE}\\logs"
-                    BUILD_DIR = "${WORKSPACE}\\build"
-                    DIST_DIR = "${WORKSPACE}\\dist"
-
-                }
-              }
-              post{
-                always{
-                  echo """Report Directory       = ${REPORT_DIR}
-    Logs directory         = ${LOGS_DIR}
-    Build directory        = ${BUILD_DIR}
-    Distribution directory = ${WORKSPACE}/dist"""
-                }
-              }
-            }
-
             stage("Installing required system level dependencies"){
                 steps{
 
@@ -414,13 +383,13 @@ pipeline {
             }
             steps {
                 dir("source"){
-                    bat "python setup.py sdist -d ${WORKSPACE}\\dist"
+                    bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
                 }
             }
             post{
                 success{
-                    stash includes: 'dist/*.tar.gz', name: "sdist"
-                    archiveArtifacts artifacts: "dist/*.tar.gz", fingerprint: true
+                    stash includes: 'dist/*.zip', name: "sdist"
+                    archiveArtifacts artifacts: "dist/*.zip", fingerprint: true
                 }
             }
         }
@@ -530,7 +499,7 @@ pipeline {
                       CL = "/MP"
                   }
                   steps {
-                    echo "Testing Source tar.gz package in devpi"
+                    echo "Testing Source zip package in devpi"
 
                     timeout(20){
                       // bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu/${env.BRANCH_NAME}_staging"
@@ -540,15 +509,15 @@ pipeline {
                           index: "${env.BRANCH_NAME}_staging",
                           pkgName: "${env.PKG_NAME}",
                           pkgVersion: "${env.PKG_VERSION}",
-                          pkgRegex: "tar.gz",
+                          pkgRegex: "zip",
                           detox: false
                       )
                     }
-                    echo "Finished testing Source Distribution: .tar.gz"
+                    echo "Finished testing Source Distribution: .zip"
                   }
                   post {
                       failure {
-                          echo "Tests for .tar.gz source on DevPi failed."
+                          echo "Tests for .zip source on DevPi failed."
                       }
                       cleanup{
                           cleanWs(
