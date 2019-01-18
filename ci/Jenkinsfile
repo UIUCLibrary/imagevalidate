@@ -253,9 +253,10 @@ pipeline {
                 PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
             }
             steps {
-                dir("${REPORT_DIR}\\coverage\\"){
-                    bat "dir"
-                }
+//                dir("${WORKSPACE}\\reports\\coverage\\"){
+//                    bat "dir"
+//                }
+                bat "if not exist reports\\coverage mkdir reports\\coverage"
                 dir("source"){
                     script{
                         try{
@@ -302,11 +303,8 @@ pipeline {
           }
           steps {
             dir("source"){
-              dir("${REPORT_DIR}/doctests"){
-                echo "Cleaning doctest reports directory"
-                deleteDir()
-              }
-              bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v" 
+                bat "if not exist reports\\doctests mkdir reports\\doctests"
+                bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v"
             }
             bat "move build\\docs\\output.txt reports\\doctest.txt"
           }
@@ -321,16 +319,13 @@ pipeline {
             equals expected: true, actual: params.TEST_RUN_MYPY
           }
           steps{
-            dir("${REPORT_DIR}/mypy/html"){
-              deleteDir()
-              bat "dir"
-            }
+            bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
             script{
                 try{
-                  dir("source"){
-                    bat "dir"
-                    bat "${WORKSPACE}\\venv36\\Scripts\\mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
-                  }
+                    dir("source"){
+                        bat "dir"
+                        bat "${WORKSPACE}\\venv36\\Scripts\\mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                    }
                 } catch (exc) {
                   echo "MyPy found some warnings"
                 }
@@ -342,7 +337,7 @@ pipeline {
 //              dir("${LOGS_DIR}"){
 //                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: "mypy.log"]], unHealthy: ''
 //              }
-              publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+              publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
             }
           }
         }
@@ -725,7 +720,7 @@ pipeline {
 //          echo "Devpi remove exited with code ${devpi_remove_return_code}."
 //        }
 //      }
-        remove_from_devpi("venv\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
+//        remove_from_devpi("venv\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
       cleanWs(
             deleteDirs: true,
             patterns: [
