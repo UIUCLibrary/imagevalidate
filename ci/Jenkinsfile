@@ -271,7 +271,7 @@ pipeline {
 
     stage('Testing') {
         environment{
-            PATH = "${WORKSPACE}\\venv\\Scripts;${tool 'CPython-3.6'}\\Scripts;${tool 'cmake3.12'};$PATH"
+            PATH = "${WORKSPACE}\\venv36\\Scripts;${tool 'CPython-3.6'}\\Scripts;${tool 'cmake3.12'};$PATH"
         }
       parallel {
         stage("Tox") {
@@ -279,7 +279,7 @@ pipeline {
                 equals expected: true, actual: params.TEST_RUN_TOX
             }
             environment {
-                PATH = "${WORKSPACE}\\venv\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
             }
             steps {
                 dir("${REPORT_DIR}\\coverage\\"){
