@@ -12,7 +12,6 @@ def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUse
 
     }
 }
-//def DOC_ZIP_FILENAME = "doc.zip"
 def junit_filename = "junit.xml"
 
 pipeline {
@@ -104,19 +103,10 @@ pipeline {
                   // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
                   def alljob = env.JOB_NAME.tokenize("/") as String[]
                   def project_name = alljob[0]
-//                  DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
 
                   junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                 }
               }
-//              post{
-//                always{
-//                  echo """Name                   = ${env.PKG_NAME}
-//    Version                = ${env.PKG_VERSION}
-//    documentation zip file = ${DOC_ZIP_FILENAME}"""
-//
-//                }
-//              }
             }
             stage("Installing Pipfile"){
                     options{
@@ -202,7 +192,6 @@ pipeline {
                                         msBuild(name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log')
                                     ]
                                 )
-        //                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
                         archiveArtifacts artifacts: "logs/build.log"
                     }
                     failure{
@@ -253,9 +242,6 @@ pipeline {
                 PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
             }
             steps {
-//                dir("${WORKSPACE}\\reports\\coverage\\"){
-//                    bat "dir"
-//                }
                 bat "if not exist reports\\coverage mkdir reports\\coverage"
                 dir("source"){
                     script{
@@ -334,10 +320,7 @@ pipeline {
           post {
             always {
                 recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-//              dir("${LOGS_DIR}"){
-//                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: "mypy.log"]], unHealthy: ''
-//              }
-              publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
             }
           }
         }
@@ -359,7 +342,6 @@ pipeline {
             post {
                 always {
                     recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-//                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'PyLint', pattern: 'logs/flake8.log']], unHealthy: ''
                 }
                 cleanup{
                     cleanWs(patterns: [[pattern: 'logs/flake8.log', type: 'INCLUDE']])
@@ -475,21 +457,6 @@ pipeline {
                 bat "devpi use https://devpi.library.illinois.edu"
                 bat "devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
 
-//                bat "venv36\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
-//                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-//                  bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-//                  bat "venv36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-//                  dir("source"){
-//                    script {
-//                      bat "${WORKSPACE}\\venv36\\Scripts\\devpi.exe upload --from-dir ${WORKSPACE}\\dist --verbose"
-//                      try {
-//                        bat "${WORKSPACE}\\venv36\\Scripts\\devpi.exe upload --only-docs ${WORKSPACE}\\dist\\${env.DOC_ZIP_FILENAME}"
-//                      } catch (exc) {
-//                        echo "Unable to upload to devpi with docs."
-//                      }
-//                    }
-//                  }
-//                }
               }
 
             }
@@ -704,30 +671,6 @@ pipeline {
   }
   post {
     cleanup {
-
-//      script {
-
-//        if(fileExists("source/setup.py")){
-//          dir("source"){
-//            try{
-//              bat "${WORKSPACE}\\venv36\\Scripts\\python.exe setup.py clean --all"
-//            } catch (Exception ex) {
-//              deleteDir()
-//            }
-//            bat "dir"
-//          }
-//        }
-//        if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
-//          withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-//            bat "venv36\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-//            bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-//          }
-//
-//          def devpi_remove_return_code = bat returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${env.PKG_NAME}==${env.PKG_VERSION}"
-//          echo "Devpi remove exited with code ${devpi_remove_return_code}."
-//        }
-//      }
-//        remove_from_devpi("venv\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
       cleanWs(
             deleteDirs: true,
             patterns: [
