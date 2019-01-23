@@ -132,13 +132,13 @@ pipeline {
             }
             stage("Creating virtualenv for building"){
                 steps{
-                    bat "${tool 'CPython-3.6'}\\python -m venv venv36"
+                    bat "python -m venv venv36"
                     script {
                         try {
                             bat "call venv36\\Scripts\\python.exe -m pip install -U pip"
                         }
                         catch (exc) {
-                            bat "${tool 'CPython-3.6'}\\python -m venv venv36"
+                            bat "python -m venv venv36"
                             bat "call venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                         }
                     }
