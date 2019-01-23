@@ -512,24 +512,24 @@ pipeline {
                                         )
                                   }
                             }
-                          post {
-                              failure {
-                                  echo "Tests for .zip source on DevPi failed."
-                              }
-                              cleanup{
-                                  cleanWs(
+                        }
+                        post {
+                            failure {
+                                echo "Tests for .zip source on DevPi failed."
+                            }
+                            cleanup{
+                                cleanWs(
                                     deleteDirs: true,
                                     patterns: [
                                         [pattern: '*tmp', type: 'INCLUDE'],
                                         [pattern: 'certs', type: 'INCLUDE'],
                                     ]
-                                  )
-                              }
-                          }
-                      }
+                                )
+                            }
                         }
-
                     }
+
+
                     stage("Built Distribution: py36 .whl") {
                           agent {
                                 node {
