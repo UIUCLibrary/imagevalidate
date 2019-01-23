@@ -428,7 +428,7 @@ pipeline {
         }
       }
     }
-    stage("Deploying to DevPi Staging") {
+    stage("Deploying to DevPi") {
         when {
             allOf{
                 anyOf{
@@ -493,27 +493,25 @@ pipeline {
 
                             }
                             stage("Testing Submitted Source Distribution") {
-                              environment {
-                                  PATH = "${WORKSPACE}\\venv36\\Scripts;${tool 'cmake3.12'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-                                  CL = "/MP"
-                              }
-                              steps {
-                                echo "Testing Source zip package in devpi"
-
-                                timeout(20){
-                                  devpiTest(
-                                    devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
-            //                          devpiExecutable: "venv36\\Scripts\\devpi.exe",
-                                      url: "https://devpi.library.illinois.edu",
-                                      index: "${env.BRANCH_NAME}_staging",
-                                      pkgName: "${env.PKG_NAME}",
-                                      pkgVersion: "${env.PKG_VERSION}",
-                                      pkgRegex: "zip",
-                                      detox: false
-                                  )
-                                }
-                                echo "Finished testing Source Distribution: .zip"
-                              }
+                                  environment {
+                                      PATH = "${WORKSPACE}\\venv36\\Scripts;${tool 'cmake3.12'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                                      CL = "/MP"
+                                  }
+                                  options {
+                                        timeout(20)
+                                    }
+                                  steps {
+                                        devpiTest(
+                                            devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
+                                            url: "https://devpi.library.illinois.edu",
+                                            index: "${env.BRANCH_NAME}_staging",
+                                            pkgName: "${env.PKG_NAME}",
+                                            pkgVersion: "${env.PKG_VERSION}",
+                                            pkgRegex: "zip",
+                                            detox: false
+                                        )
+                                  }
+                            }
                           post {
                               failure {
                                   echo "Tests for .zip source on DevPi failed."
@@ -558,6 +556,9 @@ pipeline {
 
                                 }
                                 stage("Testing DevPi .whl Package with Python 3.6"){
+                                    options {
+                                        timeout(5)
+                                    }
                                     steps {
                                           echo "Testing Whl package in devpi"
                                           devpiTest(
@@ -618,7 +619,7 @@ pipeline {
                                     PATH = "${WORKSPACE}\\venv\\37\\Scripts;${tool 'CPython-3.7'};$PATH"
                                 }
                                 options {
-                                    skipDefaultCheckout(true)
+                                    timeout(5)
                                 }
 
                                 steps {
