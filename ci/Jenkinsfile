@@ -559,7 +559,6 @@ pipeline {
                                 }
                                 stage("Testing DevPi .whl Package with Python 3.6"){
                                     steps {
-
                                           echo "Testing Whl package in devpi"
                                           devpiTest(
                                                   devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
@@ -573,18 +572,18 @@ pipeline {
                                               )
                                     }
                                     post {
-                                          failure {
-                                              echo "Tests for whl on DevPi failed."
-                                          }
-                                          cleanup{
-                                              cleanWs(
+                                        failure {
+                                            echo "Tests for whl on DevPi failed."
+                                        }
+                                        cleanup{
+                                            cleanWs(
                                                 deleteDirs: true,
                                                 patterns: [
                                                     [pattern: '*tmp', type: 'INCLUDE'],
                                                     [pattern: 'certs', type: 'INCLUDE'],
                                                 ]
-                                              )
-                                          }
+                                            )
+                                      }
                                     }
                                 }
                           }
@@ -616,7 +615,7 @@ pipeline {
                                 }
                             stage("Built Distribution: py37 .whl") {
                                 environment {
-                                    PATH = "${tool 'CPython-3.7'};$PATH"
+                                    PATH = "${WORKSPACE}\\venv\\37\\Scripts;${tool 'CPython-3.7'};$PATH"
                                 }
                                 options {
                                     skipDefaultCheckout(true)
@@ -624,9 +623,6 @@ pipeline {
 
                                 steps {
                                         echo "Testing Whl package in devpi"
-                                        bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37"
-                                        bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade"
-                                        bat "venv37\\Scripts\\pip.exe install devpi --upgrade"
                                         devpiTest(
                                                 devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
                                                 url: "https://devpi.library.illinois.edu",
