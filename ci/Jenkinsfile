@@ -556,7 +556,7 @@ pipeline {
                                 }
                                 stage("Testing DevPi .whl Package with Python 3.6"){
                                     options {
-                                        timeout(5)
+                                        timeout(10)
                                     }
                                     steps {
                                           echo "Testing Whl package in devpi"
@@ -618,7 +618,7 @@ pipeline {
                                     PATH = "${WORKSPACE}\\venv\\37\\Scripts;${tool 'CPython-3.7'};$PATH"
                                 }
                                 options {
-                                    timeout(5)
+                                    timeout(10)
                                 }
 
                                 steps {
