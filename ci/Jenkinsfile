@@ -375,6 +375,9 @@ pipeline {
             PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.6'}\\Scripts;$PATH"
             CL = "/MP"
           }
+          options{
+            retry 2
+          }
           steps {
             dir("source"){
               bat "pipenv run python setup.py build -b ${WORKSPACE}\\36\\build --build-lib ${WORKSPACE}\\build\\36\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\36\\temp bdist_wheel -d ${WORKSPACE}\\dist"
@@ -397,6 +400,9 @@ pipeline {
           environment {
             PATH = "${tool 'cmake3.12'};${tool 'CPython-3.7'};$PATH"
             CL = "/MP"
+          }
+          options{
+            retry 2
           }
           steps {
             bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37 && venv37\\scripts\\python.exe -m pip install pip --upgrade && venv37\\scripts\\pip.exe install --upgrade setuptools wheel"
