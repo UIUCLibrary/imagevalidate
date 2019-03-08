@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import pytest
 
@@ -45,7 +46,8 @@ def sample_data():
             download_images(
                 url=SAMPLE_IMAGES,
                 destination=test_path)
-    return sample_images_path
+    yield sample_images_path
+    shutil.rmtree(sample_images_path)
 
 
 @pytest.mark.integration
