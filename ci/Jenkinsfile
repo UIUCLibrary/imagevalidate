@@ -419,6 +419,7 @@ pipeline {
                   cleanWs(
                       deleteDirs: true,
                       patterns: [
+                        [pattern: 'source', type: 'INCLUDE'],
                         [pattern: '*tmp', type: 'INCLUDE'],
                         [pattern: "dist", type: 'INCLUDE']
                       ]
