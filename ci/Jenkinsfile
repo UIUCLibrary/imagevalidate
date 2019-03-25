@@ -383,6 +383,7 @@ pipeline {
                 }
                 stage("Creating bdist wheel for 3.6"){
                     environment {
+                        CMAKE_PATH = "${tool 'cmake3.12'}"
                         PYTHON36_VENV_SCRIPTS_PATH = "${WORKSPACE}\\venv\\36\\scripts"
                         PATH = "${env.PYTHON36_VENV_SCRIPTS_PATH};${tool 'CPython-3.6'};$PATH"
                     }
