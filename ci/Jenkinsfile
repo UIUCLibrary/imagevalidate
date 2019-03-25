@@ -622,6 +622,9 @@ pipeline {
                                     options {
                                         timeout(10)
                                     }
+                                    environment {
+                                        PATH = "${WORKSPACE}\\venv\\36\\Scripts;$PATH"
+                                    }
                                     steps {
                                           echo "Testing Whl package in devpi"
                                           devpiTest(
