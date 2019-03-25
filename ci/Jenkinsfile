@@ -596,7 +596,7 @@ pipeline {
                     stage("Built Distribution: py36 .whl") {
                           agent {
                                 node {
-                                    label "Windows && Python3 && !Docker"
+                                    label "Windows && Python3 && !VS2015"
                                 }
                           }
                           environment {
@@ -655,7 +655,7 @@ pipeline {
                     stage("Built Distribution: py37 .whl") {
                         agent {
                             node {
-                                label "Windows && Python3 && !Docker"
+                                label "Windows && Python3 && !VS2015"
                             }
                         }
                         environment {
