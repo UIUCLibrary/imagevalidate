@@ -452,37 +452,101 @@ pipeline {
 //            }
 //          }
         }
+//        stage("Python 3.7 whl"){
+//          agent {
+//            node {
+//              label "Windows && Python3 && VS2015"
+//            }
+//          }
+//          environment {
+//            PATH = "${tool 'cmake3.12'};${tool 'CPython-3.7'};$PATH"
+//            CL = "/MP"
+//          }
+//          steps {
+//            bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37 && venv37\\scripts\\python.exe -m pip install pip --upgrade && venv37\\scripts\\pip.exe install --upgrade setuptools wheel"
+//            dir("source"){
+//                bat "${WORKSPACE}\\venv37\\scripts\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+//                }
+//          }
+//          post{
+//              success{
+//                  stash includes: 'dist/*p37*.whl', name: "whl 3.7"
+//                  archiveArtifacts artifacts: "dist/*p37*.whl", fingerprint: true
+//              }
+//              cleanup{
+//                  cleanWs(
+//                      deleteDirs: true,
+//                      patterns: [
+//                        [pattern: '*tmp', type: 'INCLUDE'],
+//                        [pattern: "dist", type: 'INCLUDE']
+//                      ]
+//                  )
+//              }
+//          }
+//        }
         stage("Python 3.7 whl"){
-          agent {
-            node {
-              label "Windows && Python3 && VS2015"
+            agent {
+                label "Windows && Python3 && VS2015"
             }
-          }
-          environment {
-            PATH = "${tool 'cmake3.12'};${tool 'CPython-3.7'};$PATH"
-            CL = "/MP"
-          }
-          steps {
-            bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37 && venv37\\scripts\\python.exe -m pip install pip --upgrade && venv37\\scripts\\pip.exe install --upgrade setuptools wheel"
-            dir("source"){
-                bat "${WORKSPACE}\\venv37\\scripts\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+            environment {
+                CMAKE_PATH = "${tool 'cmake3.13'}"
+                PATH = "${env.CMAKE_PATH};${tool 'CPython-3.7'};$PATH"
+                // CL = "/MP"
+            }
+            stages{
+                stage("create venv for 3.7"){
+                    steps {
+                        bat "python -m venv venv\\37 && venv\\37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\37\\Scripts\\pip.exe install wheel setuptools --upgrade"
+                    }
                 }
-          }
-          post{
-              success{
-                  stash includes: 'dist/*p37*.whl', name: "whl 3.7"
-                  archiveArtifacts artifacts: "dist/*p37*.whl", fingerprint: true
-              }
-              cleanup{
-                  cleanWs(
-                      deleteDirs: true,
-                      patterns: [
-                        [pattern: '*tmp', type: 'INCLUDE'],
-                        [pattern: "dist", type: 'INCLUDE']
-                      ]
-                  )
-              }
-          }
+
+                stage("Creating bdist wheel for 3.7"){
+                    environment {
+                        PYTHON37_VENV_SCRIPTS_PATH = "${WORKSPACE}\\venv\\37\\scripts"
+                        PATH = "${env.PYTHON37_VENV_SCRIPTS_PATH};$PATH"
+                    }
+                    steps {
+                        dir("source"){
+                            bat "python setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                        }
+                    }
+                    post{
+                        success{
+                            stash includes: 'dist/*.whl', name: "whl 3.7"
+                        }
+
+                    }
+                }
+                stage("Testing 3.7 wheel on a computer without Visual Studio"){
+                    agent { label 'Windows && !VS2015' }
+                    environment {
+                        PATH = "${tool 'CPython-3.7'};$PATH"
+                    }
+                    steps{
+                        unstash "whl 3.7"
+                        test_wheel("*cp37*.whl", "37")
+
+                    }
+                    post{
+                        cleanup{
+                            deleteDir()
+                        }
+                    }
+                }
+            }
+            post{
+                cleanup{
+                    cleanWs(
+                        deleteDirs: true,
+                        disableDeferredWipeout: true,
+                        patterns: [
+                            [pattern: 'dist', type: 'INCLUDE'],
+                            [pattern: 'source', type: 'INCLUDE'],
+                            [pattern: '*tmp', type: 'INCLUDE'],
+                            ]
+                        )
+                }
+            }
         }
       }
       post{
@@ -680,7 +744,7 @@ pipeline {
                                     }
 
                                 }
-                            stage("Built Distribution: py37 .whl") {
+                            stage("Testing DevPi .whl Package with Python 3.7"){
                                 environment {
                                     PATH = "${WORKSPACE}\\venv\\37\\Scripts;${tool 'CPython-3.7'};$PATH"
                                 }
