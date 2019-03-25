@@ -371,22 +371,66 @@ pipeline {
             }
         }
         stage("Python 3.6 whl"){
-          environment {
-            PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.6'}\\Scripts;$PATH"
-            CL = "/MP"
-          }
-          steps {
-            dir("source"){
-              bat "pipenv run python setup.py build -b ${WORKSPACE}\\36\\build --build-lib ${WORKSPACE}\\build\\36\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\36\\temp bdist_wheel -d ${WORKSPACE}\\dist"
+            stages{
+                stage("Create venv for 3.6"){
+                    environment {
+                        PATH = "${tool 'CPython-3.6'};$PATH"
+                    }
+
+                    steps {
+                        bat "python -m venv venv\\36 && venv\\36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\36\\Scripts\\pip.exe install wheel setuptools --upgrade"
+                    }
+                }
+                stage("Creating bdist wheel for 3.6"){
+                    environment {
+                        PYTHON36_VENV_SCRIPTS_PATH = "${WORKSPACE}\\venv\\36\\scripts"
+                        PATH = "${env.PYTHON36_VENV_SCRIPTS_PATH};${tool 'CPython-3.6'};$PATH"
+                    }
+                    steps {
+
+                        dir("source"){
+                            bat "python setup.py build -b ../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib --build-temp ../build/36/temp build_ext --inplace --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                        }
+                    }
+                    post{
+                       success{
+                            stash includes: 'dist/*.whl', name: "whl 3.6"
+                        }
+                    }
+                }
+                stage("Testing 3.6 wheel on a computer without Visual Studio"){
+                    agent { label 'Windows && !VS2015' }
+                    environment {
+                        PATH = "${tool 'CPython-3.6'};$PATH"
+                    }
+                    steps{
+                        unstash "whl 3.6"
+                        test_wheel("*cp36*.whl", "36")
+
+                    }
+                    post{
+                        cleanup{
+                            deleteDir()
+                        }
+                    }
+                }
             }
-          }
-          post{
-            success {
-              archiveArtifacts artifacts: "dist/*p36*.whl", fingerprint: true
-              stash includes: 'dist/*p36*.whl', name: "whl 3.6"
-              
-            }
-          }
+//          environment {
+//            PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.6'}\\Scripts;$PATH"
+//            CL = "/MP"
+//          }
+//          steps {
+//            dir("source"){
+//              bat "pipenv run python setup.py build -b ${WORKSPACE}\\36\\build --build-lib ${WORKSPACE}\\build\\36\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\36\\temp bdist_wheel -d ${WORKSPACE}\\dist"
+//            }
+//          }
+//          post{
+//            success {
+//              archiveArtifacts artifacts: "dist/*p36*.whl", fingerprint: true
+//              stash includes: 'dist/*p36*.whl', name: "whl 3.6"
+//
+//            }
+//          }
         }
         stage("Python 3.7 whl"){
           agent {
