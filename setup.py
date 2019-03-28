@@ -9,12 +9,13 @@ import sysconfig
 
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
+from ctypes.util import find_library
 
 # TODO Add CMake location option
 
 
 CMAKE = shutil.which("cmake")
-
+PACKAGE_NAME = "uiucprescon.imagevalidate"
 
 # Idea comes from https://stackoverflow.com/questions/42585210/extending-setuptools-extension-to-use-cmake-in-setup-py
 
@@ -57,13 +58,22 @@ class BuildCMakeExt(build_ext):
         }
 
         return cmake_build_systems_lut[python_compiler]
-
+    @property
+    def package_dir(self):
+        build_py = self.get_finalized_command('build_py')
+        return build_py.get_package_dir(PACKAGE_NAME)
+    
     def run(self):
         for extension in self.extensions:
             self.configure_cmake(extension)
             self.build_cmake(extension)
             self.build_install_cmake(extension)
             self.bundle_shared_library_deps(extension)
+
+        MSVCP_library = find_library("MSVCP140")
+        if MSVCP_library is not None:
+            self.announce("Including Visual C++ Redistributable for Visual Studio runtime")
+            self.copy_file(MSVCP_library, os.path.join(self.build_lib, self.package_dir))
 
     def bundle_shared_library_deps(self, extension: Extension):
         print("bundling")
