@@ -82,7 +82,7 @@ class HathiTiff(AbsProfile):
         return data
 
     @staticmethod
-    def determine_color_space(filename: str)->typing.Optional[str]:
+    def determine_color_space(filename: str) -> typing.Optional[str]:
         strategies = [
             common.ColorSpaceIccDeviceModelCheck,
             common.ColorSpaceIccPrefCcmCheck,

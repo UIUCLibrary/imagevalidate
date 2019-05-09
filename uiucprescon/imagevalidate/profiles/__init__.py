@@ -17,7 +17,7 @@ def _load() -> None:
     """Dynamically load all the profiles with AbsProfile in into the
     profiles namespace"""
 
-    def is_profile(i: abc.ABCMeta)->bool:
+    def is_profile(i: abc.ABCMeta) -> bool:
         if not inspect.isclass(i):
             return False
         if inspect.isabstract(i):

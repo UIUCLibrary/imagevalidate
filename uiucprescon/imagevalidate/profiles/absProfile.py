@@ -35,8 +35,8 @@ class AbsProfile(metaclass=abc.ABCMeta):
     #     return list()
 
     @classmethod
-    def _get_metadata_static_values(cls, image: py3exiv2bind.Image)\
-            ->Dict[str, Result]:
+    def _get_metadata_static_values(cls, image: py3exiv2bind.Image) \
+            -> Dict[str, Result]:
 
         data = dict()
         for key, value in cls.expected_metadata_constants.items():
@@ -47,7 +47,7 @@ class AbsProfile(metaclass=abc.ABCMeta):
         return data
 
     @classmethod
-    def _get_metadata_has_values(cls, image: py3exiv2bind.Image)->\
+    def _get_metadata_has_values(cls, image: py3exiv2bind.Image) -> \
             Dict[str, Result]:
 
         data = dict()
@@ -60,7 +60,7 @@ class AbsProfile(metaclass=abc.ABCMeta):
 
     @staticmethod
     def generate_error_msg(category: IssueCategory, field: str,
-                           report_data: Result)->str:
+                           report_data: Result) -> str:
 
         message_types: Dict[IssueCategory, messages.AbsMessage] = {
             IssueCategory.INVALID_DATA: messages.InvalidData(),
@@ -82,7 +82,7 @@ class AbsProfile(metaclass=abc.ABCMeta):
         if result.actual is None:
             return IssueCategory.MISSING_FIELD
 
-        if result.actual is "":
+        if result.actual == "":
             return IssueCategory.EMPTY_DATA
 
         if result.actual != result.expected and \

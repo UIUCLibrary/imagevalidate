@@ -89,7 +89,7 @@ class HathiJP2000(AbsProfile):
         return data
 
     @staticmethod
-    def determine_color_space(image: str)->typing.Optional[str]:
+    def determine_color_space(image: str) -> typing.Optional[str]:
         strategies = [
             common.ColorSpaceIccDeviceModelCheck,
             common.ColorSpaceIccPrefCcmCheck,

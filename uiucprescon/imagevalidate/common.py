@@ -34,7 +34,7 @@ class ColorSpaceIccDeviceModelCheck(AbsColorSpaceExtractor):
         exiv_image = py3exiv2bind.Image(image)
         try:
             icc = exiv_image.icc()
-        except py3exiv2bind.core.NoICCError as e:
+        except py3exiv2bind.core.NoICCError:
             raise InvalidStrategy("Unable to get ICC profile.")
 
         device_model = icc.get('device_model').value \
@@ -63,5 +63,5 @@ class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
 
 
 class ColorSpaceOJPCheck(AbsColorSpaceExtractor):
-    def check(self, image: str)->str:
+    def check(self, image: str) -> str:
         return openjp2wrap.get_colorspace(image)
