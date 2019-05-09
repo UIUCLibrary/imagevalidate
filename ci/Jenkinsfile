@@ -12,6 +12,25 @@ def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUse
 
     }
 }
+
+def test_wheel(pkgRegex, python_version){
+    script{
+
+        bat "python -m venv venv\\${NODE_NAME}\\${python_version} && venv\\${NODE_NAME}\\${python_version}\\Scripts\\python.exe -m pip install pip --upgrade && venv\\${NODE_NAME}\\${python_version}\\Scripts\\pip.exe install tox --upgrade"
+
+        def python_wheel = findFiles glob: "**/${pkgRegex}"
+        dir("source"){
+            python_wheel.each{
+                echo "Testing ${it}"
+                bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
+            }
+
+        }
+
+
+    }
+}
+
 def junit_filename = "junit.xml"
 
 pipeline {
@@ -86,7 +105,7 @@ pipeline {
                 post{
                     always{
                         lock("system_python_${NODE_NAME}"){
-                            bat "\"${tool 'CPython-3.6'}\\python\" -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
+                            bat "\"${tool 'CPython-3.6'}\\python.exe\" -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
                         }
                         archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
                     }
@@ -488,7 +507,6 @@ pipeline {
                 unstash "whl 3.7"
                 unstash "sdist"
                 unstash "DOCS_ARCHIVE"
-                bat "devpi use https://devpi.library.illinois.edu"
                 bat "devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
 
               }
@@ -560,7 +578,7 @@ pipeline {
                     stage("Built Distribution: py36 .whl") {
                           agent {
                                 node {
-                                    label "Windows && Python3 && !Docker"
+                                    label "Windows && Python3 && !VS2015"
                                 }
                           }
                           environment {
@@ -585,6 +603,9 @@ pipeline {
                                 stage("Testing DevPi .whl Package with Python 3.6"){
                                     options {
                                         timeout(10)
+                                    }
+                                    environment {
+                                        PATH = "${WORKSPACE}\\venv\\36\\Scripts;$PATH"
                                     }
                                     steps {
                                           echo "Testing Whl package in devpi"
@@ -619,7 +640,7 @@ pipeline {
                     stage("Built Distribution: py37 .whl") {
                         agent {
                             node {
-                                label "Windows && Python3 && !Docker"
+                                label "Windows && Python3 && !VS2015"
                             }
                         }
                         environment {
@@ -641,7 +662,7 @@ pipeline {
                                     }
 
                                 }
-                            stage("Built Distribution: py37 .whl") {
+                            stage("Testing DevPi .whl Package with Python 3.7"){
                                 environment {
                                     PATH = "${WORKSPACE}\\venv\\37\\Scripts;${tool 'CPython-3.7'};$PATH"
                                 }
@@ -693,13 +714,7 @@ pipeline {
               }
               steps{
                 input "Release ${env.PKG_NAME} ${env.PKG_VERSION} to DevPi Production?"
-                // script {
-                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                  bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                }
-                // }
-                bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                bat "venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} production/release"
+                bat "venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging && venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} production/release"
               }
             }
         }
@@ -708,9 +723,7 @@ pipeline {
                 echo "It Worked. Pushing file to ${env.BRANCH_NAME} index"
                 script {
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                        bat "venv36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                        bat "venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                        bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD} && venv36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging && venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                     }
                 }
             }
@@ -771,11 +784,11 @@ pipeline {
                 [pattern: 'logs', type: 'INCLUDE'],
                 [pattern: 'certs', type: 'INCLUDE'],
                 [pattern: '*tmp', type: 'INCLUDE'],
-                [pattern: 'source', type: 'INCLUDE'],
-                // [pattern: "source/**/*.dll", type: 'INCLUDE'],
-                // [pattern: "source/**/*.pyd", type: 'INCLUDE'],
-                // [pattern: "source/**/*.exe", type: 'INCLUDE'],
-                // [pattern: "source/**/*.exe", type: 'INCLUDE']
+                [pattern: "source", type: 'INCLUDE'],
+//                [pattern: "source/**/*.dll", type: 'INCLUDE'],
+//                [pattern: "source/**/*.pyd", type: 'INCLUDE'],
+//                [pattern: "source/**/*.exe", type: 'INCLUDE'],
+//                [pattern: "source/**/*.exe", type: 'INCLUDE']
                 ]
             )
     }

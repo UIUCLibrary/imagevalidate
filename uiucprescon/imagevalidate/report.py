@@ -25,7 +25,7 @@ class Report:
         return len(self._data.items()) == 0
 
     def issues(self,
-               issue_type: Optional[imagevalidate.IssueCategory]=None) \
+               issue_type: Optional[imagevalidate.IssueCategory] = None) \
             -> List[str]:
 
         if issue_type is not None:

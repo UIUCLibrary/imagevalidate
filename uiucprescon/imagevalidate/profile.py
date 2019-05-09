@@ -19,7 +19,7 @@ class Profile:
         return self._profile.validate(file)
 
 
-def available_profiles()-> Set[str]:
+def available_profiles() -> Set[str]:
     """Get the names of all available profiles
 
     Returns: List of available profiles accessible in this version
