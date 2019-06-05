@@ -245,6 +245,7 @@ pipeline {
     stage('Testing') {
         environment{
             PATH = "${WORKSPACE}\\venv36\\Scripts;${tool 'CPython-3.6'}\\Scripts;${tool 'cmake3.13'};$PATH"
+            junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
         }
         stages{
             stage("Installing Python testing packages"){
@@ -298,9 +299,7 @@ pipeline {
                     }
                 }
                 stage("Run PyTest Unit Tests"){
-                    environment{
-                        junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
-                    }
+
                     steps{
                         dir("source"){
                             catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
