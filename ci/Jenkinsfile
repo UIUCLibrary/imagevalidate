@@ -251,140 +251,148 @@ pipeline {
         environment{
             PATH = "${WORKSPACE}\\venv36\\Scripts;${tool 'CPython-3.6'}\\Scripts;${tool 'cmake3.13'};$PATH"
         }
-      parallel {
-        stage("Tox") {
-            when {
-                equals expected: true, actual: params.TEST_RUN_TOX
-            }
-            environment {
-                PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-            }
-            steps {
-                bat "if not exist reports\\coverage mkdir reports\\coverage"
-                dir("source"){
-                    script{
-                        try{
-                            bat (
-                                label: "Run Tox",
-                                script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
-                            )
+        stages{
+            stage("Run Testing"){
+              parallel {
+                stage("Tox") {
+                    when {
+                        equals expected: true, actual: params.TEST_RUN_TOX
+                    }
+                    environment {
+                        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                    }
+                    steps {
+                        bat "if not exist reports\\coverage mkdir reports\\coverage"
+                        dir("source"){
+                            script{
+                                try{
+                                    bat (
+                                        label: "Run Tox",
+                                        script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    )
 
-                        } catch (exc) {
-                            bat(
-                                label: "Run Tox with new environments",
-                                script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                } catch (exc) {
+                                    bat(
+                                        label: "Run Tox with new environments",
+                                        script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            archiveArtifacts allowEmptyArchive: true, artifacts: '.tox/py*/log/*.log,.tox/log/*.log,logs/tox_report.json'
+                            recordIssues(tools: [pep8(id: 'tox', name: 'Tox', pattern: '.tox/py*/log/*.log,.tox/log/*.log')])
+                        }
+                        cleanup{
+                            cleanWs(
+                                patterns: [
+                                    [pattern: '.tox/py*/log/*.log', type: 'INCLUDE'],
+                                    [pattern: '.tox/log/*.log', type: 'INCLUDE'],
+                                    [pattern: 'logs/rox_report.json', type: 'INCLUDE']
+                                ]
                             )
                         }
                     }
                 }
-            }
-            post {
-                always {
-                    archiveArtifacts allowEmptyArchive: true, artifacts: '.tox/py*/log/*.log,.tox/log/*.log,logs/tox_report.json'
-                    recordIssues(tools: [pep8(id: 'tox', name: 'Tox', pattern: '.tox/py*/log/*.log,.tox/log/*.log')])
-                }
-                cleanup{
-                    cleanWs(
-                        patterns: [
-                            [pattern: '.tox/py*/log/*.log', type: 'INCLUDE'],
-                            [pattern: '.tox/log/*.log', type: 'INCLUDE'],
-                            [pattern: 'logs/rox_report.json', type: 'INCLUDE']
-                        ]
-                    )
-                }
-            }
-        }
-        stage("Run PyTest Unit Tests"){
-            when {
-               equals expected: true, actual: params.TEST_RUN_PYTEST
-            }
-            environment{
-                junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
-            }
-            steps{
-                dir("source"){
-                    catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
-                        bat(
-                            label: "Running Pytest",
-                            script:"pipenv run python -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/pytestcoverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --integration --cov-config=${WORKSPACE}/source/setup.cfg"
-                        )
+                stage("Run PyTest Unit Tests"){
+                    when {
+                       equals expected: true, actual: params.TEST_RUN_PYTEST
+                    }
+                    environment{
+                        junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
+                    }
+                    steps{
+                        dir("source"){
+                            catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
+                                bat(
+                                    label: "Running Pytest",
+                                    script:"pipenv run python -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/pytestcoverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --integration --cov-config=${WORKSPACE}/source/setup.cfg"
+                                )
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            junit "reports/pytest/${junit_filename}"
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/pytestcoverage", reportFiles: 'index.html', reportName: 'Coverage.py', reportTitles: ''])
+
+                            publishCoverage adapters: [
+                                        coberturaAdapter('reports/coverage.xml')
+                                    ],
+                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+
+
+                        }
+
                     }
                 }
-            }
-            post {
-                always {
-                    junit "reports/pytest/${junit_filename}"
-                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/pytestcoverage", reportFiles: 'index.html', reportName: 'Coverage.py', reportTitles: ''])
-
-                    publishCoverage adapters: [
-                                coberturaAdapter('reports/coverage.xml')
-                            ],
-                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-
-                    bat "del reports\\coverage.xml"
-
+                stage("Run Doctest Tests"){
+                  when {
+                    equals expected: true, actual: params.TEST_DOCTEST
+                  }
+                  steps {
+                    dir("source"){
+                        bat "if not exist reports\\doctests mkdir reports\\doctests"
+                        bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v"
+                    }
+                    bat "move build\\docs\\output.txt reports\\doctest.txt"
+                  }
+                  post{
+                    always {
+                      archiveArtifacts artifacts: "reports/doctest.txt"
+                    }
+                  }
                 }
-
-            }
-        }
-        stage("Run Doctest Tests"){
-          when {
-            equals expected: true, actual: params.TEST_DOCTEST
-          }
-          steps {
-            dir("source"){
-                bat "if not exist reports\\doctests mkdir reports\\doctests"
-                bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v"
-            }
-            bat "move build\\docs\\output.txt reports\\doctest.txt"
-          }
-          post{
-            always {
-              archiveArtifacts artifacts: "reports/doctest.txt"
-            }
-          }
-        }
-        stage("Run MyPy Static Analysis") {
-          when {
-            equals expected: true, actual: params.TEST_RUN_MYPY
-          }
-          steps{
-            bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
-            dir("source"){
-                catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
-                    bat(
-                        label: "Running Mypy",
-                        script: "${WORKSPACE}\\venv36\\Scripts\\mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
-                    )
+                stage("Run MyPy Static Analysis") {
+                  when {
+                    equals expected: true, actual: params.TEST_RUN_MYPY
+                  }
+                  steps{
+                    bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
+                    dir("source"){
+                        catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
+                            bat(
+                                label: "Running Mypy",
+                                script: "${WORKSPACE}\\venv36\\Scripts\\mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                            )
+                        }
+                    }
+                  }
+                  post {
+                    always {
+                        recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                        publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                    }
+                  }
                 }
-            }
-          }
-          post {
-            always {
-                recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-            }
-          }
-        }
-        stage("Run Flake8 Static Analysis") {
-            when {
-                equals expected: true, actual: params.TEST_RUN_FLAKE8
-            }
-            steps{
-                dir("source"){
-                    catchError(buildResult: "SUCCESS", message: 'Flake8 found issues', stageResult: "UNSTABLE") {
-                        bat "${WORKSPACE}\\venv36\\Scripts\\flake8.exe uiucprescon --format=pylint --tee --output-file=${WORKSPACE}\\logs\\flake8.log"
+                stage("Run Flake8 Static Analysis") {
+                    when {
+                        equals expected: true, actual: params.TEST_RUN_FLAKE8
+                    }
+                    steps{
+                        dir("source"){
+                            catchError(buildResult: "SUCCESS", message: 'Flake8 found issues', stageResult: "UNSTABLE") {
+                                bat "${WORKSPACE}\\venv36\\Scripts\\flake8.exe uiucprescon --format=pylint --tee --output-file=${WORKSPACE}\\logs\\flake8.log"
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                        }
                     }
                 }
-            }
-            post {
-                always {
-                    recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                }
-                cleanup{
-                    cleanWs(patterns: [[pattern: 'logs/flake8.log', type: 'INCLUDE']])
-                }
-            }
+              }
+          }
+      }
+      post{
+        cleanup{
+            cleanWs(patterns: [
+            [pattern: 'logs/flake8.log', type: 'INCLUDE'],
+            [pattern: 'reports/coverage.xml"', type: 'INCLUDE'],
+            ])
         }
       }
     }
