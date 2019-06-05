@@ -192,7 +192,7 @@ pipeline {
         }
     stage("Building"){
         environment{
-            PATH = "${tool 'CPython-3.6'}\\Scripts;${tool 'cmake3.12'};$PATH"
+            PATH = "${tool 'CPython-3.6'}\\Scripts;${tool 'cmake3.13'};$PATH"
         }
         stages{
             stage("Building Python Package"){
@@ -249,7 +249,7 @@ pipeline {
 
     stage('Testing') {
         environment{
-            PATH = "${WORKSPACE}\\venv36\\Scripts;${tool 'CPython-3.6'}\\Scripts;${tool 'cmake3.12'};$PATH"
+            PATH = "${WORKSPACE}\\venv36\\Scripts;${tool 'CPython-3.6'}\\Scripts;${tool 'cmake3.13'};$PATH"
         }
       parallel {
         stage("Tox") {
@@ -390,7 +390,7 @@ pipeline {
     }
     stage('Packaging') {
       environment{
-          PATH = "${tool 'cmake3.12'};$PATH"
+          PATH = "${tool 'cmake3.13'};$PATH"
       }
       parallel{
         stage("Python sdist"){
@@ -437,7 +437,7 @@ pipeline {
             }
           }
           environment {
-            PATH = "${tool 'cmake3.12'};${tool 'CPython-3.7'};$PATH"
+            PATH = "${tool 'cmake3.13'};${tool 'CPython-3.7'};$PATH"
             CL = "/MP"
           }
           options{
@@ -446,7 +446,7 @@ pipeline {
           steps {
             bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37 && venv37\\scripts\\python.exe -m pip install pip --upgrade && venv37\\scripts\\pip.exe install --upgrade setuptools wheel"
             dir("source"){
-                bat "${WORKSPACE}\\venv37\\scripts\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                bat "${WORKSPACE}\\venv37\\scripts\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.13'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                 }
           }
           post{
@@ -538,7 +538,7 @@ pipeline {
                             }
                             stage("Testing Submitted Source Distribution") {
                                   environment {
-                                      PATH = "${WORKSPACE}\\venv36\\Scripts;${tool 'cmake3.12'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                                      PATH = "${WORKSPACE}\\venv36\\Scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                                       CL = "/MP"
                                   }
                                   options {
