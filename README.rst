@@ -12,8 +12,8 @@ uiucprescon-imagevalidate
     :target: https://otm.illinois.edu/disclose-protect/illinois-open-source-license
 
 
-.. image:: https://img.shields.io/badge/dynamic/json.svg?query=$.results.elements[?(@.name=="Line")].ratio&uri=https://jenkins.library.illinois.edu/job/OpenSourceProjects/job/imagevalidate/job/master/lastBuild/coverage/result/api/json?depth=1&label=Coverage&suffix=%
-    :target: https://jenkins.library.illinois.edu/job/OpenSourceProjects/job/imagevalidate/job/master/lastBuild/coverage/
+.. image:: https://sonarqube.library.illinois.edu/api/project_badges/measure?project=uiucprescon.imagevalidate&metric=coverage
+    :target: https://sonarqube.library.illinois.edu/component_measures?id=uiucprescon.imagevalidate&metric=coverage
 
 Uses Exiv2 library bindings to validate image files.
 
