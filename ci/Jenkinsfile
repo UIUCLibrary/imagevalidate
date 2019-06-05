@@ -62,12 +62,7 @@ pipeline {
   }
   parameters {
     booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
-      booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
-      booleanParam(name: "TEST_RUN_PYTEST", defaultValue: true, description: "Run PyTest unit tests")
       booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
-      booleanParam(name: "TEST_DOCTEST", defaultValue: true, description: "Run Doctest on the documentation")
-      booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy Tests")
-      booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 Tests")
       booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
       booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only")
       booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation. Release Branch Only")
@@ -297,9 +292,6 @@ pipeline {
                     }
                 }
                 stage("Run PyTest Unit Tests"){
-                    when {
-                       equals expected: true, actual: params.TEST_RUN_PYTEST
-                    }
                     environment{
                         junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                     }
@@ -329,13 +321,12 @@ pipeline {
                     }
                 }
                 stage("Run Doctest Tests"){
-                  when {
-                    equals expected: true, actual: params.TEST_DOCTEST
-                  }
                   steps {
                     dir("source"){
                         bat "if not exist reports\\doctests mkdir reports\\doctests"
-                        bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v"
+                        catchError(buildResult: "SUCCESS", message: 'Doctest found issues', stageResult: "UNSTABLE") {
+                            bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v"
+                        }
                     }
                     bat "move build\\docs\\output.txt reports\\doctest.txt"
                   }
@@ -346,9 +337,6 @@ pipeline {
                   }
                 }
                 stage("Run MyPy Static Analysis") {
-                  when {
-                    equals expected: true, actual: params.TEST_RUN_MYPY
-                  }
                   steps{
                     bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
                     dir("source"){
@@ -368,9 +356,6 @@ pipeline {
                   }
                 }
                 stage("Run Flake8 Static Analysis") {
-                    when {
-                        equals expected: true, actual: params.TEST_RUN_FLAKE8
-                    }
                     steps{
                         dir("source"){
                             catchError(buildResult: "SUCCESS", message: 'Flake8 found issues', stageResult: "UNSTABLE") {
@@ -386,6 +371,49 @@ pipeline {
                 }
               }
           }
+            stage("Run Sonarqube Analysis"){
+                when{
+                    equals expected: "master", actual: env.BRANCH_NAME
+                }
+                options{
+                    timeout(5)
+                }
+                environment{
+                    scannerHome = tool name: 'sonar-scanner-3.3.0', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                }
+                steps{
+                    withSonarQubeEnv(installationName: "sonarqube.library.illinois.edu") {
+                        bat(
+                            label: "Running sonar scanner",
+                            script: '\
+"%scannerHome%/bin/sonar-scanner" \
+-D"sonar.projectVersion=%PKG_VERSION%" \
+-D"sonar.projectBaseDir=%WORKSPACE%/source" \
+-D"sonar.buildString=%BUILD_TAG%" \
+-D"sonar.scm.provider=git" \
+-D"sonar.python.coverage.reportPaths=%WORKSPACE%/reports/coverage.xml" \
+-D"sonar.python.xunit.reportPath=%WORKSPACE%/reports/pytest/%junit_filename%" \
+-D"sonar.working.directory=%WORKSPACE%\\.scannerwork" \
+-X'
+                        )
+
+                    }
+                    script{
+                        def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                        if (sonarqube_result.status != 'OK') {
+                            unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                        }
+                    }
+                }
+                post{
+                    always{
+                        archiveArtifacts(
+                            allowEmptyArchive: true,
+                            artifacts: ".scannerwork/report-task.txt"
+                        )
+                    }
+                }
+            }
       }
       post{
         cleanup{
