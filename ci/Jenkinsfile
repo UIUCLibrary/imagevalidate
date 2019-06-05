@@ -156,8 +156,8 @@ pipeline {
                             bat "call venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                         }
                     }
-                    bat "venv36\\Scripts\\pip.exe install -U setuptools \"tox>=3.7,<3.8\""
-                    bat "venv36\\Scripts\\pip.exe install pytest-cov lxml flake8 mypy -r source\\requirements.txt --upgrade-strategy only-if-needed"
+                    bat "venv36\\Scripts\\pip.exe install -U setuptools"
+                    bat "venv36\\Scripts\\pip.exe install -r source\\requirements.txt --upgrade-strategy only-if-needed"
                 }
                 post{
                     success{
@@ -247,6 +247,12 @@ pipeline {
             PATH = "${WORKSPACE}\\venv36\\Scripts;${tool 'CPython-3.6'}\\Scripts;${tool 'cmake3.13'};$PATH"
         }
         stages{
+            stage("Installing Python testing packages"){
+                steps{
+                    bat 'venv36\\Scripts\\pip.exe install -U setuptools "tox>=3.7,<3.10"'
+                    bat "venv36\\Scripts\\pip.exe install pytest-cov lxml flake8 mypy -r source\\requirements.txt --upgrade-strategy only-if-needed"
+                }
+            }
             stage("Run Testing"){
               parallel {
                 stage("Tox") {
