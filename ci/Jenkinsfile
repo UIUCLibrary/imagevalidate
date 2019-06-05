@@ -31,7 +31,6 @@ def test_wheel(pkgRegex, python_version){
     }
 }
 
-def junit_filename = "junit.xml"
 
 pipeline {
   agent {
@@ -108,18 +107,6 @@ pipeline {
                         deleteDir()
                     }
                 }
-            }
-            stage("Setting Project Metadata Variables"){
-              steps{
-                script {
-
-                  // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-                  def alljob = env.JOB_NAME.tokenize("/") as String[]
-                  def project_name = alljob[0]
-
-                  junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
-                }
-              }
             }
             stage("Installing Pipfile"){
                     options{
