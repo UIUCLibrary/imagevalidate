@@ -29,10 +29,6 @@ class AbsProfile(metaclass=abc.ABCMeta):
         Returns:
             Returns a report object
         """
-        pass
-    # @abc.abstractmethod
-    # def valid_extensions(cls)-> Iterable:
-    #     return list()
 
     @classmethod
     def _get_metadata_static_values(cls, image: py3exiv2bind.Image) \
