@@ -30,6 +30,19 @@ class MissingField(AbsMessage):
         return f'No metadata field for "{field}" found in file.'
 
 
+class IgnoredField(AbsMessage):
+
+    def generate_message(self, field: str, data: report.Result) -> str:
+        return f"Note: {field} is expected to be absent; if it is present, " \
+               f"the values will not be used."
+
+
+class FieldExpectedEmpty(AbsMessage):
+
+    def generate_message(self, field: str, data: report.Result) -> str:
+        return f"Included invalid field {field}"
+
+
 class MessageGenerator:
 
     def __init__(self, strategy: AbsMessage) -> None:

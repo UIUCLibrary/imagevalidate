@@ -6,6 +6,7 @@ from enum import Enum
 class ResultCategory(Enum):
     ANY = 0
     NONE = 1
+    IGNORED = 2
 
 
 class Result(NamedTuple):

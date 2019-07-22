@@ -1,9 +1,8 @@
-import collections
 import sys
 
 import py3exiv2bind
 import typing
-from uiucprescon.imagevalidate import IssueCategory, common
+from uiucprescon.imagevalidate import common
 from uiucprescon.imagevalidate import Report
 from uiucprescon.imagevalidate.report import Result
 from . import AbsProfile
@@ -49,16 +48,7 @@ class HathiJP2000(AbsProfile):
         report.filename = file
         report_data = self.get_data_from_image(file)
         report._properties = report_data
-
-        analysis: typing.Dict[IssueCategory, list] = \
-            collections.defaultdict(list)
-
-        for key, result in report_data.items():
-            issue_category = self.analyze_data_for_issues(result)
-            if issue_category:
-                message = self.generate_error_msg(issue_category, key, result)
-                analysis[issue_category].append(message)
-
+        analysis = self.analyze(report_data)
         report._data.update(analysis)
 
         return report
@@ -76,8 +66,7 @@ class HathiJP2000(AbsProfile):
         if color_space:
             data['Color Space'] = Result(expected="sRGB", actual=color_space)
         else:
-            data['Color Space'] = Result(expected="sRGB",
-                                         actual="Unknown")
+            data['Color Space'] = Result(expected="sRGB", actual="Unknown")
 
         longest_side = max(image.pixelHeight, image.pixelWidth)
 

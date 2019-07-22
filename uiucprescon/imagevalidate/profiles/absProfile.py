@@ -1,4 +1,6 @@
 import abc
+import collections
+import typing
 
 import py3exiv2bind
 from typing import Dict, List, Optional, Set
@@ -12,6 +14,8 @@ class AbsProfile(metaclass=abc.ABCMeta):
 
     expected_metadata_constants: Dict[str, str] = dict()
     expected_metadata_any_value: List[str] = list()
+    expected_metadata_no_value: List[str] = list()
+    ignored_metadata_fields: List[str] = list()
     valid_extensions: Set[str] = set()
 
     @staticmethod
@@ -54,6 +58,31 @@ class AbsProfile(metaclass=abc.ABCMeta):
             )
         return data
 
+    @classmethod
+    def _get_metadata_ignored_values(cls, image) -> Dict[str, Result]:
+        data = dict()
+        for key in cls.ignored_metadata_fields:
+            field = image.metadata.get(key)
+            if field is None:
+                continue
+            if field.strip() == "":
+                continue
+            data[key] = Result(expected=ResultCategory.IGNORED, actual=field)
+        return data
+
+    @classmethod
+    def _get_metadata_expected_no_value(cls, image) -> Dict[str, Result]:
+        data = dict()
+        for key in cls.expected_metadata_no_value:
+            field = image.metadata.get(key)
+            if field is None:
+                continue
+            if field.strip() == "":
+                continue
+            data[key] = Result(expected=ResultCategory.NONE, actual=field)
+
+        return data
+
     @staticmethod
     def generate_error_msg(category: IssueCategory, field: str,
                            report_data: Result) -> str:
@@ -61,7 +90,9 @@ class AbsProfile(metaclass=abc.ABCMeta):
         message_types: Dict[IssueCategory, messages.AbsMessage] = {
             IssueCategory.INVALID_DATA: messages.InvalidData(),
             IssueCategory.EMPTY_DATA: messages.EmptyData(),
-            IssueCategory.MISSING_FIELD: messages.MissingField()
+            IssueCategory.MISSING_FIELD: messages.MissingField(),
+            IssueCategory.IGNORED_FIELD: messages.IgnoredField(),
+            IssueCategory.EXPECTED_EMPTY_FIELD: messages.FieldExpectedEmpty(),
         }
 
         if category in message_types:
@@ -71,12 +102,24 @@ class AbsProfile(metaclass=abc.ABCMeta):
 
             return message_generator.generate_message(field, report_data)
 
-        return "Unknown error with {}".format(field)
+        return "Unknown error type {} with {}".format(category, field)
 
     @staticmethod
     def analyze_data_for_issues(result: Result) -> Optional[IssueCategory]:
-        if result.actual is None:
+        if result.expected is not ResultCategory.NONE \
+                and result.actual is None:
+
             return IssueCategory.MISSING_FIELD
+
+        if result.expected is ResultCategory.IGNORED \
+                and result.actual is not ResultCategory.NONE:
+
+            return IssueCategory.IGNORED_FIELD
+
+        if result.expected is ResultCategory.NONE \
+                and result.actual is not ResultCategory.NONE:
+
+            return IssueCategory.EXPECTED_EMPTY_FIELD
 
         if result.actual == "":
             return IssueCategory.EMPTY_DATA
@@ -94,5 +137,20 @@ class AbsProfile(metaclass=abc.ABCMeta):
         image = py3exiv2bind.Image(filename)
         data: Dict[str, Result] = dict()
         data.update(cls._get_metadata_has_values(image))
+        data.update(cls._get_metadata_expected_no_value(image))
+        data.update(cls._get_metadata_ignored_values(image))
         data.update(cls._get_metadata_static_values(image))
         return data
+
+    def analyze(self, report_data) -> typing.Dict[IssueCategory, list]:
+
+        analysis: typing.Dict[IssueCategory, list] = \
+            collections.defaultdict(list)
+
+        for key, result in report_data.items():
+            issue_category = self.analyze_data_for_issues(result)
+            if issue_category:
+                message = self.generate_error_msg(issue_category, key, result)
+                analysis[issue_category].append(message)
+
+        return analysis

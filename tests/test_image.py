@@ -8,12 +8,12 @@ def test_loaded():
 
 
 def test_load_profile():
-    hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiff())
+    hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiffUiuc())
     assert isinstance(hathi_tiff_profile, imagevalidate.Profile)
 
 
 def test_missing_file():
-    hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiff())
+    hathi_tiff_profile = imagevalidate.Profile(profiles.HathiTiffUiuc())
     with pytest.raises(FileNotFoundError):
-        report = hathi_tiff_profile .validate(file="invalid_file.tif")
+        hathi_tiff_profile.validate(file="invalid_file.tif")
 
