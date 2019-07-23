@@ -307,7 +307,8 @@ pipeline {
                             publishCoverage adapters: [
                                         coberturaAdapter('reports/coverage.xml')
                                     ],
-                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                                calculateDiffForChangeRequests: true
 
 
                         }
