@@ -85,9 +85,6 @@ pipeline {
     WORKON_HOME ="${WORKSPACE}\\pipenv\\"
     PIPENV_NOSPIN="DISABLED"
     PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-
-    DEVPI = credentials("DS_devpi")
-
   }
   parameters {
     booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
@@ -584,6 +581,7 @@ pipeline {
                 PATH = "${WORKSPACE}\\venv36\\Scripts;${PATH}"
                 PKG_NAME = get_package_name("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
                 PKG_VERSION = get_package_version("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
+                DEVPI = credentials("DS_devpi")
             }
         stages{
             stage("Install DevPi client"){
