@@ -63,9 +63,7 @@ pipeline {
     WORKON_HOME ="${WORKSPACE}\\pipenv\\"
     PIPENV_NOSPIN="DISABLED"
     PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-    PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
-    PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
-    DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
+
     DEVPI = credentials("DS_devpi")
 
   }
@@ -187,9 +185,6 @@ pipeline {
                 bat "dir"
                 deleteDir()
             }
-            success{
-                echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
-            }
           }
         }
     stage("Building"){
@@ -223,6 +218,10 @@ pipeline {
                 }
             }
             stage("Sphinx Documentation"){
+                environment{
+                    PKG_NAME = get_package_name("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
+                    PKG_VERSION = get_package_version("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
+                }
                 steps {
                     echo "Building docs on ${env.NODE_NAME}"
                     dir("source"){
@@ -559,6 +558,8 @@ pipeline {
         }
         environment{
                 PATH = "${WORKSPACE}\\venv36\\Scripts;${PATH}"
+                PKG_NAME = get_package_name("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
+                PKG_VERSION = get_package_version("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
             }
         stages{
             stage("Install DevPi client"){
