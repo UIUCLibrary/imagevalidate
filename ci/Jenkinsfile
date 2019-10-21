@@ -13,6 +13,28 @@ def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUse
     }
 }
 
+def get_package_version(stashName, metadataFile){
+    ws {
+        unstash "${stashName}"
+        script{
+            def props = readProperties interpolate: true, file: "${metadataFile}"
+            deleteDir()
+            return props.Version
+        }
+    }
+}
+
+def get_package_name(stashName, metadataFile){
+    ws {
+        unstash "${stashName}"
+        script{
+            def props = readProperties interpolate: true, file: "${metadataFile}"
+            deleteDir()
+            return props.Name
+        }
+    }
+}
+
 def test_wheel(pkgRegex, python_version){
     script{
 
@@ -63,11 +85,6 @@ pipeline {
     WORKON_HOME ="${WORKSPACE}\\pipenv\\"
     PIPENV_NOSPIN="DISABLED"
     PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-    PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
-    PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
-    DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
-    DEVPI = credentials("DS_devpi")
-
   }
   parameters {
     booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
@@ -98,6 +115,24 @@ pipeline {
                     }
                 }
             }
+            stage("Getting Distribution Info"){
+                    environment{
+                        PATH = "${tool 'CPython-3.7'};${tool 'cmake3.13'};$PATH"
+                    }
+                    steps{
+                        dir("source"){
+                            bat "python setup.py dist_info"
+                        }
+                    }
+                    post{
+                        success{
+                            dir("source"){
+                                stash includes: "uiucprescon_imagevalidate.dist-info/**", name: 'DIST-INFO'
+                                archiveArtifacts artifacts: "uiucprescon_imagevalidate.dist-info/**"
+                            }
+                        }
+                    }
+                }
             stage("Installing Required System Level Dependencies"){
                 steps{
 
@@ -169,9 +204,6 @@ pipeline {
                 bat "dir"
                 deleteDir()
             }
-            success{
-                echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
-            }
           }
         }
     stage("Building"){
@@ -205,6 +237,10 @@ pipeline {
                 }
             }
             stage("Sphinx Documentation"){
+                environment{
+                    PKG_NAME = get_package_name("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
+                    PKG_VERSION = get_package_version("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
+                }
                 steps {
                     echo "Building docs on ${env.NODE_NAME}"
                     dir("source"){
@@ -218,13 +254,19 @@ pipeline {
                     }
                     success{
                         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                        zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${env.DOC_ZIP_FILENAME}"
-                        stash includes: "dist/${env.DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
+                        script{
+                            def DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
+                            zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${env.DOC_ZIP_FILENAME}"
+                            stash includes: "dist/${env.DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
+                        }
 
                     }
                     cleanup{
-                        cleanWs(patterns: [[pattern: 'logs/build_sphinx.log', type: 'INCLUDE']])
-                        cleanWs(patterns: [[pattern: "dist/${env.DOC_ZIP_FILENAME}", type: 'INCLUDE']])
+                        cleanWs(patterns: [
+                            [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
+                            [pattern: "dist/*.doc.zip", type: 'INCLUDE']
+                            ]
+                        )
                     }
                 }
             }
@@ -375,6 +417,7 @@ pipeline {
                 }
                 environment{
                     scannerHome = tool name: 'sonar-scanner-3.3.0', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                    PKG_VERSION = get_package_version("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
                 }
                 steps{
                     withSonarQubeEnv(installationName: "sonarqube.library.illinois.edu") {
@@ -535,6 +578,9 @@ pipeline {
         }
         environment{
                 PATH = "${WORKSPACE}\\venv36\\Scripts;${PATH}"
+                PKG_NAME = get_package_name("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
+                PKG_VERSION = get_package_version("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
+                DEVPI = credentials("DS_devpi")
             }
         stages{
             stage("Install DevPi client"){
