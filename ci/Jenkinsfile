@@ -218,13 +218,19 @@ pipeline {
                     }
                     success{
                         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                        zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${env.DOC_ZIP_FILENAME}"
-                        stash includes: "dist/${env.DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
+                        script{
+                            def DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
+                            zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${env.DOC_ZIP_FILENAME}"
+                            stash includes: "dist/${env.DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
+                        }
 
                     }
                     cleanup{
-                        cleanWs(patterns: [[pattern: 'logs/build_sphinx.log', type: 'INCLUDE']])
-                        cleanWs(patterns: [[pattern: "dist/${env.DOC_ZIP_FILENAME}", type: 'INCLUDE']])
+                        cleanWs(patterns: [
+                            [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
+                            [pattern: "dist/*.doc.zip", type: 'INCLUDE']
+                            ]
+                        )
                     }
                 }
             }
