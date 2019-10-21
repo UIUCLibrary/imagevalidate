@@ -420,6 +420,7 @@ pipeline {
                 }
                 environment{
                     scannerHome = tool name: 'sonar-scanner-3.3.0', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                    PKG_VERSION = get_package_version("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
                 }
                 steps{
                     withSonarQubeEnv(installationName: "sonarqube.library.illinois.edu") {
