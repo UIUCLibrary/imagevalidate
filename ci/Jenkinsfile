@@ -13,6 +13,28 @@ def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUse
     }
 }
 
+def get_package_version(stashName, metadataFile){
+    ws {
+        unstash "${stashName}"
+        script{
+            def props = readProperties interpolate: true, file: "${metadataFile}"
+            deleteDir()
+            return props.Version
+        }
+    }
+}
+
+def get_package_name(stashName, metadataFile){
+    ws {
+        unstash "${stashName}"
+        script{
+            def props = readProperties interpolate: true, file: "${metadataFile}"
+            deleteDir()
+            return props.Name
+        }
+    }
+}
+
 def test_wheel(pkgRegex, python_version){
     script{
 
