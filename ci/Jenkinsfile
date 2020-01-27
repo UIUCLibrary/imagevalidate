@@ -41,15 +41,10 @@ def test_wheel(pkgRegex, python_version){
         bat "python -m venv venv\\${NODE_NAME}\\${python_version} && venv\\${NODE_NAME}\\${python_version}\\Scripts\\python.exe -m pip install pip --upgrade && venv\\${NODE_NAME}\\${python_version}\\Scripts\\pip.exe install tox --upgrade"
 
         def python_wheel = findFiles glob: "**/${pkgRegex}"
-        dir("source"){
-            python_wheel.each{
-                echo "Testing ${it}"
-                bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
-            }
-
+        python_wheel.each{
+            echo "Testing ${it}"
+            bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
         }
-
-
     }
 }
 
@@ -76,7 +71,6 @@ pipeline {
   options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
         timeout(120)  // Timeout after 120 minutes. This shouldn't take this long but it hangs for some reason
-        checkoutToSubdirectory("source")
   }
   environment {
     build_number = VersionNumber(projectStartDate: '2018-6-12', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
@@ -110,9 +104,7 @@ pipeline {
                 }
                 steps{
                     deleteDir()
-                    dir("source"){
-                        checkout scm
-                    }
+                    checkout scm
                 }
             }
             stage("Getting Distribution Info"){
@@ -120,22 +112,17 @@ pipeline {
                         PATH = "${tool 'CPython-3.7'};${tool 'cmake3.13'};$PATH"
                     }
                     steps{
-                        dir("source"){
-                            bat "python setup.py dist_info"
-                        }
+                        bat "python setup.py dist_info"
                     }
                     post{
                         success{
-                            dir("source"){
-                                stash includes: "uiucprescon_imagevalidate.dist-info/**", name: 'DIST-INFO'
-                                archiveArtifacts artifacts: "uiucprescon_imagevalidate.dist-info/**"
-                            }
+                            stash includes: "uiucprescon_imagevalidate.dist-info/**", name: 'DIST-INFO'
+                            archiveArtifacts artifacts: "uiucprescon_imagevalidate.dist-info/**"
                         }
                     }
                 }
             stage("Installing Required System Level Dependencies"){
                 steps{
-
                     lock("system_python_${NODE_NAME}"){
                         bat "python -m pip install --upgrade pip --quiet"
                     }
@@ -158,11 +145,8 @@ pipeline {
                         timeout(5)
                     }
                     steps {
-                        dir("source"){
-                            bat "pipenv install --dev --deploy && pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log"
-                            bat "pipenv check"
-
-                        }
+                        bat "pipenv install --dev --deploy && pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log"
+                        bat "pipenv check"
                     }
                     post{
                         always{
@@ -189,7 +173,7 @@ pipeline {
                         }
                     }
                     bat "venv36\\Scripts\\pip.exe install -U setuptools"
-                    bat "venv36\\Scripts\\pip.exe install -r source\\requirements.txt --upgrade-strategy only-if-needed"
+                    bat "venv36\\Scripts\\pip.exe install -r requirements.txt --upgrade-strategy only-if-needed"
                 }
                 post{
                     success{
@@ -214,9 +198,7 @@ pipeline {
             stage("Building Python Package"){
 
                 steps {
-                    dir("source"){
-                        powershell "&pipenv run python setup.py build -b ${WORKSPACE}\\36\\build --build-lib ${WORKSPACE}\\build\\36\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\36\\temp build_ext --inplace  | tee ${WORKSPACE}\\logs\\build.log"
-                    }
+                    powershell "&pipenv run python setup.py build -b ${WORKSPACE}\\36\\build --build-lib ${WORKSPACE}\\build\\36\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\36\\temp build_ext --inplace  | tee ${WORKSPACE}\\logs\\build.log"
 
                 }
                 post{
@@ -243,9 +225,7 @@ pipeline {
                 }
                 steps {
                     echo "Building docs on ${env.NODE_NAME}"
-                    dir("source"){
-                        powershell "& pipenv run sphinx-build -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees | tee ${WORKSPACE}\\logs\\build_sphinx.log"
-                    }
+                    powershell "& pipenv run sphinx-build -b html docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees | tee ${WORKSPACE}\\logs\\build_sphinx.log"
                 }
                 post{
                     always {
@@ -282,7 +262,7 @@ pipeline {
             stage("Installing Python Testing Packages"){
                 steps{
                     bat 'venv36\\Scripts\\pip.exe install -U setuptools "tox>=3.7,<3.10"'
-                    bat "venv36\\Scripts\\pip.exe install pytest-cov lxml flake8 mypy pylint -r source\\requirements.txt --upgrade-strategy only-if-needed"
+                    bat "venv36\\Scripts\\pip.exe install pytest-cov lxml flake8 mypy pylint -r requirements.txt --upgrade-strategy only-if-needed"
                 }
             }
             stage("Run Testing"){
@@ -296,20 +276,18 @@ pipeline {
                     }
                     steps {
                         bat "if not exist reports\\coverage mkdir reports\\coverage"
-                        dir("source"){
-                            script{
-                                try{
-                                    bat (
-                                        label: "Run Tox",
-                                        script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
-                                    )
+                        script{
+                            try{
+                                bat (
+                                    label: "Run Tox",
+                                    script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                )
 
-                                } catch (exc) {
-                                    bat(
-                                        label: "Run Tox with new environments",
-                                        script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
-                                    )
-                                }
+                            } catch (exc) {
+                                bat(
+                                    label: "Run Tox with new environments",
+                                    script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                )
                             }
                         }
                     }
@@ -332,13 +310,11 @@ pipeline {
                 stage("Run PyTest Unit Tests"){
 
                     steps{
-                        dir("source"){
-                            catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
-                                bat(
-                                    label: "Running Pytest",
-                                    script:"pipenv run python -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/pytestcoverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --integration --cov-config=${WORKSPACE}/source/setup.cfg"
-                                )
-                            }
+                        catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
+                            bat(
+                                label: "Running Pytest",
+                                script:"pipenv run python -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/pytestcoverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --integration --cov-config=${WORKSPACE}/setup.cfg"
+                            )
                         }
                     }
                     post {
@@ -359,11 +335,9 @@ pipeline {
                 }
                 stage("Run Doctest Tests"){
                   steps {
-                    dir("source"){
-                        bat "if not exist reports\\doctests mkdir reports\\doctests"
-                        catchError(buildResult: "SUCCESS", message: 'Doctest found issues', stageResult: "UNSTABLE") {
-                            bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v"
-                        }
+                    bat "if not exist reports\\doctests mkdir reports\\doctests"
+                    catchError(buildResult: "SUCCESS", message: 'Doctest found issues', stageResult: "UNSTABLE") {
+                        bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v"
                     }
                     bat "move build\\docs\\output.txt reports\\doctest.txt"
                   }
@@ -376,13 +350,11 @@ pipeline {
                 stage("Run MyPy Static Analysis") {
                   steps{
                     bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
-                    dir("source"){
-                        catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
-                            bat(
-                                label: "Running Mypy",
-                                script: "${WORKSPACE}\\venv36\\Scripts\\mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
-                            )
-                        }
+                    catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
+                        bat(
+                            label: "Running Mypy",
+                            script: "${WORKSPACE}\\venv36\\Scripts\\mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                        )
                     }
                   }
                   post {
@@ -394,10 +366,8 @@ pipeline {
                 }
                 stage("Run Flake8 Static Analysis") {
                     steps{
-                        dir("source"){
-                            catchError(buildResult: "SUCCESS", message: 'Flake8 found issues', stageResult: "UNSTABLE") {
-                                bat "${WORKSPACE}\\venv36\\Scripts\\flake8.exe uiucprescon --format=pylint --tee --output-file=${WORKSPACE}\\logs\\flake8.log"
-                            }
+                        catchError(buildResult: "SUCCESS", message: 'Flake8 found issues', stageResult: "UNSTABLE") {
+                            bat "${WORKSPACE}\\venv36\\Scripts\\flake8.exe uiucprescon --format=pylint --tee --output-file=${WORKSPACE}\\logs\\flake8.log"
                         }
                     }
                     post {
@@ -426,7 +396,7 @@ pipeline {
                             script: '\
 "%scannerHome%/bin/sonar-scanner" \
 -D"sonar.projectVersion=%PKG_VERSION%" \
--D"sonar.projectBaseDir=%WORKSPACE%/source" \
+-D"sonar.projectBaseDir=%WORKSPACE%" \
 -D"sonar.buildString=%BUILD_TAG%" \
 -D"sonar.scm.provider=git" \
 -D"sonar.python.coverage.reportPaths=%WORKSPACE%/reports/coverage.xml" \
@@ -481,9 +451,7 @@ pipeline {
                 PATH = "${tool 'CPython-3.6'};$PATH"
             }
             steps {
-                dir("source"){
-                    bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
-                }
+                bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
             }
             post{
                 success{
@@ -500,12 +468,10 @@ pipeline {
             retry 2
           }
           steps {
-            dir("source"){
-              bat(
-                label: "Building wheel file for Python 3.6",
-                script: "pipenv run python setup.py build -b ${WORKSPACE}\\36\\build --build-lib ${WORKSPACE}\\build\\36\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\36\\temp bdist_wheel -d ${WORKSPACE}\\dist"
-                )
-            }
+          bat(
+            label: "Building wheel file for Python 3.6",
+            script: "pipenv run python setup.py build -b ${WORKSPACE}\\36\\build --build-lib ${WORKSPACE}\\build\\36\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\36\\temp bdist_wheel -d ${WORKSPACE}\\dist"
+            )
           }
           post{
             success {
@@ -529,12 +495,10 @@ pipeline {
           }
           steps {
             bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37 && venv37\\scripts\\python.exe -m pip install pip --upgrade && venv37\\scripts\\pip.exe install --upgrade setuptools wheel"
-            dir("source"){
-                bat(
-                    label: "Building wheel file for Python 3.6",
-                    script: "${WORKSPACE}\\venv37\\scripts\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext build_clib --cmake-path=${tool 'cmake3.13'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
-                )
-            }
+            bat(
+                label: "Building wheel file for Python 3.6",
+                script: "${WORKSPACE}\\venv37\\scripts\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext build_clib --cmake-path=${tool 'cmake3.13'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+            )
           }
           post{
               success{
@@ -545,7 +509,6 @@ pipeline {
                   cleanWs(
                       deleteDirs: true,
                       patterns: [
-                        [pattern: 'source', type: 'INCLUDE'],
                         [pattern: '*tmp', type: 'INCLUDE'],
                         [pattern: "dist", type: 'INCLUDE']
                       ]
@@ -873,7 +836,6 @@ pipeline {
                 [pattern: 'logs', type: 'INCLUDE'],
                 [pattern: 'certs', type: 'INCLUDE'],
                 [pattern: '*tmp', type: 'INCLUDE'],
-                [pattern: "source", type: 'INCLUDE'],
 //                [pattern: "source/**/*.dll", type: 'INCLUDE'],
 //                [pattern: "source/**/*.pyd", type: 'INCLUDE'],
 //                [pattern: "source/**/*.exe", type: 'INCLUDE'],
