@@ -60,11 +60,12 @@ def get_sonarqube_unresolved_issues(report_task_file){
 
 
 pipeline {
-  agent {
-    label 'Windows && longfilenames && VS2015 && Python3'
-    // customWorkspace "c:/Jenkins/temp/${JOB_NAME}/${BUILD_NUMBER}"
-
-  }
+    agent none
+//   agent {
+//     label 'Windows && longfilenames && VS2015 && Python3'
+//     // customWorkspace "c:/Jenkins/temp/${JOB_NAME}/${BUILD_NUMBER}"
+//
+//   }
   triggers {
         cron('@daily')
     }
@@ -825,23 +826,23 @@ pipeline {
       }
     }
   }
-  post {
-    cleanup {
-      cleanWs(
-            deleteDirs: true,
-            patterns: [
-                [pattern: 'dist', type: 'INCLUDE'],
+//   post {
+//     cleanup {
+//       cleanWs(
+//             deleteDirs: true,
+//             patterns: [
+//                 [pattern: 'dist', type: 'INCLUDE'],
 //                    [pattern: 'build', type: 'INCLUDE'],
-                [pattern: 'reports', type: 'INCLUDE'],
-                [pattern: 'logs', type: 'INCLUDE'],
-                [pattern: 'certs', type: 'INCLUDE'],
-                [pattern: '*tmp', type: 'INCLUDE'],
+//                 [pattern: 'reports', type: 'INCLUDE'],
+//                 [pattern: 'logs', type: 'INCLUDE'],
+//                 [pattern: 'certs', type: 'INCLUDE'],
+//                 [pattern: '*tmp', type: 'INCLUDE'],
 //                [pattern: "source/**/*.dll", type: 'INCLUDE'],
 //                [pattern: "source/**/*.pyd", type: 'INCLUDE'],
 //                [pattern: "source/**/*.exe", type: 'INCLUDE'],
 //                [pattern: "source/**/*.exe", type: 'INCLUDE']
-                ]
-            )
-    }
-  }
+//                 ]
+//             )
+//     }
+//   }
 }
