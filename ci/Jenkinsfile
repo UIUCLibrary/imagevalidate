@@ -79,7 +79,6 @@ pipeline {
     PIPENV_CACHE_DIR="${WORKSPACE}\\..\\.virtualenvs\\cache\\"
     WORKON_HOME ="${WORKSPACE}\\pipenv\\"
     PIPENV_NOSPIN="DISABLED"
-    PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
   }
   parameters {
     booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
@@ -91,106 +90,131 @@ pipeline {
   }
 
   stages {
-    stage('Configure Environment') {
-        environment{
-            PATH = "${tool 'CPython-3.6'}\\Scripts;$PATH"
+        stage("Getting Distribution Info"){
+            agent {
+                dockerfile {
+                    filename 'ci/docker/python37/windows/build/msvc/Dockerfile'
+                    label 'Windows&&Docker'
+                 }
+            }
+            steps{
+                bat "python setup.py dist_info"
+            }
+            post{
+                success{
+                    stash includes: "uiucprescon_imagevalidate.dist-info/**", name: 'DIST-INFO'
+                    archiveArtifacts artifacts: "uiucprescon_imagevalidate.dist-info/**"
+                }
+                cleanup{
+                    cleanWs(
+                        deleteDirs: true,
+                        patterns: [
+                            [pattern: "uiucprescon_imagevalidate.dist-info/", type: 'INCLUDE'],
+                        ]
+                    )
+                }
+            }
         }
-        stages{
-            stage("Purge All Existing Data in Workspace"){
-                when{
-                    anyOf{
-                        equals expected: true, actual: params.FRESH_WORKSPACE
-                        triggeredBy "TimerTriggerCause"
-                    }
-                }
-                steps{
-                    deleteDir()
-                    checkout scm
-                }
-            }
-            stage("Getting Distribution Info"){
-                    environment{
-                        PATH = "${tool 'CPython-3.7'};${tool 'cmake3.13'};$PATH"
-                    }
-                    steps{
-                        bat "python setup.py dist_info"
-                    }
-                    post{
-                        success{
-                            stash includes: "uiucprescon_imagevalidate.dist-info/**", name: 'DIST-INFO'
-                            archiveArtifacts artifacts: "uiucprescon_imagevalidate.dist-info/**"
-                        }
-                    }
-                }
-            stage("Installing Required System Level Dependencies"){
-                steps{
-                    lock("system_python_${NODE_NAME}"){
-                        bat "python -m pip install --upgrade pip --quiet"
-                    }
-                    bat "if not exist logs mkdir logs"
-                }
-                post{
-                    always{
-                        lock("system_python_${NODE_NAME}"){
-                            bat "\"${tool 'CPython-3.6'}\\python.exe\" -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
-                        }
-                        archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
-                    }
-                    failure {
-                        deleteDir()
-                    }
-                }
-            }
-            stage("Installing Pipfile"){
-                    options{
-                        timeout(5)
-                    }
-                    steps {
-                        bat "pipenv install --dev --deploy && pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log"
-                        bat "pipenv check"
-                    }
-                    post{
-                        always{
-                            archiveArtifacts artifacts: "logs/pippackages_pipenv_*.log"
-                        }
-                        failure {
-                            deleteDir()
-                        }
-                        cleanup{
-                            cleanWs(patterns: [[pattern: "logs/pippackages_pipenv_*.log", type: 'INCLUDE']])
-                        }
-                    }
-            }
-            stage("Creating Python Virtual Environment for Building"){
-                steps{
-                    bat "python -m venv venv36"
-                    script {
-                        try {
-                            bat "call venv36\\Scripts\\python.exe -m pip install -U pip"
-                        }
-                        catch (exc) {
-                            bat "python -m venv venv36"
-                            bat "call venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
-                        }
-                    }
-                    bat "venv36\\Scripts\\pip.exe install -U setuptools"
-                    bat "venv36\\Scripts\\pip.exe install -r requirements.txt --upgrade-strategy only-if-needed"
-                }
-                post{
-                    success{
-                        bat "venv36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
-                        archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
-                    }
-                }
-            }
-          }
-          post{
-            failure {
-                bat "dir"
-                deleteDir()
-            }
-          }
-        }
+//     stage('Configure Environment') {
+//         environment{
+//             PATH = "${tool 'CPython-3.6'}\\Scripts;$PATH"
+//         }
+//         stages{
+//             stage("Purge All Existing Data in Workspace"){
+//                 when{
+//                     anyOf{
+//                         equals expected: true, actual: params.FRESH_WORKSPACE
+//                         triggeredBy "TimerTriggerCause"
+//                     }
+//                 }
+//                 steps{
+//                     deleteDir()
+//                     checkout scm
+//                 }
+//             }
+//             stage("Getting Distribution Info"){
+//                     environment{
+//                         PATH = "${tool 'CPython-3.7'};${tool 'cmake3.13'};$PATH"
+//                     }
+//                     steps{
+//                         bat "python setup.py dist_info"
+//                     }
+//                     post{
+//                         success{
+//                             stash includes: "uiucprescon_imagevalidate.dist-info/**", name: 'DIST-INFO'
+//                             archiveArtifacts artifacts: "uiucprescon_imagevalidate.dist-info/**"
+//                         }
+//                     }
+//                 }
+//             stage("Installing Required System Level Dependencies"){
+//                 steps{
+//                     lock("system_python_${NODE_NAME}"){
+//                         bat "python -m pip install --upgrade pip --quiet"
+//                     }
+//                     bat "if not exist logs mkdir logs"
+//                 }
+//                 post{
+//                     always{
+//                         lock("system_python_${NODE_NAME}"){
+//                             bat "\"${tool 'CPython-3.6'}\\python.exe\" -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
+//                         }
+//                         archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+//                     }
+//                     failure {
+//                         deleteDir()
+//                     }
+//                 }
+//             }
+//             stage("Installing Pipfile"){
+//                     options{
+//                         timeout(5)
+//                     }
+//                     steps {
+//                         bat "pipenv install --dev --deploy && pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log"
+//                         bat "pipenv check"
+//                     }
+//                     post{
+//                         always{
+//                             archiveArtifacts artifacts: "logs/pippackages_pipenv_*.log"
+//                         }
+//                         failure {
+//                             deleteDir()
+//                         }
+//                         cleanup{
+//                             cleanWs(patterns: [[pattern: "logs/pippackages_pipenv_*.log", type: 'INCLUDE']])
+//                         }
+//                     }
+//             }
+//             stage("Creating Python Virtual Environment for Building"){
+//                 steps{
+//                     bat "python -m venv venv36"
+//                     script {
+//                         try {
+//                             bat "call venv36\\Scripts\\python.exe -m pip install -U pip"
+//                         }
+//                         catch (exc) {
+//                             bat "python -m venv venv36"
+//                             bat "call venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+//                         }
+//                     }
+//                     bat "venv36\\Scripts\\pip.exe install -U setuptools"
+//                     bat "venv36\\Scripts\\pip.exe install -r requirements.txt --upgrade-strategy only-if-needed"
+//                 }
+//                 post{
+//                     success{
+//                         bat "venv36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
+//                         archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
+//                     }
+//                 }
+//             }
+//           }
+//           post{
+//             failure {
+//                 bat "dir"
+//                 deleteDir()
+//             }
+//           }
+//         }
     stage("Building"){
         environment{
             PATH = "${tool 'CPython-3.6'}\\Scripts;${tool 'cmake3.13'};$PATH"

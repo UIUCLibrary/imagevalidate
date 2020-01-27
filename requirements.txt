@@ -7,4 +7,4 @@ py==1.5.3
 pytest==3.6.1
 pytest-runner==4.2
 six==1.11.0
-py3exiv2bind==0.1.0
+py3exiv2bind
