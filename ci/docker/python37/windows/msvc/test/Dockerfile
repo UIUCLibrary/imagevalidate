@@ -6,4 +6,6 @@ RUN certutil -generateSSTFromWU roots.sst ; `
     certutil -addstore -f root roots.sst ; `
     del roots.sst
 
+ENV PIP_EXTRA_INDEX_URL="https://devpi.library.illinois.edu/production/release"
+
 RUN python -m pip install tox
