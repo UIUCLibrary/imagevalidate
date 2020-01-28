@@ -32,6 +32,7 @@ class PackageClib(Command):
         self.clib_lib_path = None
         self.destination = None
 
+
     def finalize_options(self):
         self.library_dirs = \
             self.get_finalized_command("build_ext").library_dirs
@@ -545,7 +546,7 @@ class BuildCMakeClib(build_clib):
             if build_cmd.parallel is not None:
 
                 build_command += ["--parallel", str(build_cmd.parallel)]
-
+            self.get_finalized_command("build_ext")
             self.compiler.spawn(build_command)
 
             install_command = [
@@ -567,6 +568,7 @@ class BuildCMakeClib(build_clib):
                 "-S", lib["source path"],
                 "-B", lib["build path"],
                 f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH={runtime_output_path}",
+                f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH={runtime_output_path}",
                 f"-DCMAKE_INSTALL_PREFIX:PATH={install_prefix}",
                 f"-DCMAKE_TOOLCHAIN_FILE:FILEPATH={self.toolchain_file}",
                 f"-DCMAKE_BUILD_TYPE={self.build_configuration}"
@@ -687,7 +689,17 @@ class BuildOpenJp2Extension(BuildPybind11Ext):
         self.library_dirs.insert(
             0, os.path.join(clib_command.build_clib, "lib"))
 
+        extension = os.path.join(self.build_lib, self.get_ext_filename(self.extensions[0].name))
+        bin_dir = os.path.join(clib_command.build_temp, "bin")
         super().run()
+        fixup_command = [
+            clib_command.cmake_path,
+            f'-DPYTHON_CEXTENSION={extension}',
+            f'-DDIRECTORIES={bin_dir}',
+            "-P",
+            "cmake/fixup.cmake",
+        ]
+        self.compiler.spawn(fixup_command)
 
 
 open_jpeg_extension = setuptools.Extension(
