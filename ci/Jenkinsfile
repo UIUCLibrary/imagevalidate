@@ -116,7 +116,9 @@ pipeline {
                  }
             }
             steps{
-                bat "python setup.py dist_info"
+                timeout(5){
+                    bat "python setup.py dist_info"
+                }
             }
             post{
                 success{
