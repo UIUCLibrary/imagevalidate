@@ -580,6 +580,9 @@ pipeline {
                             }
                         }
                         post{
+                            failure{
+                                bat "tree /A /F"
+                            }
                             cleanup{
                                 cleanWs(
                                     deleteDirs: true,
