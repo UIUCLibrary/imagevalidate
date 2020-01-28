@@ -576,7 +576,14 @@ pipeline {
                                 timeout(15)
                             }
                             steps{
-                                bat "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
+                                bat(
+                                    label: "Checking Python version",
+                                    script: "python --version"
+                                )
+                                bat(
+                                    label: "Creating whl for ${PYTHON_VERSION}",
+                                    script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
+                                    )
                             }
                             post{
                                 always{
