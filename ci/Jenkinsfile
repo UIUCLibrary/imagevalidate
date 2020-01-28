@@ -256,10 +256,11 @@ pipeline {
                     bat "python -m sphinx -b html docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
                 }
                 post{
-                    //always {
+                    always {
+                        bat "tree /F /A"
                     //    recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log')])
                     //    archiveArtifacts artifacts: 'logs/build_sphinx.log'
-                    //}
+                    }
                     success{
                         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                         script{
