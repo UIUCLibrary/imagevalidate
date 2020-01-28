@@ -296,6 +296,7 @@ pipeline {
                 steps{
                     unstash "COMPILED_BINARIES"
                     bat "if not exist logs mkdir logs"
+                    bat "if not exist reports\\coverage mkdir reports\\coverage"
                 }
             }
             stage("Run Testing"){
@@ -305,7 +306,6 @@ pipeline {
                         equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     steps {
-                        bat "if not exist reports\\coverage mkdir reports\\coverage"
                         bat (
                             label: "Run Tox",
                             script: "tox --workdir ${WORKSPACE}\\.tox -vv  -e py -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
@@ -379,6 +379,14 @@ pipeline {
                     always {
                       archiveArtifacts artifacts: "reports/doctest.txt"
                     }
+                    cleanup{
+                        cleanWs(
+                          deleteDirs: true,
+                          patterns: [
+                            [pattern: 'build/docs/doctrees/', type: 'INCLUDE'],
+                          ]
+                        )
+                    }
                   }
                 }
                 stage("Run MyPy Static Analysis") {
@@ -395,6 +403,14 @@ pipeline {
                     always {
                         recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
                         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                    }
+                    cleanup{
+                        cleanWs(
+                          deleteDirs: true,
+                          patterns: [
+                            [pattern: '.mypy_cache/', type: 'INCLUDE'],
+                          ]
+                        )
                     }
                   }
                 }
