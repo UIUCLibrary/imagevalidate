@@ -4,6 +4,18 @@ def CONFIGURATIONS = [
     "3.6": [
             pkgRegex: "*cp36*.whl",
             python_install_url:"https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe",
+            package_testing: [
+                whl: [
+                        dockerfile: "ci/docker/python37/windows/msvc/build/Dockerfile",
+                        label: "windows && Docker",
+                        additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                    ],
+                sdist: [
+                    dockerfile: "ci/docker/python37/windows/msvc/build/Dockerfile",
+                    label: "windows && Docker",
+                    additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                ]
+            ],
             test_docker_image: "python:3.6-windowsservercore",
             tox_env: "py36",
             devpi_wheel_regex: "cp36"
@@ -12,6 +24,18 @@ def CONFIGURATIONS = [
     "3.7": [
             pkgRegex: "*cp37*.whl",
             python_install_url:"https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe",
+            package_testing: [
+                whl: [
+                    dockerfile: "ci/docker/python37/windows/msvc/build/Dockerfile",
+                    label: "windows && Docker",
+                    additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                ],
+                sdist: [
+                    dockerfile: "ci/docker/python37/windows/msvc/build/Dockerfile",
+                    label: "windows && Docker",
+                    additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                ]
+            ],
             test_docker_image: "python:3.7",
             tox_env: "py37",
             devpi_wheel_regex: "cp37"
@@ -523,7 +547,7 @@ pipeline {
                     }
                 }
             }
-            stage('Creating Binary Packages and Testing all Package') {
+            stage('Creating Binary Packages'){
                 matrix{
                     agent none
                     axes{
@@ -532,13 +556,6 @@ pipeline {
                             values(
                                 "3.6",
                                 "3.7"
-                            )
-                        }
-                        axis {
-                            name "PYTHON_PACKAGE_TYPE"
-                            values(
-                                "whl",
-                                "sdist"
                             )
                         }
                     }
@@ -584,12 +601,35 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Testing wheel"){
+                    }
+                }
+            }
+            stage('Testing all Package') {
+                matrix{
+                    agent none
+                    axes{
+                        axis {
+                            name "PYTHON_VERSION"
+                            values(
+                                "3.6",
+                                "3.7"
+                            )
+                        }
+                        axis {
+                            name "PYTHON_PACKAGE_TYPE"
+                            values(
+                                "whl",
+                                "sdist"
+                            )
+                        }
+                    }
+                    stages{
+                        stage("Testing Package"){
                             agent{
                                 dockerfile {
-                                    filename 'ci/docker/python37/windows/msvc/test/Dockerfile'
-                                    label 'windows && docker'
-                                    additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image}"
+                                    filename "${CONFIGURATIONS[PYTHON_VERSION].package_testing[PYTHON_PACKAGE_TYPE].dockerfile}"
+                                    label "${CONFIGURATIONS[PYTHON_VERSION].package_testing[PYTHON_PACKAGE_TYPE].label}"
+                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].package_testing[PYTHON_PACKAGE_TYPE].additionalBuildArgs}"
                                 }
                             }
                             options{
