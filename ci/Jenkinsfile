@@ -2,18 +2,19 @@
 
 def CONFIGURATIONS = [
     "3.6": [
-            pkgRegex: "*cp36*.whl",
             python_install_url:"https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe",
             package_testing: [
                 whl: [
-                        dockerfile: "ci/docker/python37/windows/msvc/build/Dockerfile",
-                        label: "windows && Docker",
-                        additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
-                    ],
+                    dockerfile: "ci/docker/python37/windows/msvc/test/Dockerfile",
+                    label: "windows && Docker",
+                    additionalBuildArgs: "--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.6-windowsservercore",
+                    pkgRegex: "*cp36*.whl",
+                ],
                 sdist: [
                     dockerfile: "ci/docker/python37/windows/msvc/build/Dockerfile",
                     label: "windows && Docker",
-                    additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                    additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}",
+                    pkgRegex: "*.zip",
                 ]
             ],
             test_docker_image: "python:3.6-windowsservercore",
@@ -22,18 +23,19 @@ def CONFIGURATIONS = [
 
         ],
     "3.7": [
-            pkgRegex: "*cp37*.whl",
             python_install_url:"https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe",
             package_testing: [
                 whl: [
-                    dockerfile: "ci/docker/python37/windows/msvc/build/Dockerfile",
+                    dockerfile: "ci/docker/python37/windows/msvc/test/Dockerfile",
                     label: "windows && Docker",
-                    additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                    additionalBuildArgs: "--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.7",
+                    pkgRegex: "*cp37*.whl",
                 ],
                 sdist: [
                     dockerfile: "ci/docker/python37/windows/msvc/build/Dockerfile",
                     label: "windows && Docker",
-                    additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                    additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}",
+                    pkgRegex: "*.zip",
                 ]
             ],
             test_docker_image: "python:3.7",
@@ -568,10 +570,6 @@ pipeline {
                                     additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
                                 }
                             }
-                            when{
-                                equals expected: "whl", actual: PYTHON_PACKAGE_TYPE
-                                beforeAgent true
-                            }
                             options{
                                 timeout(15)
                             }
@@ -597,7 +595,7 @@ pipeline {
                                     }
                                 }
                                 success{
-                                    stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
+                                    stash includes: "dist/${CONFIGURATIONS[PYTHON_VERSION].package_testing.whl.pkgRegex}", name: "whl ${PYTHON_VERSION}"
                                     archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
                                 }
                                 cleanup{
@@ -640,19 +638,23 @@ pipeline {
                                 }
                             }
                             options{
-                                timeout(5)
-                            }
-                            when{
-                                equals expected: "whl", actual: PYTHON_PACKAGE_TYPE
+                                timeout(15)
                             }
                             steps{
-                                unstash "whl ${PYTHON_VERSION}"
+                                script{
+                                    if(PYTHON_PACKAGE_TYPE == "whl"){
+                                        unstash "${PYTHON_PACKAGE_TYPE} ${PYTHON_VERSION}"
+                                    }
+                                    if(PYTHON_PACKAGE_TYPE == "sdist"){
+                                        unstash "sdist"
+                                    }
+                                }
                                 bat(
                                     label: "Checking Python version",
                                     script: "python --version"
-                                    )
+                                )
                                 script{
-                                    findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}").each{
+                                    findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].package_testing[PYTHON_PACKAGE_TYPE].pkgRegex}").each{
                                         bat(
                                             script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
                                             label: "Testing ${it}"
@@ -662,7 +664,7 @@ pipeline {
                             }
                             post{
                                 failure{
-                                    bat "tree /A /F"
+                                    bat "tree .tox\\py\\lib\\site-packages\\uiucprescon /A /F"
                                 }
                                 cleanup{
                                     cleanWs(
