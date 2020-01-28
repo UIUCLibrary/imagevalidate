@@ -79,13 +79,8 @@ def get_sonarqube_unresolved_issues(report_task_file){
 
 pipeline {
     agent none
-//   agent {
-//     label 'Windows && longfilenames && VS2015 && Python3'
-//     // customWorkspace "c:/Jenkins/temp/${JOB_NAME}/${BUILD_NUMBER}"
-//
-//   }
   triggers {
-        cron('@daily')
+    parameterizedCron '@daily % DEPLOY_DEVPI=true; TEST_RUN_TOX=true'
     }
   options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
@@ -93,14 +88,11 @@ pipeline {
   }
   environment {
     build_number = VersionNumber(projectStartDate: '2018-6-12', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
-    PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
-    PIPENV_CACHE_DIR="${WORKSPACE}\\..\\.virtualenvs\\cache\\"
-    WORKON_HOME ="${WORKSPACE}\\pipenv\\"
     PIPENV_NOSPIN="DISABLED"
   }
   parameters {
     booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
-      booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
+      booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
       booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
       booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only")
       booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation. Release Branch Only")
