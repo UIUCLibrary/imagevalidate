@@ -27,7 +27,10 @@ RUN $ErrorActionPreference = 'Stop'; `
     Start-Process python-installer.exe -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1' -Wait ; `
     Remove-Item c:\python-installer.exe -Force
 
+ADD requirements.txt c:\temp\
+
+ENV PIP_EXTRA_INDEX_URL="https://devpi.library.illinois.edu/production/release"
 
 RUN python -m pip install --upgrade pip ; `
     pip install --upgrade setuptools ; `
-    pip install wheel pipenv sphinx tox devpi-client
+    pip install wheel pipenv sphinx tox devpi-client -r c:\temp\requirements.txt
