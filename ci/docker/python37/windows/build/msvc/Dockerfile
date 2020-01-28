@@ -33,4 +33,4 @@ ENV PIP_EXTRA_INDEX_URL="https://devpi.library.illinois.edu/production/release"
 
 RUN python -m pip install --upgrade pip ; `
     pip install --upgrade setuptools ; `
-    pip install wheel pipenv sphinx tox devpi-client -r c:\temp\requirements.txt
+    pip install wheel pipenv pytest-cov lxml sphinx mypy flake8 tox devpi-client -r c:\temp\requirements.txt
