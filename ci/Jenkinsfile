@@ -523,7 +523,7 @@ pipeline {
                     }
                 }
             }
-            stage('Creating Binary Packages') {
+            stage('Creating Binary Packages and Testing all Package') {
                 matrix{
                     agent none
                     axes{
@@ -553,6 +553,7 @@ pipeline {
                             }
                             when{
                                 equals expected: "whl", actual: PYTHON_PACKAGE_TYPE
+                                beforeAgent true
                             }
                             options{
                                 timeout(15)
