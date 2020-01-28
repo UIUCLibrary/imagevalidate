@@ -503,100 +503,135 @@ pipeline {
         }
       }
     }
-    stage('Creating Binary Packages') {
-            matrix{
-                agent none
-                axes{
-                    axis {
-                        name "PYTHON_VERSION"
-                        values(
-                            "3.6",
-                            "3.7"
-                        )
+    stage("Create Python Packages"){
+        stages{
+            stage('Creating Source Package') {
+                agent{
+                    dockerfile {
+                        filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
+                        label 'windows && Docker'
+                        additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
                     }
                 }
-                stages{
-                    stage("Creating bdist wheel"){
-                        agent{
-                            dockerfile {
-                                filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
-                                label 'windows && Docker'
-                                additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
-                            }
+                steps {
+                    bat "python setup.py sdist -d dist --format zip"
+                }
+                post{
+                    success{
+                        stash includes: 'dist/*.zip', name: "sdist"
+                        archiveArtifacts artifacts: "dist/*.zip", fingerprint: true
+                    }
+                }
+            }
+            stage('Creating Binary Packages') {
+                matrix{
+                    agent none
+                    axes{
+                        axis {
+                            name "PYTHON_VERSION"
+                            values(
+                                "3.6",
+                                "3.7"
+                            )
                         }
-                        options{
-                            timeout(15)
-                        }
-                        steps{
-                            bat "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
-                        }
-                        post{
-                            always{
-                                script{
-                                    findFiles(glob: "build/lib/**/*.pyd").each{
-                                        bat(
-                                            label: "Checking Python extension for dependents",
-                                            script: "dumpbin /DEPENDENTS ${it.path}"
-                                            )
-                                    }
-                                }
-                            }
-                            success{
-                                stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
-                                archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
-                            }
-                            cleanup{
-                                cleanWs(
-                                    deleteDirs: true,
-                                    patterns: [[pattern: 'dist/', type: 'INCLUDE']]
-                                )
-                            }
+                        axis {
+                            name "PYTHON_PACKAGE_TYPE"
+                            values(
+                                "whl",
+                                "sdist"
+                            )
                         }
                     }
-                    stage("Testing wheel"){
-                        agent{
-                            dockerfile {
-                                filename 'ci/docker/python37/windows/msvc/test/Dockerfile'
-                                label 'windows && docker'
-                                additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image}"
+                    stages{
+                        stage("Creating bdist wheel"){
+                            agent{
+                                dockerfile {
+                                    filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
+                                    label 'windows && Docker'
+                                    additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                                }
                             }
-                        }
-                        options{
-                            timeout(5)
-                        }
-                        steps{
-                            unstash "whl ${PYTHON_VERSION}"
-                            bat(
-                                label: "Checking Python version",
-                                script: "python --version"
-                                )
-                            script{
-                                findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}").each{
-                                    bat(
-                                        script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
-                                        label: "Testing ${it}"
+                            when{
+                                equals expected: "whl", actual: PYTHON_PACKAGE_TYPE
+                            }
+                            options{
+                                timeout(15)
+                            }
+                            steps{
+                                bat "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
+                            }
+                            post{
+                                always{
+                                    script{
+                                        findFiles(glob: "build/lib/**/*.pyd").each{
+                                            bat(
+                                                label: "Checking Python extension for dependents",
+                                                script: "dumpbin /DEPENDENTS ${it.path}"
+                                                )
+                                        }
+                                    }
+                                }
+                                success{
+                                    stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
+                                    archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [[pattern: 'dist/', type: 'INCLUDE']]
                                     )
                                 }
                             }
                         }
-                        post{
-                            failure{
-                                bat "tree /A /F"
+                        stage("Testing wheel"){
+                            agent{
+                                dockerfile {
+                                    filename 'ci/docker/python37/windows/msvc/test/Dockerfile'
+                                    label 'windows && docker'
+                                    additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image}"
+                                }
                             }
-                            cleanup{
-                                cleanWs(
-                                    deleteDirs: true,
-                                    patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                        ]
-                                )
+                            options{
+                                timeout(5)
+                            }
+                            when{
+                                equals expected: "whl", actual: PYTHON_PACKAGE_TYPE
+                            }
+                            steps{
+                                unstash "whl ${PYTHON_VERSION}"
+                                bat(
+                                    label: "Checking Python version",
+                                    script: "python --version"
+                                    )
+                                script{
+                                    findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}").each{
+                                        bat(
+                                            script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
+                                            label: "Testing ${it}"
+                                        )
+                                    }
+                                }
+                            }
+                            post{
+                                failure{
+                                    bat "tree /A /F"
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: '.tox/', type: 'INCLUDE'],
+                                            ]
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
 //     stage('Packaging') {
 // //       environment{
 // //           PATH = "${tool 'cmake3.13'};$PATH"
