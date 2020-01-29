@@ -1051,7 +1051,7 @@ pipeline {
                                 unstash "DIST-INFO"
                                 script{
                                     def props = readProperties interpolate: true, file: "uiucprescon_imagevalidate.dist-info/METADATA"
-                                    cleanWs(patterns: [[pattern: "uiucprescon_imagevalidate.dist/METADATA", type: 'INCLUDE']])
+                                    cleanWs(patterns: [[pattern: "uiucprescon_imagevalidate.dist-info/METADATA", type: 'INCLUDE']])
                                     bat "python --version"
                                     bat(
                                         label: "Connecting to DevPi index",
@@ -1090,7 +1090,7 @@ pipeline {
                    script{
                         docker.build("imagevalidate:devpi.${env.BUILD_ID}",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                             unstash "DIST-INFO"
-                            def props = readProperties interpolate: true, file: 'uiucprescon_imagevalidate.dist/METADATA'
+                            def props = readProperties interpolate: true, file: 'uiucprescon_imagevalidate.dist-info/METADATA'
                             sh(
                                 label: "Connecting to DevPi Server",
                                 script: 'devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi'
