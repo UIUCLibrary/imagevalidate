@@ -103,7 +103,16 @@ def get_sonarqube_unresolved_issues(report_task_file){
 }
 
 def getChocolateySource(){
-    return 'https://chocolatey.org/api/v2/'
+    script{
+        try{
+            configFileProvider([configFile(fileId: 'local_chocolatey_cache', variable: 'CHOCO_PROP_FILES')]) {
+                def props = readProperties(CHOCO_PROP_FILES)
+                return CHOCO_PROP_FILES.url
+            }
+        } catch (exc) {
+            return 'https://chocolatey.org/api/v2/'
+        }
+    }
 }
 
 def defaultChocolateySource = getChocolateySource()
