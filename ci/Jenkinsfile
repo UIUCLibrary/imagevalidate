@@ -102,7 +102,11 @@ def get_sonarqube_unresolved_issues(report_task_file){
     }
 }
 
-def defaultChocolateySource = 'https://chocolatey.org/api/v2/'
+def getChocolateySource(){
+    return 'https://chocolatey.org/api/v2/'
+}
+
+def defaultChocolateySource = getChocolateySource()
 
 pipeline {
     agent none
