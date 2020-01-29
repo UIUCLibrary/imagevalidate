@@ -355,6 +355,9 @@ class BuildCMakeClib(build_clib):
         else:
             self.cmake_generator = None
 
+    def build_libraries(self, libraries):
+        super().build_libraries(libraries)
+
     def finalize_options(self):
         super().finalize_options()
         assert self.cmake_path, "CMake required to build clibs"
@@ -513,6 +516,8 @@ class BuildCMakeClib(build_clib):
                 *PACKAGE_NAME.split(".")  # For namespace and subpackages
             )
         )
+        if not self.compiler.initialized:
+            self.compiler.initialize()
 
         for lib_name, lib in libraries:
 
@@ -543,8 +548,10 @@ class BuildCMakeClib(build_clib):
             build_cmd = self.get_finalized_command("build")
 
             if build_cmd.parallel is not None:
-
                 build_command += ["--parallel", str(build_cmd.parallel)]
+
+            if not self.compiler.initialized:
+                self.compiler.initialize()
 
             self.compiler.spawn(build_command)
 
@@ -566,7 +573,7 @@ class BuildCMakeClib(build_clib):
                 self.cmake_path,
                 "-S", lib["source path"],
                 "-B", lib["build path"],
-                f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH={runtime_output_path}",
+                # f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH={runtime_output_path}",
                 # f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH={runtime_output_path}",
                 f"-DCMAKE_INSTALL_PREFIX:PATH={install_prefix}",
                 f"-DCMAKE_TOOLCHAIN_FILE:FILEPATH={self.toolchain_file}",
@@ -675,6 +682,9 @@ class BuildPybind11Ext(build_ext):
 
 class BuildOpenJp2Extension(BuildPybind11Ext):
 
+    def links_to_dynamic(self, ext):
+        return super().links_to_dynamic(ext)
+
     def run(self):
         clib_command = self.get_finalized_command("build_clib")
 
@@ -698,6 +708,8 @@ class BuildOpenJp2Extension(BuildPybind11Ext):
             "-P",
             "cmake/fixup.cmake",
         ]
+        if not self.compiler.initialized:
+            self.compiler.initialize()
         self.compiler.spawn(fixup_command)
 
 
@@ -737,6 +749,6 @@ setup(
     cmdclass={
         "build_ext": BuildOpenJp2Extension,
         "build_clib": BuildCMakeClib,
-        "package_clib": PackageClib,
+        # "package_clib": PackageClib,
     }
 )
