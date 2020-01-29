@@ -7,7 +7,7 @@ SHELL ["cmd", "/S", "/C"]
 RUN mkdir c:\\TEMP
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 RUN Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-ARG CHOCOLATEY_SOURCE=""
+ARG CHOCOLATEY_SOURCE="https://chocolatey.org/api/v2"
 ADD ci/docker/python37/windows/msvc/build/packages.config packages.config
 RUN If($Env:CHOCOLATEY_SOURCE -ne $null){Write-Host "using $Env:CHOCOLATEY_SOURCE" ; & "C:\ProgramData\chocolatey\bin\choco.exe install -y --no-progress --source=$Env:CHOCOLATEY_SOURCE packages.config"} Else {Write-Host "Using Chocholatey Community repository. NOTE: This might fail if the same docker host is running choco install in another container at the same time." ; & "C:\ProgramData\chocolatey\bin\choco.exe install -y --no-progress packages.config"} ; `
     Remove-Item C:\ProgramData\chocolatey\bin\cpack.exe ; `

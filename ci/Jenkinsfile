@@ -137,6 +137,7 @@ pipeline {
                 dockerfile {
                     filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
                     label 'Windows&&Docker'
+                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE=${params.CHOCOLATEY_SOURCE}"
                  }
             }
             steps{
@@ -265,6 +266,7 @@ pipeline {
             dockerfile {
                 filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
                 label 'Windows&&Docker'
+                additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE=${params.CHOCOLATEY_SOURCE}"
              }
         }
         stages{
@@ -315,6 +317,7 @@ pipeline {
             dockerfile {
                 filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
                 label 'Windows&&Docker'
+                additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE=${params.CHOCOLATEY_SOURCE}"
              }
         }
         environment{
@@ -516,7 +519,7 @@ pipeline {
                     dockerfile {
                         filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
                         label 'windows && Docker'
-                        additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                        additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE=${params.CHOCOLATEY_SOURCE}"
                     }
                 }
                 steps {
@@ -556,7 +559,7 @@ pipeline {
                                 dockerfile {
                                     filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
                                     label 'windows && Docker'
-                                    additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                                    additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_SOURCE=${params.CHOCOLATEY_SOURCE}"
                                 }
                             }
                             options{
