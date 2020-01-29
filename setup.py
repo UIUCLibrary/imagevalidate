@@ -749,6 +749,6 @@ setup(
     cmdclass={
         "build_ext": BuildOpenJp2Extension,
         "build_clib": BuildCMakeClib,
-        # "package_clib": PackageClib,
+        "package_clib": PackageClib,
     }
 )
