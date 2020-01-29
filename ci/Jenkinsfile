@@ -102,6 +102,7 @@ def get_sonarqube_unresolved_issues(report_task_file){
     }
 }
 
+def defaultChocolateySource = 'https://chocolatey.org/api/v2/'
 
 pipeline {
     agent none
@@ -122,6 +123,7 @@ pipeline {
       booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
       booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only")
       booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation. Release Branch Only")
+      string(defaultValue: "${defaultChocolateySource}", description: '', name: 'CHOCOLATEY_SOURCE', trim: true)
       string(name: 'DEPLOY_DOCS_URL_SUBFOLDER', defaultValue: "imagevalidate", description: 'The directory that the docs should be saved under')
   }
 
@@ -1020,7 +1022,7 @@ pipeline {
                         stage("Testing DevPi source Package"){
                             agent {
                                 dockerfile {
-                                    additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url}"
+                                    additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_SOURCE=${params.CHOCOLATEY_SOURCE}"
                                     filename 'ci/docker/deploy/devpi/test/windows/source/Dockerfile'
                                     label 'windows && docker'
                                 }
