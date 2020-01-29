@@ -262,22 +262,13 @@ pipeline {
         }
         stages{
             stage("Building Python Package"){
-
                 steps {
-                    bat "python setup.py build -b ${WORKSPACE}\\36\\build --build-lib ${WORKSPACE}\\build\\36\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\36\\temp build_ext --inplace"
+                    bat(
+                        label: "Building",
+                        script: "python setup.py build -b build --build-lib build\\lib -j${env.NUMBER_OF_PROCESSORS} -t build\\temp build_ext --inplace"
+                        )
                 }
                 post{
-                //    always{
-                //        recordIssues(tools: [
-                //                        pyLint(name: 'Setuptools Build: PyLint', pattern: 'logs/build.log'),
-                //                        msBuild(name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log')
-                //                    ]
-                //                )
-                //        archiveArtifacts artifacts: "logs/build.log"
-                //    }
-                //    failure{
-                //        echo "Failed to build Python package"
-                //    }
                    success{
                        stash includes: "uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd", name: 'COMPILED_BINARIES'
                    }
@@ -293,11 +284,6 @@ pipeline {
                     bat "python -m sphinx -b html docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
                 }
                 post{
-                    always {
-                        bat "tree /F /A"
-                    //    recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log')])
-                    //    archiveArtifacts artifacts: 'logs/build_sphinx.log'
-                    }
                     success{
                         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                         script{
@@ -317,7 +303,6 @@ pipeline {
             }
         }
     }
-
     stage('Testing') {
         agent {
             dockerfile {
@@ -332,8 +317,15 @@ pipeline {
             stage("Setting up tests"){
                 steps{
                     unstash "COMPILED_BINARIES"
-                    bat "if not exist logs mkdir logs"
-                    bat "if not exist reports\\coverage mkdir reports\\coverage"
+                    bat(
+                        label: "Creating logging and report directories",
+                        script: """
+                            if not exist logs mkdir logs
+                            if not exist reports\\coverage mkdir reports\\coverage
+                            if not exist reports\\doctests mkdir reports\\doctests
+                            if not exist reports\\mypy\\html mkdir reports\\mypy\\html
+                        """
+                    )
                 }
             }
             stage("Run Testing"){
@@ -347,20 +339,6 @@ pipeline {
                             label: "Run Tox",
                             script: "tox --workdir ${WORKSPACE}\\.tox -vv  -e py -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                         )
-//                         script{
-//                             try{
-//                                 bat (
-//                                     label: "Run Tox",
-//                                     script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
-//                                 )
-//
-//                             } catch (exc) {
-//                                 bat(
-//                                     label: "Run Tox with new environments",
-//                                     script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
-//                                 )
-//                             }
-//                         }
                     }
                     post {
                         always {
@@ -398,15 +376,11 @@ pipeline {
                                     ],
                                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                                 calculateDiffForChangeRequests: true
-
-
                         }
-
                     }
                 }
                 stage("Run Doctest Tests"){
                   steps {
-                    bat "if not exist reports\\doctests mkdir reports\\doctests"
                     catchError(buildResult: "SUCCESS", message: 'Doctest found issues', stageResult: "UNSTABLE") {
                         bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v"
                     }
@@ -428,7 +402,7 @@ pipeline {
                 }
                 stage("Run MyPy Static Analysis") {
                   steps{
-                    bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
+
                     catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
                         bat(
                             label: "Running Mypy",
@@ -694,98 +668,6 @@ pipeline {
             }
         }
     }
-//     stage('Packaging') {
-// //       environment{
-// //           PATH = "${tool 'cmake3.13'};$PATH"
-// //       }
-//         agent {
-//             dockerfile {
-//                 filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
-//                 label 'Windows&&Docker'
-//             }
-//         }
-//         stages{
-//             stage("Make Packages"){
-//
-//             parallel{
-//                 stage("Python sdist"){
-//                     environment{
-//                         PATH = "${tool 'CPython-3.6'};$PATH"
-//                     }
-//                     steps {
-//                         bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
-//                     }
-//                     post{
-//                         success{
-//                             stash includes: 'dist/*.zip', name: "sdist"
-//                             archiveArtifacts artifacts: "dist/*.zip", fingerprint: true
-//                         }
-//                     }
-//                 }
-//                 stage("Python 3.6 whl"){
-//                   environment {
-//                     PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.6'}\\Scripts;$PATH"
-//                   }
-//                   options{
-//                     retry 2
-//                   }
-//                   steps {
-//                   bat(
-//                     label: "Building wheel file for Python 3.6",
-//                     script: "pipenv run python setup.py build -b ${WORKSPACE}\\36\\build --build-lib ${WORKSPACE}\\build\\36\\lib -j${env.NUMBER_OF_PROCESSORS} -t ${WORKSPACE}\\build\\36\\temp bdist_wheel -d ${WORKSPACE}\\dist"
-//                     )
-//                   }
-//                   post{
-//                     success {
-//                       archiveArtifacts artifacts: "dist/*p36*.whl", fingerprint: true
-//                       stash includes: 'dist/*p36*.whl', name: "whl 3.6"
-//
-//                     }
-//                   }
-//                 }
-//                 stage("Python 3.7 whl"){
-//                   agent {
-//                     node {
-//                       label "Windows && Python3 && VS2015"
-//                     }
-//                   }
-//                   environment {
-//                     PATH = "${tool 'cmake3.13'};${tool 'CPython-3.7'};$PATH"
-//                   }
-//                   options{
-//                     retry 2
-//                   }
-//                   steps {
-//                     bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37 && venv37\\scripts\\python.exe -m pip install pip --upgrade && venv37\\scripts\\pip.exe install --upgrade setuptools wheel"
-//                     bat(
-//                         label: "Building wheel file for Python 3.6",
-//                         script: "${WORKSPACE}\\venv37\\scripts\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext build_clib --cmake-path=${tool 'cmake3.13'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
-//                     )
-//                   }
-//                   post{
-//                       success{
-//                           stash includes: 'dist/*p37*.whl', name: "whl 3.7"
-//                           archiveArtifacts artifacts: "dist/*p37*.whl", fingerprint: true
-//                       }
-//                       cleanup{
-//                           cleanWs(
-//                               deleteDirs: true,
-//                               patterns: [
-//                                 [pattern: '*tmp', type: 'INCLUDE'],
-//                                 [pattern: "dist", type: 'INCLUDE']
-//                               ]
-//                           )
-//                       }
-//                   }
-//                 }
-//               }
-//               post{
-//                 cleanup{
-//                   cleanWs(patterns: [[pattern: "dist/*.whl,dist/*.tar.gz,dist/*.zip", type: 'INCLUDE']])
-//                 }
-//               }
-//         }
-//     }
     stage("Deploying to DevPi") {
         when {
             allOf{
@@ -812,9 +694,7 @@ pipeline {
             stage("Install DevPi client"){
               steps {
                 bat "${WORKSPACE}\\venv36\\Scripts\\pip.exe install devpi-client"
-
               }
-
             }
             stage("Upload to DevPi Staging"){
               steps {
