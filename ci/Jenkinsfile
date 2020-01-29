@@ -547,6 +547,15 @@ pipeline {
                         stash includes: 'dist/*.zip', name: "sdist"
                         archiveArtifacts artifacts: "dist/*.zip", fingerprint: true
                     }
+                    cleanup{
+                        cleanWs(
+                            deleteDirs: true,
+                            patterns: [
+                                [pattern: 'dist/', type: 'INCLUDE'],
+                                [pattern: 'build/', type: 'INCLUDE'],
+                            ]
+                        )
+                    }
                 }
             }
             stage('Creating Binary Packages'){
@@ -601,7 +610,10 @@ pipeline {
                                 cleanup{
                                     cleanWs(
                                         deleteDirs: true,
-                                        patterns: [[pattern: 'dist/', type: 'INCLUDE']]
+                                        patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: 'build/', type: 'INCLUDE'],
+                                        ]
                                     )
                                 }
                             }
@@ -671,6 +683,7 @@ pipeline {
                                         deleteDirs: true,
                                         patterns: [
                                             [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: 'build/', type: 'INCLUDE'],
                                             [pattern: '.tox/', type: 'INCLUDE'],
                                             ]
                                     )
