@@ -567,7 +567,7 @@ class BuildCMakeClib(build_clib):
                 "-S", lib["source path"],
                 "-B", lib["build path"],
                 f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH={runtime_output_path}",
-                f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH={runtime_output_path}",
+                # f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH={runtime_output_path}",
                 f"-DCMAKE_INSTALL_PREFIX:PATH={install_prefix}",
                 f"-DCMAKE_TOOLCHAIN_FILE:FILEPATH={self.toolchain_file}",
                 f"-DCMAKE_BUILD_TYPE={self.build_configuration}"
