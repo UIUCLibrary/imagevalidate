@@ -370,15 +370,18 @@ pipeline {
                 }
                 environment{
                     scannerHome = tool name: 'sonar-scanner-3.3.0', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-                    PKG_VERSION = get_package_version("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
+//                     PKG_VERSION = get_package_version("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
                 }
                 steps{
-                    withSonarQubeEnv(installationName: "sonarqube.library.illinois.edu") {
-                        bat(
-                            label: "Running sonar scanner",
-                            script: '\
+                    unstash "DIST-INFO"
+                    script{
+                        def props = readProperties interpolate: true, file: "uiucprescon_imagevalidate.dist-info/METADATA"
+                        withSonarQubeEnv(installationName: "sonarqube.library.illinois.edu") {
+                            bat(
+                                label: "Running sonar scanner",
+                                script: '\
 "%scannerHome%/bin/sonar-scanner" \
--D"sonar.projectVersion=%PKG_VERSION%" \
+-D"sonar.projectVersion=${props.Version}" \
 -D"sonar.projectBaseDir=%WORKSPACE%" \
 -D"sonar.buildString=%BUILD_TAG%" \
 -D"sonar.scm.provider=git" \
@@ -386,8 +389,8 @@ pipeline {
 -D"sonar.python.xunit.reportPath=%WORKSPACE%/reports/pytest/%junit_filename%" \
 -D"sonar.working.directory=%WORKSPACE%\\.scannerwork" \
 -X'
-                        )
-
+                            )
+                        }
                     }
                     script{
                         def sonarqube_result = waitForQualityGate(abortPipeline: false)
