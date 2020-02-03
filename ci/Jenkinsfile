@@ -358,38 +358,48 @@ pipeline {
                 }
               }
           }
-        stage("Run Sonarqube Analysis"){
-                agent {
-                  label 'windows && !docker'
-                }
-                when{
-                    equals expected: "master", actual: env.BRANCH_NAME
-                    beforeAgent true
-                }
-                options{
-                    timeout(5)
-                }
-                environment{
-                    scannerHome = tool name: 'sonar-scanner-3.3.0', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-//                     PKG_VERSION = get_package_version("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
-                }
-                steps{
-                    unstash "DIST-INFO"
-                    unstash "COVERAGE_REPORT_DATA"
-                    unstash "PYTEST_UNIT_TEST_RESULTS"
-                    script{
-                        def props = readProperties interpolate: true, file: "uiucprescon_imagevalidate.dist-info/METADATA"
-                        withSonarQubeEnv(installationName: "sonarqube.library.illinois.edu") {
-                        bat(
-                            label: "Running sonar scanner",
-                            script: '\
-                "%scannerHome%/bin/sonar-scanner" \
-                -D"sonar.projectBaseDir=%WORKSPACE%" \
-                -D"sonar.scm.provider=git" \
-                -D"sonar.python.coverage.reportPaths=%WORKSPACE%/reports/coverage.xml" \
-                -D"sonar.python.xunit.reportPath=reports/pytest/pytest-junit.xml" \
-                -D"sonar.working.directory=%WORKSPACE%\\.scannerwork" \
-                -X')
+
+      }
+      post{
+        cleanup{
+            cleanWs(patterns: [
+            [pattern: 'logs/flake8.log', type: 'INCLUDE'],
+            [pattern: 'reports/coverage.xml"', type: 'INCLUDE'],
+            ])
+        }
+      }
+    }
+    stage("Run Sonarqube Analysis"){
+        agent {
+          label 'windows && !docker'
+        }
+        when{
+            equals expected: "master", actual: env.BRANCH_NAME
+            beforeAgent true
+        }
+        options{
+            timeout(5)
+        }
+        environment{
+            scannerHome = tool name: 'sonar-scanner-3.3.0', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+        }
+        steps{
+            unstash "DIST-INFO"
+            unstash "COVERAGE_REPORT_DATA"
+            unstash "PYTEST_UNIT_TEST_RESULTS"
+            script{
+                def props = readProperties interpolate: true, file: "uiucprescon_imagevalidate.dist-info/METADATA"
+                withSonarQubeEnv(installationName: "sonarqube.library.illinois.edu") {
+                bat(
+                    label: "Running sonar scanner",
+                    script: '\
+            "%scannerHome%/bin/sonar-scanner" \
+            -D"sonar.projectBaseDir=%WORKSPACE%" \
+            -D"sonar.scm.provider=git" \
+            -D"sonar.python.coverage.reportPaths=%WORKSPACE%/reports/coverage.xml" \
+            -D"sonar.python.xunit.reportPath=reports/pytest/pytest-junit.xml" \
+            -D"sonar.working.directory=%WORKSPACE%\\.scannerwork" \
+            -X')
 
 //                -Dsonar.python.pylint.reportPath=%WORKSPACE%/reports/pylint.txt \
 //                            bat(
@@ -405,37 +415,27 @@ pipeline {
 //-D"sonar.working.directory=%WORKSPACE%\\.scannerwork" \
 //-X'
 //                            )
-                        }
-                    }
-                    script{
-                        def sonarqube_result = waitForQualityGate(abortPipeline: false)
-                        if (sonarqube_result.status != 'OK') {
-                            unstable "SonarQube quality gate: ${sonarqube_result.status}"
-                        }
-                        def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
-                        writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-                    }
-                }
-                post{
-                    always{
-                        archiveArtifacts(
-                            allowEmptyArchive: true,
-                            artifacts: ".scannerwork/report-task.txt"
-                        )
-                        archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
-                        recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
-                    }
                 }
             }
-      }
-      post{
-        cleanup{
-            cleanWs(patterns: [
-            [pattern: 'logs/flake8.log', type: 'INCLUDE'],
-            [pattern: 'reports/coverage.xml"', type: 'INCLUDE'],
-            ])
+            script{
+                def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                if (sonarqube_result.status != 'OK') {
+                    unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                }
+                def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
+                writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+            }
         }
-      }
+        post{
+            always{
+                archiveArtifacts(
+                    allowEmptyArchive: true,
+                    artifacts: ".scannerwork/report-task.txt"
+                )
+                archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
+                recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+            }
+        }
     }
     stage("Create Python Packages"){
         stages{
