@@ -5,6 +5,8 @@ include LICENSE
 include README.rst
 include CHANGELOG.rst
 
+include cmake/fixup.cmake
+
 # C++ Source files
 include CMakeLists.txt
 recursive-include uiucprescon/imagevalidate CMakeLists.txt *.cpp *.h
