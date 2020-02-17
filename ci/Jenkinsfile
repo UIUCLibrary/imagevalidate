@@ -193,7 +193,7 @@ pipeline {
                         cleanWs(
                             deleteDirs: true
                             patterns: [
-                                [patstern: 'build/', type: 'INCLUDE'],
+                                [pattern: 'build/', type: 'INCLUDE'],
                                 [pattern: ".eggs/", type: 'INCLUDE']
                             ]
                         )
