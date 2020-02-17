@@ -191,7 +191,7 @@ pipeline {
                    }
                    failure{
                         cleanWs(
-                            deleteDirs: true
+                            deleteDirs: true,
                             patterns: [
                                 [pattern: 'build/', type: 'INCLUDE'],
                                 [pattern: ".eggs/", type: 'INCLUDE']
