@@ -189,6 +189,15 @@ pipeline {
                    success{
                        stash includes: "uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd", name: 'COMPILED_BINARIES'
                    }
+                   failure{
+                        cleanWs(
+                            deleteDirs: true
+                            patterns: [
+                                [patstern: 'build/', type: 'INCLUDE'],
+                                [pattern: ".eggs/", type: 'INCLUDE']
+                            ]
+                        )
+                   }
                 }
             }
             stage("Sphinx Documentation"){
