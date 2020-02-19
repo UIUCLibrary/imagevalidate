@@ -243,6 +243,10 @@ pipeline {
         stages{
             stage("Setting up tests"){
                 steps{
+                    powershell(
+                        label: "Installing Certs required to download python dependencies",
+                        script: "certutil -generateSSTFromWU roots.sst ; certutil -addstore -f root roots.sst ; del roots.sst"
+                    )
                     unstash "COMPILED_BINARIES"
                     bat(
                         label: "Creating logging and report directories",
@@ -284,8 +288,8 @@ pipeline {
                     }
                 }
                 stage("Run PyTest Unit Tests"){
-
                     steps{
+
                         catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                             bat(
                                 label: "Running Pytest",
