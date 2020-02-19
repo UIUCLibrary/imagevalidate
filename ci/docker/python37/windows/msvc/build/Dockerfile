@@ -27,6 +27,10 @@ RUN Invoke-WebRequest $Env:PYTHON_INSTALLER_URL -OutFile c:\python-installer.exe
     Start-Process python-installer.exe -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1' -Wait ; `
     Remove-Item c:\python-installer.exe -Force
 
+RUN certutil -generateSSTFromWU roots.sst ; `
+    certutil -addstore -f root roots.sst ; `
+    del roots.sst
+
 ADD requirements.txt c:\temp\
 
 ENV PIP_EXTRA_INDEX_URL="https://devpi.library.illinois.edu/production/release"

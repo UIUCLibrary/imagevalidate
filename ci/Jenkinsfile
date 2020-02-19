@@ -243,10 +243,6 @@ pipeline {
         stages{
             stage("Setting up tests"){
                 steps{
-                    powershell(
-                        label: "Installing Certs required to download python dependencies",
-                        script: "certutil -generateSSTFromWU roots.sst ; certutil -addstore -f root roots.sst ; del roots.sst"
-                    )
                     unstash "COMPILED_BINARIES"
                     bat(
                         label: "Creating logging and report directories",
