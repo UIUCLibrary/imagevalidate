@@ -1,5 +1,5 @@
 # escape=`
-ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
+ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8
 FROM ${FROM_IMAGE}
 
 # Reset the shell.
@@ -23,13 +23,13 @@ RUN Set-ItemProperty -Path 'HKLM:\Software\Microsoft\Command Processor' -Name 'A
 
 ARG PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe
 
-RUN Invoke-WebRequest $Env:PYTHON_INSTALLER_URL -OutFile c:\python-installer.exe ; `
-    Start-Process python-installer.exe -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1' -Wait ; `
-    Remove-Item c:\python-installer.exe -Force
-
 RUN certutil -generateSSTFromWU roots.sst ; `
     certutil -addstore -f root roots.sst ; `
     del roots.sst
+
+RUN Invoke-WebRequest $Env:PYTHON_INSTALLER_URL -OutFile c:\python-installer.exe ; `
+    Start-Process python-installer.exe -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1' -Wait ; `
+    Remove-Item c:\python-installer.exe -Force
 
 ADD requirements.txt c:\temp\
 
