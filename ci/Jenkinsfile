@@ -284,8 +284,8 @@ pipeline {
                     }
                 }
                 stage("Run PyTest Unit Tests"){
-
                     steps{
+
                         catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                             bat(
                                 label: "Running Pytest",
@@ -460,8 +460,10 @@ pipeline {
                     bat "python setup.py sdist -d dist --format zip"
                 }
                 post{
-                    success{
+                    always{
                         stash includes: 'dist/*.zip', name: "sdist"
+                    }
+                    success{
                         archiveArtifacts artifacts: "dist/*.zip", fingerprint: true
                     }
                     cleanup{
@@ -511,6 +513,7 @@ pipeline {
                             }
                             post{
                                 always{
+                                    stash includes: "dist/${CONFIGURATIONS[PYTHON_VERSION].package_testing.whl.pkgRegex}", name: "whl ${PYTHON_VERSION}"
                                     script{
                                         findFiles(glob: "build/lib/**/*.pyd").each{
                                             bat(
@@ -521,7 +524,6 @@ pipeline {
                                     }
                                 }
                                 success{
-                                    stash includes: "dist/${CONFIGURATIONS[PYTHON_VERSION].package_testing.whl.pkgRegex}", name: "whl ${PYTHON_VERSION}"
                                     archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
                                 }
                                 cleanup{
