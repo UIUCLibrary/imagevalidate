@@ -13,7 +13,7 @@ def CONFIGURATIONS = [
                 sdist: [
                     dockerfile: "ci/docker/python37/windows/msvc/build/Dockerfile",
                     label: "windows && Docker",
-                    additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe --build-arg CHOCOLATEY_REPO",
+                    additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe --build-arg CHOCOLATEY_SOURCE",
                     pkgRegex: "*.zip",
                 ]
             ],
@@ -34,7 +34,7 @@ def CONFIGURATIONS = [
                 sdist: [
                     dockerfile: "ci/docker/python37/windows/msvc/build/Dockerfile",
                     label: "windows && Docker",
-                    additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe --build-arg CHOCOLATEY_REPO",
+                    additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe --build-arg CHOCOLATEY_SOURCE",
                     pkgRegex: "*.zip",
                 ]
             ],
@@ -144,7 +144,7 @@ pipeline {
                 dockerfile {
                     filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
                     label 'Windows&&Docker'
-                    additionalBuildArgs "--build-arg CHOCOLATEY_REPO"
+                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                  }
             }
             steps{
@@ -173,7 +173,7 @@ pipeline {
             dockerfile {
                 filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
                 label 'Windows&&Docker'
-                additionalBuildArgs "--build-arg CHOCOLATEY_REPO"
+                additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
              }
         }
         stages{
@@ -233,7 +233,7 @@ pipeline {
             dockerfile {
                 filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
                 label 'Windows&&Docker'
-                additionalBuildArgs "--build-arg CHOCOLATEY_REPO"
+                additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
              }
         }
         environment{
@@ -452,7 +452,7 @@ pipeline {
                     dockerfile {
                         filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
                         label 'windows && Docker'
-                        additionalBuildArgs "--build-arg CHOCOLATEY_REPO"
+                        additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                     }
                 }
                 steps {
@@ -494,7 +494,7 @@ pipeline {
                                 dockerfile {
                                     filename 'ci/docker/python37/windows/msvc/build/Dockerfile'
                                     label 'windows && Docker'
-                                    additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_REPO"
+                                    additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_SOURCE"
                                 }
                             }
                             steps{
@@ -705,7 +705,7 @@ pipeline {
                         stage("Testing DevPi Source Package"){
                             agent {
                                 dockerfile {
-                                    additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_REPO"
+                                    additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_SOURCE"
                                     filename 'ci/docker/deploy/devpi/test/windows/source/Dockerfile'
                                     label 'windows && docker'
                                 }
