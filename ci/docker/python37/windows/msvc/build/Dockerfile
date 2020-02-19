@@ -10,12 +10,20 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 ADD ci/docker/python37/windows/msvc/build/chocolatey/install_choco.ps1 choco/install_choco.ps1
 ARG CHOCOLATEY_REPO=https://chocolatey.org/api/v2
 ARG ChocolateyEnvironmentDebug=false
-RUN Set-ExecutionPolicy Bypass -Scope Process -Force; ./choco/install_choco.ps1 -packageRepo $env:CHOCOLATEY_REPO ; `
-    choco source remove -n chocolatey ; choco source add -n=chocolatey_repo -s=\"$env:CHOCOLATEY_REPO\" ; `
+RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    ./choco/install_choco.ps1 -packageRepo $env:CHOCOLATEY_REPO ; `
+    if( -not ([string]::IsNullOrEmpty($Env:CHOCOLATEY_REPO ))) `
+    { `
+        Write-Host "Adding $env:CHOCOLATEY_REPO to chocolatey sources" ; `
+        choco source add -n=chocolatey_repo --priority=1 -s=\"$env:CHOCOLATEY_REPO\"; `
+    }; `
     Remove-Item C:\ProgramData\chocolatey\bin\cpack.exe
 
+
 ADD ci/docker/python37/windows/msvc/build/chocolatey/packages.config choco/packages.config
-RUN choco install -y choco/packages.config --no-progress --stoponfirstfailure;`
+
+RUN choco sources ; `
+    choco install -y choco/packages.config --no-progress --stoponfirstfailure; `
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse
 
 ADD ci/docker/python37/windows/msvc/build/startup.bat c:\temp\startup.bat
