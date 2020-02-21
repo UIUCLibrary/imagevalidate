@@ -4,5 +4,5 @@ more-itertools==4.2.0
 py==1.5.3
 pytest
 pytest-runner==4.2
-six==1.11.0
+six
 py3exiv2bind
