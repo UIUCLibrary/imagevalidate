@@ -7,6 +7,7 @@ import urllib
 import zipfile
 from typing import Iterable, Tuple, List
 import abc
+from distutils.sysconfig import customize_compiler
 from urllib import request
 
 import setuptools
@@ -400,9 +401,33 @@ class BuildCMakeClib(build_clib):
         #     "Generated CMake Toolchain file: {}".format(toolchain_file))
 
     def run(self):
+        if not self.libraries:
+            return
+
+            # Yech -- this is cut 'n pasted from build_ext.py!
+        from distutils.ccompiler import new_compiler
+        self.compiler = new_compiler(compiler=self.compiler,
+                                     dry_run=self.dry_run,
+                                     force=self.force)
+        customize_compiler(self.compiler)
+
+        if self.include_dirs is not None:
+            self.compiler.set_include_dirs(self.include_dirs)
+        if self.define is not None:
+            # 'define' option is a list of (name,value) tuples
+            for (name, value) in self.define:
+                self.compiler.define_macro(name, value)
+        if self.undef is not None:
+            for macro in self.undef:
+                self.compiler.undefine_macro(macro)
+
+        # for library in self.libraries:
+        #     self.build_extension(library)
+
         self.get_deps_source(self.libraries)
         self.finalize_library_options(self.libraries)
-        super().run()
+        self.build_libraries(self.libraries)
+        # super().run()
 
     def download_source_archive(self, url, lib_name):
         source_archive_file_extension = \
@@ -534,7 +559,9 @@ class BuildCMakeClib(build_clib):
                     lib['install manifest'].append(file_already_installed)
             except FileNotFoundError:
                 pass
-
+            if self.compiler.compiler_type == "msvc":
+                if not self.compiler.initialized:
+                    self.compiler.initialize()
             self.build_library(lib, build_path, package_path)
 
             #  Build
@@ -569,6 +596,8 @@ class BuildCMakeClib(build_clib):
             self.spawn(install_command)
 
     def build_library(self, lib, build_path, runtime_output_path):
+        # super(BuildCMakeClib, self).build_library()
+
         if not os.path.exists(os.path.join(build_path, "CMakeCache.txt")):
             install_prefix = os.path.abspath(lib["install prefix"])
 
@@ -588,8 +617,8 @@ class BuildCMakeClib(build_clib):
 
             if self.cmake_generator is not None:
                 configure_command += ["-G", self.cmake_generator]
-
-            self.toolchain.compiler_spawn(configure_command)
+            self.compiler.spawn(configure_command)
+            # self.toolchain.compiler_spawn(configure_command)
 
     def initalize_cmake_toolchain(self):
         self.toolchain_file = os.path.abspath(
@@ -644,7 +673,7 @@ class BuildPybind11Ext(build_ext):
     def find_openjpeg_lib_path(self):
         matching_names = [
             "libopenjp2.a",
-            "libopenjp2.lib",
+            "openjp2.lib",
         ]
         clib_cmd = self.get_finalized_command("build_clib")
         for root, dirs, files in os.walk(clib_cmd.build_clib):
@@ -655,7 +684,7 @@ class BuildPybind11Ext(build_ext):
 
     def find_openjpeg_header_path(self):
         clib_cmd = self.get_finalized_command("build_clib")
-        for root, dirs, files in os.walk(clib_cmd.build_clib):
+        for root, dirs, files in os.walk(os.path.join(clib_cmd.build_clib, "include")):
             for f in files:
                 if f == "openjpeg.h":
                     return root
@@ -686,6 +715,8 @@ class BuildPybind11Ext(build_ext):
         if opj2_include_dir is not None:
             self.include_dirs.insert(0, opj2_include_dir)
         opj2_lib_dir = self.find_openjpeg_lib_path()
+        if opj2_lib_dir is not None:
+            self.library_dirs.insert(0, opj2_lib_dir)
         super().run()
             # self.compiler.
         # if self.inplace:
