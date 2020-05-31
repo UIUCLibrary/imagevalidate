@@ -368,8 +368,6 @@ class BuildCMakeClib(build_clib):
             return []
         return None
     def find_target(self, target_name: str, build_type=None) -> Optional[str]:
-        # lib['build path']
-        # cmake_api_dir =
         libraries = self.get_finalized_command("build_openjpeg").libraries
         for l in libraries:
             if l[0] == target_name:
@@ -378,7 +376,12 @@ class BuildCMakeClib(build_clib):
         else:
             raise AttributeError("{} Not found".format(target_name))
         cmake_api_dir = os.path.join(lib[1]['build path'],  ".cmake", "api", "v1")
-        for f in os.scandir(os.path.join(cmake_api_dir, "reply")):
+
+        cmake_api_reply_dir = os.path.join(cmake_api_dir, "reply")
+        if not os.path.exists(cmake_api_dir):
+            return None
+
+        for f in os.scandir(cmake_api_reply_dir):
             if f"target-{target_name}-" not in f.name:
                 continue
             if build_type is not None:
@@ -754,14 +757,8 @@ class BuildPybind11Ext(build_ext):
 
     def build_extension(self, ext):
         missing = self.find_missing_libraries(ext)
-        opj2_include_dir = self.find_openjpeg_header_path()
-        if opj2_include_dir is not None:
-            ext.include_dirs.insert(0, opj2_include_dir)
-        opj2_lib_dir = self.find_openjpeg_lib_path()
-        if opj2_lib_dir is not None:
-            ext.library_dirs.insert(0, opj2_lib_dir)
-
         build_clib_cmd = self.get_finalized_command("build_openjpeg")
+
 
         if len(missing) > 0:
             self.announce(f"missing required deps [{', '.join(missing)}]. "
@@ -769,6 +766,13 @@ class BuildPybind11Ext(build_ext):
             self.run_command("build_openjpeg")
 
             ext.include_dirs.append(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
+        opj2_include_dir = self.find_openjpeg_header_path()
+        if opj2_include_dir is not None:
+            ext.include_dirs.insert(0, opj2_include_dir)
+        opj2_lib_dir = self.find_openjpeg_lib_path()
+        if opj2_lib_dir is not None:
+            ext.library_dirs.insert(0, opj2_lib_dir)
+
         if self.compiler.compiler_type == "unix":
             ext.extra_compile_args.append("-std=c++14")
         else:
@@ -783,11 +787,13 @@ class BuildPybind11Ext(build_ext):
             else:
                 build_configuration = None
             t = build_clib_cmd.find_target(lib, build_configuration)
-            deps = build_clib_cmd.find_dep_libs_from_cmake(t, remove_prefix=self.compiler.compiler_type == "unix")
-            if deps is not None:
-                if lib in deps:
-                    deps.remove(lib)
-                new_libs += deps
+            if t is not None:
+                deps = build_clib_cmd.find_dep_libs_from_cmake(t, remove_prefix=self.compiler.compiler_type == "unix")
+                if deps is not None:
+                    if lib in deps:
+                        deps.remove(lib)
+                    new_libs += deps
+
         ext.libraries += new_libs
         super().build_extension(ext)
 
