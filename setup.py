@@ -1056,10 +1056,10 @@ open_jpeg_extension = setuptools.Extension(
 openjpeg_library = \
     ("openjp2",
      {
-        "url": "https://github.com/uclouvain/openjpeg/archive/v2.3.0.tar.gz",
+        "url": "https://github.com/uclouvain/openjpeg/archive/v2.3.1.tar.gz",
         "cmake_args": [
             ("-DBUILD_CODEC:BOOL", "OFF"),
-            # ("-DBUILD_SHARED_LIBS:BOOL", "OFF"),
+            ("-DBUILD_SHARED_LIBS:BOOL", "OFF"),
         ],
         "sources": []
      }
