@@ -1,3 +1,4 @@
+import json
 import os
 import platform
 import re
@@ -5,7 +6,7 @@ import shutil
 import tarfile
 import urllib
 import zipfile
-from typing import Iterable, Tuple, List
+from typing import Iterable, Tuple, List, Optional
 import abc
 from distutils.sysconfig import customize_compiler
 from urllib import request
@@ -336,6 +337,56 @@ class BuildCMakeClib(build_clib):
 
     ]
 
+    def find_dep_libs_from_cmake(self, target_json, remove_prefix):
+        if target_json is not None:
+            with open(target_json) as f:
+                t = json.load(f)
+                link = t.get("link")
+                if link is not  None:
+                    cf = link['commandFragments']
+                    deps = map(lambda i: os.path.split(i)[-1],
+                               map(lambda z: z['fragment'],
+                                   filter(lambda fragment: fragment['role'] == "libraries", cf)
+                                   )
+                               )
+
+                    splitted = []
+                    for d in deps:
+                        splitted += d.split(" ")
+                    prefix_removed = []
+                    for d in splitted:
+                        if d.startswith("-l"):
+                            prefix_removed.append(d.replace("-l", ""))
+                        else:
+                            prefix_removed.append(d)
+
+                    deps = map(lambda i: os.path.splitext(i)[0], prefix_removed)
+
+                    if remove_prefix:
+                        return list(map(lambda i: i.replace("lib","") if i.startswith("lib") else i, deps))
+                    return list(deps)
+            return []
+        return None
+    def find_target(self, target_name: str, build_type=None) -> Optional[str]:
+        # lib['build path']
+        # cmake_api_dir =
+        libraries = self.get_finalized_command("build_clib").libraries
+        for l in libraries:
+            if l[0] == target_name:
+                lib = l
+                break
+        else:
+            raise AttributeError("{} Not found".format(target_name))
+        cmake_api_dir = os.path.join(lib[1]['build path'],  ".cmake", "api", "v1")
+        for f in os.scandir(os.path.join(cmake_api_dir, "reply")):
+            if f"target-{target_name}-" not in f.name:
+                continue
+            if build_type is not None:
+                if build_type not in f.name:
+                    continue
+            return f.path
+        return None
+
     def __init__(self, dist):
         super().__init__(dist)
         if "MSC" in platform.python_compiler():
@@ -343,7 +394,7 @@ class BuildCMakeClib(build_clib):
 
         elif "Clang" in platform.python_compiler():
             self.toolchain = ClangToolChain(self)
-
+        self.cmake_api_dir = None
         self.build_configuration = "release"
 
     def initialize_options(self):
@@ -352,6 +403,7 @@ class BuildCMakeClib(build_clib):
         self.nasm_exec = shutil.which("nasm")
         self.source_archive_path = None
         self.source_path_root = None
+
 
         if shutil.which("ninja") is not None:
             self.cmake_generator = "Ninja"
@@ -536,6 +588,7 @@ class BuildCMakeClib(build_clib):
     def build_libraries(self, libraries):
         super().build_libraries([])
         # self.initalize_cmake_toolchain()
+
         build_command = self.get_finalized_command("build")
 
         package_path = os.path.abspath(
@@ -546,9 +599,15 @@ class BuildCMakeClib(build_clib):
         )
         # if not self.compiler.initialized:
         #     self.compiler.initialize()
+        if self.compiler.compiler_type == "msvc":
+            if not self.compiler.initialized:
+                self.compiler.initialize()
 
         for lib_name, lib in libraries:
-
+            cmake_api_dir = os.path.join(lib['build path'], ".cmake", "api", "v1")
+            self.mkpath(os.path.join(cmake_api_dir, "query"))
+            with open(os.path.join(cmake_api_dir, "query", "codemodel-v2"), "w"):
+                pass
             self._resolve_cmake_args(lib)
 
             build_path = os.path.abspath(lib['build path'])
@@ -559,9 +618,7 @@ class BuildCMakeClib(build_clib):
                     lib['install manifest'].append(file_already_installed)
             except FileNotFoundError:
                 pass
-            if self.compiler.compiler_type == "msvc":
-                if not self.compiler.initialized:
-                    self.compiler.initialize()
+
             self.build_library(lib, build_path, package_path)
 
             #  Build
@@ -617,6 +674,11 @@ class BuildCMakeClib(build_clib):
 
             if self.cmake_generator is not None:
                 configure_command += ["-G", self.cmake_generator]
+
+            # self.mkpath(os.path.join(self.cmake_api_dir, "query"))
+            # with open(os.path.join(self.cmake_api_dir, "query", "codemodel-v2"), "w"):
+            #     pass
+
             self.compiler.spawn(configure_command)
             # self.toolchain.compiler_spawn(configure_command)
 
@@ -690,6 +752,52 @@ class BuildPybind11Ext(build_ext):
                     return root
         return None
 
+    def build_extension(self, ext):
+        missing = self.find_missing_libraries(ext)
+        opj2_include_dir = self.find_openjpeg_header_path()
+        if opj2_include_dir is not None:
+            ext.include_dirs.insert(0, opj2_include_dir)
+        opj2_lib_dir = self.find_openjpeg_lib_path()
+        if opj2_lib_dir is not None:
+            ext.library_dirs.insert(0, opj2_lib_dir)
+
+        build_clib_cmd = self.get_finalized_command("build_clib")
+
+        if len(missing) > 0:
+            self.announce(f"missing required deps [{', '.join(missing)}]. "
+                          f"Trying to build them", 5)
+            self.run_command("build_clib")
+
+            ext.include_dirs.append(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
+        if self.compiler.compiler_type == "unix":
+            ext.extra_compile_args.append("-std=c++14")
+        else:
+            ext.extra_compile_args.append("/std:c++14")
+        new_libs = []
+        for lib in ext.libraries:
+            if self.compiler.compiler_type != "unix":
+                if self.debug is None:
+                    build_configuration = "Release"
+                else:
+                    build_configuration = "Debug"
+            else:
+                build_configuration = None
+            t = build_clib_cmd.find_target(lib, build_configuration)
+            deps = build_clib_cmd.find_dep_libs_from_cmake(t, remove_prefix=self.compiler.compiler_type == "unix")
+            if deps is not None:
+                if lib in deps:
+                    deps.remove(lib)
+                new_libs += deps
+        ext.libraries += new_libs
+        super().build_extension(ext)
+
+    def find_missing_libraries(self, ext):
+        missing_libs = []
+        for lib in ext.libraries:
+            if self.compiler.find_library_file(self.library_dirs, lib) is None:
+                missing_libs.append(lib)
+        return missing_libs
+
 
     def run(self):
         self.get_pybind11()
@@ -699,25 +807,26 @@ class BuildPybind11Ext(build_ext):
         clib_cmd = self.get_finalized_command("build_clib")
 
 
-        for lib_name, library in clib_cmd.libraries:
-            install_prefix = library['install prefix']
+        # for lib_name, library in clib_cmd.libraries:
+        #     install_prefix = library['install prefix']
+        #
+        #     lib_include = os.path.join(install_prefix, "include")
+        #     lib_libdir = os.path.join(install_prefix, "lib")
+        #
+        #     if lib_include not in self.include_dirs and os.path.exists(lib_include):
+        #         self.include_dirs.append(lib_include)
+        #
+        #     if lib_libdir not in self.library_dirs and os.path.exists(lib_libdir):
+        #         self.library_dirs.append(lib_libdir)
 
-            lib_include = os.path.join(install_prefix, "include")
-            lib_libdir = os.path.join(install_prefix, "lib")
 
-            if lib_include not in self.include_dirs and os.path.exists(lib_include):
-                self.include_dirs.append(lib_include)
-
-            if lib_libdir not in self.library_dirs and os.path.exists(lib_libdir):
-                self.library_dirs.append(lib_libdir)
-
-        opj2_include_dir = self.find_openjpeg_header_path()
-        if opj2_include_dir is not None:
-            self.include_dirs.insert(0, opj2_include_dir)
-        opj2_lib_dir = self.find_openjpeg_lib_path()
-        if opj2_lib_dir is not None:
-            self.library_dirs.insert(0, opj2_lib_dir)
         super().run()
+
+        # for ext in self.extensions:
+        #     if self.compiler.compiler_type == "unix":
+        #         ext.extra_compile_args.append("-std=c++14")
+        #     else:
+        #         ext.extra_compile_args.append("/std:c++14")
             # self.compiler.
         # if self.inplace:
         #     self.run_command("package_clib")
@@ -942,7 +1051,7 @@ open_jpeg_extension = setuptools.Extension(
     ],
     language="c++",
     libraries=["openjp2"],
-    extra_compile_args=['-std=c++14'],
+    # extra_compile_args=['-std=c++14'],
 )
 openjpeg_library = \
     ("openjp2",
