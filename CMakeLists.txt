@@ -18,7 +18,7 @@ if (NOT libpybind11_POPULATED)
 endif ()
 
 FetchContent_Declare(libopenjpeg
-        URL https://github.com/uclouvain/openjpeg/archive/v2.3.0.tar.gz
+        URL https://github.com/uclouvain/openjpeg/archive/v2.3.1.tar.gz
 #        URL_HASH SHA1=0acaeb967f09dbef53a1e2a4366780548597beba
         )
 
@@ -29,15 +29,15 @@ if (NOT libopenjpeg_POPULATED)
     set(BUILD_CODEC OFF CACHE BOOL "")
 #    set(BUILD_SHARED_LIBS OFF)
 #        -DBUILD_SHARED_LIBS:bool
-    add_subdirectory(${libopenjpeg_SOURCE_DIR} ${libopenjpeg_BINARY_DIR} EXCLUDE_FROM_ALL)
+    add_subdirectory(${libopenjpeg_SOURCE_DIR} ${libopenjpeg_BINARY_DIR})
 endif ()
-add_subdirectory(uiucprescon/imagevalidate)
-set_target_properties(openjp2 PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}
-    LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE}
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}
-    LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG}
-
-    )
+#add_subdirectory(uiucprescon/imagevalidate)
+#set_target_properties(openjp2 PROPERTIES
+#    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}
+#    LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE}
+#    RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}
+#    LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG}
+#
+#    )
 include(CTest)
 add_subdirectory(tests)
