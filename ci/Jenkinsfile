@@ -154,14 +154,14 @@ pipeline {
             }
             post{
                 success{
-                    stash includes: "uiucprescon_imagevalidate.dist-info/**", name: 'DIST-INFO'
-                    archiveArtifacts artifacts: "uiucprescon_imagevalidate.dist-info/**"
+                    stash includes: "uiucprescon.imagevalidate.dist-info/**", name: 'DIST-INFO'
+                    archiveArtifacts artifacts: "uiucprescon.imagevalidate.dist-info/**"
                 }
                 cleanup{
                     cleanWs(
                         deleteDirs: true,
                         patterns: [
-                            [pattern: "uiucprescon_imagevalidate.dist-info/", type: 'INCLUDE'],
+                            [pattern: "uiucprescon.imagevalidate.dist-info/", type: 'INCLUDE'],
                             [pattern: ".eggs/", type: 'INCLUDE'],
                         ]
                     )
@@ -201,8 +201,8 @@ pipeline {
             }
             stage("Sphinx Documentation"){
                 environment{
-                    PKG_NAME = get_package_name("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
-                    PKG_VERSION = get_package_version("DIST-INFO", "uiucprescon_imagevalidate.dist-info/METADATA")
+                    PKG_NAME = get_package_name("DIST-INFO", "uiucprescon.imagevalidate.dist-info/METADATA")
+                    PKG_VERSION = get_package_version("DIST-INFO", "uiucprescon.imagevalidate.dist-info/METADATA")
                 }
                 steps {
                     echo "Building docs on ${env.NODE_NAME}"
@@ -396,7 +396,7 @@ pipeline {
             unstash "COVERAGE_REPORT_DATA"
             unstash "PYTEST_UNIT_TEST_RESULTS"
             script{
-                def props = readProperties interpolate: true, file: "uiucprescon_imagevalidate.dist-info/METADATA"
+                def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
                 withSonarQubeEnv(installationName: "sonarqube.library.illinois.edu") {
                 bat(
                     label: "Running sonar scanner",
@@ -687,8 +687,8 @@ pipeline {
                             steps{
                                 unstash "DIST-INFO"
                                 script{
-                                    def props = readProperties interpolate: true, file: "uiucprescon_imagevalidate.dist-info/METADATA"
-                                    cleanWs(patterns: [[pattern: "uiucprescon_imagevalidate.dist/METADATA", type: 'INCLUDE']])
+                                    def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
+                                    cleanWs(patterns: [[pattern: "uiucprescon.imagevalidate.dist/METADATA", type: 'INCLUDE']])
                                     bat "python --version"
                                     bat(
                                         label: "Connecting to DevPi index",
@@ -717,8 +717,8 @@ pipeline {
                             steps{
                                 unstash "DIST-INFO"
                                 script{
-                                    def props = readProperties interpolate: true, file: "uiucprescon_imagevalidate.dist-info/METADATA"
-                                    cleanWs(patterns: [[pattern: "uiucprescon_imagevalidate.dist-info/METADATA", type: 'INCLUDE']])
+                                    def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
+                                    cleanWs(patterns: [[pattern: "uiucprescon.imagevalidate.dist-info/METADATA", type: 'INCLUDE']])
                                     bat "python --version"
                                     bat(
                                         label: "Connecting to DevPi index",
@@ -741,7 +741,7 @@ pipeline {
                    script{
                         docker.build("imagevalidate:devpi.${env.BUILD_ID}",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                             unstash "DIST-INFO"
-                            def props = readProperties interpolate: true, file: 'uiucprescon_imagevalidate.dist-info/METADATA'
+                            def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                             sh(
                                 label: "Connecting to DevPi Server",
                                 script: 'devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi'
@@ -757,7 +757,7 @@ pipeline {
                    script{
                         docker.build("imagevalidate:devpi.${env.BUILD_ID}",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                             unstash "DIST-INFO"
-                            def props = readProperties interpolate: true, file: 'uiucprescon_imagevalidate.dist-info/METADATA'
+                            def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                             sh(
                                 label: "Connecting to DevPi Server",
                                 script: 'devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi'
