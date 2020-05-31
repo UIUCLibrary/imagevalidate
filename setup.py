@@ -40,9 +40,9 @@ class PackageClib(Command):
             self.get_finalized_command("build_ext").library_dirs
 
         self.clib_bin_path = os.path.join(
-            self.get_finalized_command("build_clib").build_clib, "bin")
+            self.get_finalized_command("build_openjpeg").build_clib, "bin")
 
-        self.toolchain = self.get_finalized_command("build_clib").toolchain
+        self.toolchain = self.get_finalized_command("build_openjpeg").toolchain
 
         if self.get_finalized_command("build_ext").inplace == 1:
             self.destination = os.path.join(
@@ -370,7 +370,7 @@ class BuildCMakeClib(build_clib):
     def find_target(self, target_name: str, build_type=None) -> Optional[str]:
         # lib['build path']
         # cmake_api_dir =
-        libraries = self.get_finalized_command("build_clib").libraries
+        libraries = self.get_finalized_command("build_openjpeg").libraries
         for l in libraries:
             if l[0] == target_name:
                 lib = l
@@ -737,7 +737,7 @@ class BuildPybind11Ext(build_ext):
             "libopenjp2.a",
             "openjp2.lib",
         ]
-        clib_cmd = self.get_finalized_command("build_clib")
+        clib_cmd = self.get_finalized_command("build_openjpeg")
         for root, dirs, files in os.walk(clib_cmd.build_clib):
             for f in files:
                 if f in matching_names:
@@ -745,7 +745,7 @@ class BuildPybind11Ext(build_ext):
         return None
 
     def find_openjpeg_header_path(self):
-        clib_cmd = self.get_finalized_command("build_clib")
+        clib_cmd = self.get_finalized_command("build_openjpeg")
         for root, dirs, files in os.walk(os.path.join(clib_cmd.build_clib, "include")):
             for f in files:
                 if f == "openjpeg.h":
@@ -761,12 +761,12 @@ class BuildPybind11Ext(build_ext):
         if opj2_lib_dir is not None:
             ext.library_dirs.insert(0, opj2_lib_dir)
 
-        build_clib_cmd = self.get_finalized_command("build_clib")
+        build_clib_cmd = self.get_finalized_command("build_openjpeg")
 
         if len(missing) > 0:
             self.announce(f"missing required deps [{', '.join(missing)}]. "
                           f"Trying to build them", 5)
-            self.run_command("build_clib")
+            self.run_command("build_openjpeg")
 
             ext.include_dirs.append(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
         if self.compiler.compiler_type == "unix":
@@ -804,7 +804,7 @@ class BuildPybind11Ext(build_ext):
         self.pybind11_include_path = self.find_pybind11_include()
         self.include_dirs.append(os.path.abspath(self.pybind11_include_path))
 
-        clib_cmd = self.get_finalized_command("build_clib")
+        clib_cmd = self.get_finalized_command("build_openjpeg")
 
 
         # for lib_name, library in clib_cmd.libraries:
@@ -833,7 +833,7 @@ class BuildPybind11Ext(build_ext):
 
     def finalize_options(self):
         super().finalize_options()
-        clib_command = self.get_finalized_command("build_clib")
+        clib_command = self.get_finalized_command("build_openjpeg")
         self.archive_dest = clib_command.source_archive_path
 
         self.pybind11_source_path = \
@@ -972,8 +972,8 @@ class BuildPybind11Extension(build_ext):
         if len(missing) > 0:
             self.announce(f"missing required deps [{', '.join(missing)}]. "
                           f"Trying to build them", 5)
-            self.run_command("build_clib")
-            build_clib_cmd = self.get_finalized_command("build_clib")
+            self.run_command("build_openjpeg")
+            build_clib_cmd = self.get_finalized_command("build_openjpeg")
 
             ext.include_dirs.append(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
         super().build_extension(ext)
@@ -1015,7 +1015,7 @@ class BuildOpenJp2Extension(BuildPybind11Ext):
         return super().links_to_dynamic(ext)
 
     def run(self):
-        clib_command = self.get_finalized_command("build_clib")
+        clib_command = self.get_finalized_command("build_openjpeg")
 
         self.include_dirs.insert(
             0, os.path.join(
@@ -1079,7 +1079,7 @@ setup(
     libraries=[openjpeg_library],
     cmdclass={
         "build_ext": BuildPybind11Ext,
-        "build_clib": BuildCMakeClib,
+        "build_openjpeg": BuildCMakeClib,
         # "build_openjpeg": BuildOpenJpegClib,
         # "package_clib": PackageClib,
     }
