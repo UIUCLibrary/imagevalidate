@@ -1065,7 +1065,7 @@ openjpeg_library = \
         "url": "https://github.com/uclouvain/openjpeg/archive/v2.3.1.tar.gz",
         "cmake_args": [
             ("-DBUILD_CODEC:BOOL", "OFF"),
-            ("-DBUILD_SHARED_LIBS:BOOL", "OFF"),
+            ("-DBUILD_SHARED_LIBS:BOOL", "ON"),
         ],
         "sources": []
      }
