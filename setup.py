@@ -726,6 +726,9 @@ class BuildOpenJpegClib(build_clib):
 
 
 class BuildPybind11Ext(build_ext):
+    DEPS_REGEX = \
+        r'(?<=(Image has the following dependencies:(\n){2}))((?<=\s).*\.dll\n)*'
+
     def find_pybind11_include(self):
         for root, dirs, files in os.walk(self.pybind11_source_path):
             for dirname in dirs:
@@ -806,7 +809,12 @@ class BuildPybind11Ext(build_ext):
                 missing_libs.append(lib)
         return missing_libs
 
+    def find_deps(self, lib):
 
+        for path in os.environ['path'].split(";"):
+            for f in os.scandir(path):
+                if f.name.lower() == lib.lower():
+                    return f.path
     def run(self):
         self.get_pybind11()
         self.pybind11_include_path = self.find_pybind11_include()
