@@ -408,12 +408,10 @@ class BuildCMakeClib(build_clib):
         self.source_archive_path = None
         self.source_path_root = None
 
-
-        # if shutil.which("ninja") is not None:
-        #     self.cmake_generator = "Ninja"
-        # else:
-        #     self.cmake_generator = None
-        self.cmake_generator = None
+        if shutil.which("ninja") is not None:
+            self.cmake_generator = "Ninja"
+        else:
+            self.cmake_generator = None
 
     # def build_libraries(self, libraries):
     #     super().build_libraries(libraries)
