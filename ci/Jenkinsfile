@@ -41,7 +41,27 @@ def CONFIGURATIONS = [
             test_docker_image: "python:3.7",
             tox_env: "py37",
             devpi_wheel_regex: "cp37"
-        ]
+        ],
+    "3.8": [
+                    python_install_url:"https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe",
+                    package_testing: [
+                        whl: [
+                            dockerfile: "ci/docker/python37/windows/msvc/test/Dockerfile",
+                            label: "windows && Docker",
+                            additionalBuildArgs: "--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.8",
+                            pkgRegex: "*cp37*.whl",
+                        ],
+                        sdist: [
+                            dockerfile: "ci/docker/python37/windows/msvc/build/Dockerfile",
+                            label: "windows && Docker",
+                            additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe --build-arg CHOCOLATEY_SOURCE",
+                            pkgRegex: "*.zip",
+                        ]
+                    ],
+                    test_docker_image: "python:3.8",
+                    tox_env: "py38",
+                    devpi_wheel_regex: "cp38"
+                ]
 ]
 
 def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
@@ -492,7 +512,8 @@ pipeline {
                             name "PYTHON_VERSION"
                             values(
                                 "3.6",
-                                "3.7"
+                                "3.7",
+                                "3.8",
                             )
                         }
                     }
@@ -554,7 +575,8 @@ pipeline {
                             name "PYTHON_VERSION"
                             values(
                                 "3.6",
-                                "3.7"
+                                "3.7",
+                                "3.8"
                             )
                         }
                         axis {
@@ -650,6 +672,7 @@ pipeline {
                 steps {
                     unstash "whl 3.6"
                     unstash "whl 3.7"
+                    unstash "whl 3.8"
                     unstash "sdist"
                     unstash "DOCS_ARCHIVE"
                     sh(
@@ -668,7 +691,7 @@ pipeline {
                     axes {
                         axis {
                             name 'PYTHON_VERSION'
-                            values '3.6', '3.7'
+                            values '3.6', '3.7', '3.8'
                         }
                         axis {
                             name 'FORMAT'
