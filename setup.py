@@ -1050,11 +1050,18 @@ class BuildPybind11Extension(build_ext):
 
 
     def find_deps(self, lib):
+        build_clib_cmd = self.get_finalized_command("build_clib")
+        paths = os.environ['path'].split(";")
+        paths.insert(0, os.path.join(build_clib_cmd.build_clib, "bin"))
 
-        for path in os.environ['path'].split(";"):
+        for path in paths:
+            if not os.path.exists(path):
+                continue
             for f in os.scandir(path):
                 if f.name.lower() == lib.lower():
                     return f.path
+
+        return None
     def find_header_file_path(self, include_dirs: List[str], headers:List[str]) -> Optional[str]:
         for include_dir in include_dirs:
             for h in headers:
