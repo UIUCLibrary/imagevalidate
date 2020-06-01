@@ -851,7 +851,7 @@ class BuildPybind11Ext(build_ext):
                         'dumpbin',
                         '/dependents',
                         dll_file,
-                        f'/out:{output_file}'
+                        # f'/out:{output_file}'
                     ]
                 )
                 deps = self.parse_dumpbin_deps(dump_file=output_file)
