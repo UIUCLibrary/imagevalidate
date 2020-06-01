@@ -1082,8 +1082,10 @@ class BuildPybind11Extension(build_ext):
                           f"Trying to build them", 5)
             self.run_command("build_openjpeg")
             build_clib_cmd = self.get_finalized_command("build_openjpeg")
-
-            ext.include_dirs.append(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
+            open_jpeg_include_path = self.find_openjpeg_header_path(os.path.join(build_clib_cmd.build_clib, "include"))
+            if open_jpeg_include_path is not None:
+                ext.include_dirs.append(os.path.abspath(open_jpeg_include_path))
+            # ext.include_dirs.append(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
         super().build_extension(ext)
 
     def get_pybind11_include_path(self):
