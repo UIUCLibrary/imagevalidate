@@ -49,7 +49,7 @@ def CONFIGURATIONS = [
                             dockerfile: "ci/docker/python37/windows/msvc/test/Dockerfile",
                             label: "windows && Docker",
                             additionalBuildArgs: "--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.8",
-                            pkgRegex: "*cp37*.whl",
+                            pkgRegex: "*cp38*.whl",
                         ],
                         sdist: [
                             dockerfile: "ci/docker/python37/windows/msvc/build/Dockerfile",
@@ -675,7 +675,7 @@ pipeline {
                     unstash "whl 3.8"
                     unstash "sdist"
                     unstash "DOCS_ARCHIVE"
-                    sh(
+                    sh(h
                         label: "Connecting to DevPi Server",
                         script: 'devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi'
                     )
