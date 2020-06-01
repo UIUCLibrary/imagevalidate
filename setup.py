@@ -482,6 +482,8 @@ class BuildCMakeClib(build_clib):
         self.get_deps_source(self.libraries)
         self.finalize_library_options(self.libraries)
         self.build_libraries(self.libraries)
+
+
         # super().run()
 
     def download_source_archive(self, url, lib_name):
@@ -827,6 +829,28 @@ class BuildPybind11Ext(build_ext):
 
 
         super().run()
+        for e in self.extensions:
+            dll_name = \
+                os.path.join(self.build_lib, self.get_ext_filename(e.name))
+
+            output_file = os.path.join(self.build_temp, f'{e.name}.dependents')
+            if self.compiler.compiler_type != "unix":
+                if not self.compiler.initialized:
+                    self.compiler.initialize()
+                self.compiler.spawn(
+                    [
+                        'dumpbin',
+                        '/dependents',
+                        dll_name,
+                        f'/out:{output_file}'
+                    ]
+                )
+                deps = self.parse_dumpbin_deps(dump_file=output_file)
+                deps = self.remove_system_dlls(deps)
+                dest = os.path.dirname(dll_name)
+                for dep in deps:
+                    dll = self.find_deps(dep)
+                    shutil.copy(dll, dest)
 
         # for ext in self.extensions:
         #     if self.compiler.compiler_type == "unix":
@@ -836,6 +860,35 @@ class BuildPybind11Ext(build_ext):
             # self.compiler.
         # if self.inplace:
         #     self.run_command("package_clib")
+    @staticmethod
+    def remove_system_dlls(dlls):
+        non_system_dlls = []
+        for dll in dlls:
+            if dll.startswith("api-ms-win-crt"):
+                continue
+
+            if dll.startswith("python"):
+                continue
+
+            if dll == "KERNEL32.dll":
+                continue
+            non_system_dlls.append(dll)
+        return non_system_dlls
+
+    @classmethod
+    def parse_dumpbin_deps(cls, dump_file) -> List[str]:
+
+        dlls = []
+        dep_regex = re.compile(cls.DEPS_REGEX)
+
+        with open(dump_file) as f:
+            d = dep_regex.search(f.read())
+            for x in d.group(0).split("\n"):
+                if x.strip() == "":
+                    continue
+                dll = x.strip()
+                dlls.append(dll)
+        return dlls
 
     def finalize_options(self):
         super().finalize_options()
@@ -915,7 +968,6 @@ class BuildPybind11Extension(build_ext):
                 continue
             non_system_dlls.append(dll)
         return non_system_dlls
-
 
     def run(self):
         self.include_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "include")))
