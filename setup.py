@@ -838,9 +838,9 @@ class BuildPybind11Ext(build_ext):
 
         super().run()
         for e in self.extensions:
-            dll_name = \
+            dll_file = \
                 os.path.join(self.build_lib, self.get_ext_filename(e.name))
-
+            assert os.path.exists(dll_file), "Unable to located {}".format(dll_file)
             output_file = os.path.join(self.build_temp, f'{e.name}.dependents')
             if self.compiler.compiler_type != "unix":
                 if not self.compiler.initialized:
@@ -849,13 +849,13 @@ class BuildPybind11Ext(build_ext):
                     [
                         'dumpbin',
                         '/dependents',
-                        dll_name,
+                        dll_file,
                         f'/out:{output_file}'
                     ]
                 )
                 deps = self.parse_dumpbin_deps(dump_file=output_file)
                 deps = self.remove_system_dlls(deps)
-                dest = os.path.dirname(dll_name)
+                dest = os.path.dirname(dll_file)
                 for dep in deps:
                     dll = self.find_deps(dep)
                     shutil.copy(dll, dest)
