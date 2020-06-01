@@ -1036,8 +1036,7 @@ class BuildPybind11Extension(build_ext):
                         '/DEPENDENTS',
                         f'/OUT:{output_file}',
                         dll_name,
-                    ],
-                    verbose=1
+                    ]
                 )
                 deps = self.parse_dumpbin_deps(dump_file=output_file)
                 deps = self.remove_system_dlls(deps)
