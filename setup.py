@@ -995,6 +995,11 @@ class BuildPybind11Extension(build_ext):
             if self.compiler.compiler_type != "unix":
                 if not self.compiler.initialized:
                     self.compiler.initialize()
+                dll_file = \
+                    os.path.abspath(os.path.join(self.build_lib, self.get_ext_filename(e.name)))
+
+                assert os.path.exists(dll_file), "Unable to located {}".format(dll_file)
+                assert os.path.exists(self.build_temp), "Unable to located {}".format(self.build_temp)
                 self.compiler.spawn(
                     [
                         'dumpbin',
