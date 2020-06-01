@@ -3,6 +3,7 @@ import os
 import platform
 import re
 import shutil
+import sys
 import tarfile
 import urllib
 import zipfile
@@ -1043,7 +1044,11 @@ class BuildPybind11Extension(build_ext):
                 dest = os.path.dirname(dll_name)
                 for dep in deps:
                     dll = self.find_deps(dep)
-                    shutil.copy(dll, dest)
+                    if dll is not None:
+                        shutil.copy(dll, dest)
+                    else:
+                        print("Unable to locate deps for {}".format(dep), file=sys.stderr)
+
 
     def find_deps(self, lib):
 
