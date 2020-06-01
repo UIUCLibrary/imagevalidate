@@ -1034,15 +1034,15 @@ class BuildPybind11Extension(build_ext):
                         'dumpbin',
                         '/dependents',
                         dll_name,
-                        f'/out:{output_file}'
+                        # f'/out:{output_file}'
                     ]
                 )
-                deps = self.parse_dumpbin_deps(dump_file=output_file)
-                deps = self.remove_system_dlls(deps)
-                dest = os.path.dirname(dll_name)
-                for dep in deps:
-                    dll = self.find_deps(dep)
-                    shutil.copy(dll, dest)
+                # deps = self.parse_dumpbin_deps(dump_file=output_file)
+                # deps = self.remove_system_dlls(deps)
+                # dest = os.path.dirname(dll_name)
+                # for dep in deps:
+                #     dll = self.find_deps(dep)
+                #     shutil.copy(dll, dest)
 
     def find_deps(self, lib):
 
