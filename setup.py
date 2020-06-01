@@ -981,6 +981,18 @@ class BuildPybind11Extension(build_ext):
             non_system_dlls.append(dll)
         return non_system_dlls
 
+    def find_openjpeg_lib_path(self, starting_path):
+        matching_names = [
+            "libopenjp2.a",
+            "openjp2.lib",
+        ]
+        # clib_cmd = self.get_finalized_command("build_openjpeg")
+        for root, dirs, files in os.walk(starting_path):
+            for f in files:
+                if f in matching_names:
+                    return root
+        return None
+
     def find_openjpeg_header_path(self, starting_path):
         # clib_cmd = self.get_finalized_command("build_clib")
         for root, dirs, files in os.walk(starting_path):
@@ -1085,7 +1097,11 @@ class BuildPybind11Extension(build_ext):
             open_jpeg_include_path = self.find_openjpeg_header_path(os.path.join(build_clib_cmd.build_clib, "include"))
             if open_jpeg_include_path is not None:
                 ext.include_dirs.append(os.path.abspath(open_jpeg_include_path))
-            # ext.include_dirs.append(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
+
+            open_jpeg_library_path = self.find_openjpeg_lib_path(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "lib")))
+            if open_jpeg_library_path is not None:
+                ext.library_dirs.append(os.path.abspath(open_jpeg_library_path))
+
         super().build_extension(ext)
 
     def get_pybind11_include_path(self):
