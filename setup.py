@@ -810,11 +810,16 @@ class BuildPybind11Ext(build_ext):
         return missing_libs
 
     def find_deps(self, lib):
-
-        for path in os.environ['path'].split(";"):
+        paths = os.environ['path'].split(";")
+        build_clib_cmd = self.get_finalized_command("build_openjpeg")
+        build_bin = os.path.join(build_clib_cmd.build_clib, "bin")
+        paths.append(build_bin)
+        for path in paths:
             for f in os.scandir(path):
                 if f.name.lower() == lib.lower():
                     return f.path
+        return None
+
     def run(self):
         self.get_pybind11()
         self.pybind11_include_path = self.find_pybind11_include()
@@ -859,7 +864,10 @@ class BuildPybind11Ext(build_ext):
                 dest = os.path.dirname(dll_file)
                 for dep in deps:
                     dll = self.find_deps(dep)
-                    shutil.copy(dll, dest)
+                    if dll is not None:
+                        shutil.copy(dll, dest)
+                    else:
+                        self.announce("Unable to locate deps for {}".format(dep), level=2)
 
         # for ext in self.extensions:
         #     if self.compiler.compiler_type == "unix":
