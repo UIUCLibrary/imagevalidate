@@ -841,6 +841,7 @@ class BuildPybind11Ext(build_ext):
             dll_file = \
                 os.path.join(self.build_lib, self.get_ext_filename(e.name))
             assert os.path.exists(dll_file), "Unable to located {}".format(dll_file)
+            assert os.path.exists(self.build_temp), "Unable to located {}".format(self.build_temp)
             output_file = os.path.join(self.build_temp, f'{e.name}.dependents')
             if self.compiler.compiler_type != "unix":
                 if not self.compiler.initialized:
