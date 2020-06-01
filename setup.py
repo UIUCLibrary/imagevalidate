@@ -1019,7 +1019,8 @@ class BuildPybind11Extension(build_ext):
             dll_name = \
                 os.path.join(self.build_lib, self.get_ext_filename(e.name))
 
-            output_file = os.path.join(self.build_temp, f'{os.path.splitext(e.name)[0].replace(".", "-")}.dependents')
+            output_file = "dumpbin.log"
+            # output_file = os.path.join(self.build_temp, f'{os.path.splitext(e.name)[0].replace(".", "-")}.dependents')
             if self.compiler.compiler_type != "unix":
                 if not self.compiler.initialized:
                     self.compiler.initialize()
