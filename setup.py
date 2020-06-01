@@ -1046,6 +1046,8 @@ class BuildPybind11Extension(build_ext):
                     dll = self.find_deps(dep)
                     if dll is not None:
                         self.copy_file(dll, dest)
+                        if self.inplace:
+                            self.copy_file(dll, os.path.dirname(self.get_ext_filename(e.name)))
                     else:
                         print("Unable to locate deps for {}".format(dep), file=sys.stderr)
 
