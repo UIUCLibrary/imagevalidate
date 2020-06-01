@@ -187,6 +187,14 @@ pipeline {
                 post{
                    success{
                        stash includes: "uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd", name: 'COMPILED_BINARIES'
+                       script{
+                           findFiles(glob: "uiucprescon/imagevalidate/**/*.pyd,uiucprescon/imagevalidate/**/*.dll").each{
+                               bat(
+                                   label: "Checking shared library for dependents",
+                                   script: "dumpbin /DEPENDENTS ${it.path}"
+                                   )
+                           }
+                       }
                    }
                    failure{
                         cleanWs(
