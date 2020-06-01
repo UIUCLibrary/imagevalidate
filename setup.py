@@ -485,6 +485,9 @@ class BuildCMakeClib(build_clib):
         self.finalize_library_options(self.libraries)
         self.build_libraries(self.libraries)
 
+        # build_ext_cmd = self.get_finalized_command("build_ext")
+        # print("")
+
 
         # super().run()
 
@@ -1020,8 +1023,7 @@ class BuildPybind11Extension(build_ext):
             dll_name = \
                 os.path.join(self.build_lib, self.get_ext_filename(e.name))
 
-            output_file = "dumpbin.log"
-            # output_file = os.path.join(self.build_temp, f'{os.path.splitext(e.name)[0].replace(".", "-")}.dependents')
+            output_file = os.path.join(self.build_temp, f'{os.path.splitext(e.name)[0].replace(".", "-")}.dependents')
             if self.compiler.compiler_type != "unix":
                 if not self.compiler.initialized:
                     self.compiler.initialize()
@@ -1041,6 +1043,7 @@ class BuildPybind11Extension(build_ext):
                 deps = self.parse_dumpbin_deps(dump_file=output_file)
                 deps = self.remove_system_dlls(deps)
                 dest = os.path.dirname(dll_name)
+                self.announce("Copying dependencies to {}".format(dest))
                 for dep in deps:
                     dll = self.find_deps(dep)
                     if dll is not None:
