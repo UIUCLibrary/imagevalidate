@@ -206,7 +206,7 @@ pipeline {
                 }
                 post{
                    success{
-                       stash includes: "build/lib/**,build/bin/**,build/include/**,build/dependencies/**", name: 'COMPILED_OPENJEG2_WINDOWS'
+                       stash includes: "build/lib/**,build/bin/**,build/include/**,build/temp/dependencies/**", name: 'COMPILED_OPENJEG2_WINDOWS'
                        stash includes: "uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd", name: 'COMPILED_BINARIES'
                        script{
                            findFiles(glob: "uiucprescon/imagevalidate/**/*.pyd,uiucprescon/imagevalidate/**/*.dll").each{
