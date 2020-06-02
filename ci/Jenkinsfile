@@ -270,7 +270,7 @@ pipeline {
     stage("Building"){
         agent {
             dockerfile {
-                filename ' ci/docker/python/windows/msvc/build/Dockerfile'
+                filename 'ci/docker/python/windows/msvc/build/Dockerfile'
                 label 'Windows&&Docker'
                 additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
              }
@@ -339,7 +339,7 @@ pipeline {
     stage('Testing') {
         agent {
             dockerfile {
-                filename ' ci/docker/python/windows/msvc/build/Dockerfile'
+                filename 'ci/docker/python/windows/msvc/build/Dockerfile'
                 label 'Windows&&Docker'
                 additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
              }
@@ -558,7 +558,7 @@ pipeline {
             stage('Creating Source Package') {
                 agent{
                     dockerfile {
-                        filename ' ci/docker/python/windows/msvc/build/Dockerfile'
+                        filename 'ci/docker/python/windows/msvc/build/Dockerfile'
                         label 'windows && Docker'
                         additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                     }
