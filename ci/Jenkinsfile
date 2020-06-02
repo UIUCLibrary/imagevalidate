@@ -3,6 +3,21 @@
 def CONFIGURATIONS = [
     "3.6": [
         "os":[
+            "linux":[
+                base_image: "python:3.6",
+                agents: [
+                    build:[
+                        dockerfile: "ci/docker/python/linux/Dockerfile",
+                        label: "linux && docker",
+                        additionalBuildArgs: "--build-arg PYTHON_VERSION=3.6",
+                    ],
+                    test:[
+                        dockerfile: "ci/docker/python/linux/Dockerfile",
+                        label: "linux && docker",
+                        additionalBuildArgs: "--build-arg PYTHON_VERSION=3.6",
+                    ],
+                ]
+            ],
             "windows":[
                 python_install_url:"https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe",
                 base_image: "python:3.6.8-windowsservercore",
@@ -244,14 +259,19 @@ pipeline {
         stage("Getting Distribution Info"){
             agent {
                 dockerfile {
-                    filename 'ci/docker/python/windows/msvc/build/Dockerfile'
-                    label 'Windows&&Docker'
-                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+//                     filename 'ci/docker/python/windows/msvc/build/Dockerfile'
+//                     label 'Windows&&Docker'
+//                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                    filename "${CONFIGURATIONS["3.6"].os.linux.agents.build.dockerfile}"
+                    label "${CONFIGURATIONS["3.6"].os.linux.agents.build.label}"
+//                     label 'Windows&&Docker'
+                    additionalBuildArgs "${CONFIGURATIONS["3.6"].os.linux.agents.build.additionalBuildArgs}"
+//                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                  }
             }
             steps{
                 timeout(5){
-                    bat "python setup.py dist_info"
+                    sh "python setup.py dist_info"
                 }
             }
             post{
