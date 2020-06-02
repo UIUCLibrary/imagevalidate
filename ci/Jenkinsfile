@@ -461,7 +461,7 @@ pipeline {
                     catchError(buildResult: "SUCCESS", message: 'Doctest found issues', stageResult: "UNSTABLE") {
                         sh "python -m sphinx -b doctest docs/source ${WORKSPACE}/build/docs -d ${WORKSPACE}/build/docs/doctrees -v"
                     }
-                    bat "mv build/docs/output.txt reports/doctest.txt"
+                    sh "mv build/docs/output.txt reports/doctest.txt"
 //                     bat "move build\\docs\\output.txt reports\\doctest.txt"
                   }
                   post{
