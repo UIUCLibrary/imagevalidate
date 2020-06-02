@@ -322,6 +322,7 @@ pipeline {
                    success{
 //                        stash includes: "build/lib/**,build/bin/**,build/include/**,build/temp/dependencies/**", name: 'COMPILED_OPENJEG2_WINDOWS'
                        stash includes: "uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd,uiucprescon/imagevalidate/*.so", name: 'COMPILED_BINARIES'
+                       stash includes: "build/**", name: 'LINUX_BUILD_DIRECTORY'
 //                        script{
 //                            findFiles(glob: "uiucprescon/imagevalidate/**/*.pyd,uiucprescon/imagevalidate/**/*.dll").each{
 //                                bat(
@@ -400,6 +401,7 @@ pipeline {
                             mkdir -p reports/mypy/html
                         """
                     )
+                    sh "cd uiucprescon && ls -laR"
                 }
             }
             stage("Run Testing"){
