@@ -51,6 +51,21 @@ def CONFIGURATIONS = [
     ],
     "3.7": [
         "os":[
+            "linux":[
+                base_image: "python:3.7",
+                agents: [
+                    build:[
+                        dockerfile: "ci/docker/python/linux/Dockerfile",
+                        label: "linux && docker",
+                        additionalBuildArgs: "--build-arg PYTHON_VERSION=3.7",
+                    ],
+                    test:[
+                        dockerfile: "ci/docker/python/linux/Dockerfile",
+                        label: "linux && docker",
+                        additionalBuildArgs: "--build-arg PYTHON_VERSION=3.7",
+                    ],
+                ]
+            ],
             "windows":[
                 python_install_url:"https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe",
                 base_image: "python:3.7",
@@ -240,7 +255,7 @@ pipeline {
     parameterizedCron '@daily % DEPLOY_DEVPI=true; TEST_RUN_TOX=true'
     }
   options {
-        disableConcurrentBuilds()  //each branch has 1 job running at a time
+//         disableConcurrentBuilds()  //each branch has 1 job running at a time
         timeout(time: 1, unit: 'DAYS')
   }
   environment {
@@ -262,10 +277,10 @@ pipeline {
 //                     filename 'ci/docker/python/windows/msvc/build/Dockerfile'
 //                     label 'Windows&&Docker'
 //                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
-                    filename "${CONFIGURATIONS["3.6"].os.linux.agents.build.dockerfile}"
-                    label "${CONFIGURATIONS["3.6"].os.linux.agents.build.label}"
+                    filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
+                    label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
 //                     label 'Windows&&Docker'
-                    additionalBuildArgs "${CONFIGURATIONS["3.6"].os.linux.agents.build.additionalBuildArgs}"
+                    additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
 //                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                  }
             }
