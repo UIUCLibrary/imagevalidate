@@ -241,7 +241,7 @@ pipeline {
         stage("Getting Distribution Info"){
             agent {
                 dockerfile {
-                    filename ' ci/docker/python/windows/msvc/build/Dockerfile'
+                    filename 'ci/docker/python/windows/msvc/build/Dockerfile'
                     label 'Windows&&Docker'
                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                  }
