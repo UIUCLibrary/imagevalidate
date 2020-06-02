@@ -206,7 +206,7 @@ pipeline {
                 }
                 post{
                    success{
-                       stash includes: "build/lib/**,build/bin/**,build/include/**,build/temp/dependencies/**", name: 'COMPILED_OPENJEG2_WINDOWS'
+//                        stash includes: "build/lib/**,build/bin/**,build/include/**,build/temp/dependencies/**", name: 'COMPILED_OPENJEG2_WINDOWS'
                        stash includes: "uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd", name: 'COMPILED_BINARIES'
                        script{
                            findFiles(glob: "uiucprescon/imagevalidate/**/*.pyd,uiucprescon/imagevalidate/**/*.dll").each{
@@ -533,7 +533,7 @@ pipeline {
                                         label: "Checking Python version",
                                         script: "python --version"
                                     )
-                                    unstash "COMPILED_OPENJEG2_WINDOWS"
+//                                     unstash "COMPILED_OPENJEG2_WINDOWS"
                                     bat(
                                         label: "Creating whl for ${PYTHON_VERSION}",
                                         script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
