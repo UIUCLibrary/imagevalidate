@@ -664,7 +664,7 @@ pipeline {
                             )
                         }
                         axis {
-                            name "PYTHON_PACKAGE_TYPE"
+                            name "FORMAT"
                             values(
                                 "whl",
                                 "sdist"
@@ -709,10 +709,10 @@ pipeline {
                             }
                             steps{
                                 script{
-                                    if(PYTHON_PACKAGE_TYPE == "whl"){
-                                        unstash "${PYTHON_PACKAGE_TYPE} ${PYTHON_VERSION}"
+                                    if(FORMAT == "whl"){
+                                        unstash "${FORMAT} ${PYTHON_VERSION}"
                                     }
-                                    if(PYTHON_PACKAGE_TYPE == "sdist"){
+                                    if(FORMAT == "sdist"){
                                         unstash "sdist"
                                     }
                                 }
@@ -722,7 +722,7 @@ pipeline {
                                 )
                                 script{
 
-                                    findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex[PYTHON_PACKAGE_TYPE]}").each{
+                                    findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex[FORMAT]}").each{
                                         bat(
                                             script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
                                             label: "Testing ${it}"
