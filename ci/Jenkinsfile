@@ -601,9 +601,9 @@ pipeline {
                         stage("Creating bdist wheel"){
                             agent{
                                 dockerfile {
-                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os['windows'].agents.build.dockerfile}"
-                                    label "${CONFIGURATIONS[PYTHON_VERSION].os['windows'].agents.build.dockerfile.label}"
-                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os['windows'].agents.build.dockerfile.additionalBuildArgs}"
+                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os.windows.agents.build.dockerfile}"
+                                    label "${CONFIGURATIONS[PYTHON_VERSION].os.windows.agents.build.label}"
+                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os.windows.agents.build.additionalBuildArgs}"
                                 }
                             }
                             steps{
