@@ -7,6 +7,6 @@ ARG GROUP_ID=1000
 RUN groupadd -g $GROUP_ID user && \
     useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
 RUN apt update && apt install -y cmake ninja-build
-RUN pip install wheel sphinx tox pytest coverage pytest-cov lxml mypy flake8 devpi-client
+RUN python -m pip install pip --upgrade && pip install wheel sphinx tox pytest coverage pytest-cov lxml mypy flake8 devpi-client
 USER user
 WORKDIR /home/user
