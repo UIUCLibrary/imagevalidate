@@ -308,11 +308,6 @@ pipeline {
                 label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
                 additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
             }
-//             dockerfile {
-//                 filename 'ci/docker/python/windows/msvc/build/Dockerfile'
-//                 label 'Windows&&Docker'
-//                 additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
-//              }
         }
         stages{
             stage("Building Python Package"){
@@ -348,10 +343,6 @@ pipeline {
                 }
             }
             stage("Sphinx Documentation"){
-//                 environment{
-//                     PKG_NAME = get_package_name("DIST-INFO", "uiucprescon.imagevalidate.dist-info/METADATA")
-//                     PKG_VERSION = get_package_version("DIST-INFO", "uiucprescon.imagevalidate.dist-info/METADATA")
-//                 }
                 steps {
                     sh(
                         label: "Building docs on ${env.NODE_NAME}",
@@ -383,10 +374,15 @@ pipeline {
     stage('Testing') {
         agent {
             dockerfile {
-                filename 'ci/docker/python/windows/msvc/build/Dockerfile'
-                label 'Windows&&Docker'
-                additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
-             }
+                    filename "${CONFIGURATIONS["3.7"].os.linux.agents.test.dockerfile}"
+                    label "${CONFIGURATIONS["3.7"].os.linux.agents.test.label}"
+                    additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.test.additionalBuildArgs}"
+                }
+//             dockerfile {
+//                 filename 'ci/docker/python/windows/msvc/build/Dockerfile'
+//                 label 'Windows&&Docker'
+//                 additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+//              }
         }
         environment{
             junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
@@ -395,13 +391,13 @@ pipeline {
             stage("Setting up tests"){
                 steps{
                     unstash "COMPILED_BINARIES"
-                    bat(
+                    sh(
                         label: "Creating logging and report directories",
                         script: """
-                            if not exist logs mkdir logs
-                            if not exist reports\\coverage mkdir reports\\coverage
-                            if not exist reports\\doctests mkdir reports\\doctests
-                            if not exist reports\\mypy\\html mkdir reports\\mypy\\html
+                            mkdir -p logs
+                            mkdir -p reports/coverage
+                            mkdir -p reports/doctests
+                            mkdir -p reports/mypy/html
                         """
                     )
                 }
@@ -413,9 +409,9 @@ pipeline {
                         equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     steps {
-                        bat (
+                        sh (
                             label: "Run Tox",
-                            script: "tox --workdir ${WORKSPACE}\\.tox -vv  -e py -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                            script: "tox --workdir ${WORKSPACE}/.tox -vv  -e py -- --junitxml=${WORKSPACE}/reports/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                         )
                     }
                     post {
@@ -438,7 +434,7 @@ pipeline {
                     steps{
 
                         catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
-                            bat(
+                            sh(
                                 label: "Running Pytest",
                                 script:"python -m pytest --junitxml=reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/pytestcoverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --integration --cov-config=${WORKSPACE}/setup.cfg"
                             )
@@ -461,9 +457,10 @@ pipeline {
                 stage("Run Doctest Tests"){
                   steps {
                     catchError(buildResult: "SUCCESS", message: 'Doctest found issues', stageResult: "UNSTABLE") {
-                        bat "python -m sphinx -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v"
+                        sh "python -m sphinx -b doctest docs/source ${WORKSPACE}/build/docs -d ${WORKSPACE}/build/docs/doctrees -v"
                     }
-                    bat "move build\\docs\\output.txt reports\\doctest.txt"
+                    bat "mv build/docs/output.txt reports/doctest.txt"
+//                     bat "move build\\docs\\output.txt reports\\doctest.txt"
                   }
                   post{
                     always {
@@ -483,9 +480,9 @@ pipeline {
                   steps{
 
                     catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
-                        bat(
+                        sh(
                             label: "Running Mypy",
-                            script: "mypy -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                            script: "mypy -p uiucprescon --html-report ${WORKSPACE}/reports/mypy/html > ${WORKSPACE}/logs/mypy.log"
                         )
                     }
                   }
@@ -507,7 +504,7 @@ pipeline {
                 stage("Run Flake8 Static Analysis") {
                     steps{
                         catchError(buildResult: "SUCCESS", message: 'Flake8 found issues', stageResult: "UNSTABLE") {
-                            bat "flake8 uiucprescon --format=pylint --tee --output-file=logs\\flake8.log"
+                            sh "flake8 uiucprescon --format=pylint --tee --output-file=logs/flake8.log"
                         }
                     }
                     post {
