@@ -274,15 +274,10 @@ pipeline {
         stage("Getting Distribution Info"){
             agent {
                 dockerfile {
-//                     filename 'ci/docker/python/windows/msvc/build/Dockerfile'
-//                     label 'Windows&&Docker'
-//                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                     filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
                     label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
-//                     label 'Windows&&Docker'
                     additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
-//                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
-                 }
+                }
             }
             steps{
                 timeout(5){
@@ -306,33 +301,40 @@ pipeline {
             }
         }
     stage("Building"){
+
         agent {
             dockerfile {
-                filename 'ci/docker/python/windows/msvc/build/Dockerfile'
-                label 'Windows&&Docker'
-                additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
-             }
+                filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
+                label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
+                additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
+            }
+//             dockerfile {
+//                 filename 'ci/docker/python/windows/msvc/build/Dockerfile'
+//                 label 'Windows&&Docker'
+//                 additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+//              }
         }
         stages{
             stage("Building Python Package"){
                 steps {
-                    bat(
+                    sh(
                         label: "Building",
-                        script: "python setup.py build -b build --build-lib build\\lib -j${env.NUMBER_OF_PROCESSORS} -t build\\temp build_ext --inplace"
+                        script: "python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace"
+//                         script: "python setup.py build -b build --build-lib build\\lib -j${env.NUMBER_OF_PROCESSORS} -t build\\temp build_ext --inplace"
                         )
                 }
                 post{
                    success{
 //                        stash includes: "build/lib/**,build/bin/**,build/include/**,build/temp/dependencies/**", name: 'COMPILED_OPENJEG2_WINDOWS'
-                       stash includes: "uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd", name: 'COMPILED_BINARIES'
-                       script{
-                           findFiles(glob: "uiucprescon/imagevalidate/**/*.pyd,uiucprescon/imagevalidate/**/*.dll").each{
-                               bat(
-                                   label: "Checking shared library for dependents",
-                                   script: "dumpbin /DEPENDENTS ${it.path}"
-                                   )
-                           }
-                       }
+                       stash includes: "uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd,uiucprescon/imagevalidate/*.so", name: 'COMPILED_BINARIES'
+//                        script{
+//                            findFiles(glob: "uiucprescon/imagevalidate/**/*.pyd,uiucprescon/imagevalidate/**/*.dll").each{
+//                                bat(
+//                                    label: "Checking shared library for dependents",
+//                                    script: "dumpbin /DEPENDENTS ${it.path}"
+//                                    )
+//                            }
+//                        }
                    }
                    failure{
                         cleanWs(
