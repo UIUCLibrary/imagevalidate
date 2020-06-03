@@ -121,6 +121,23 @@ def CONFIGURATIONS = [
 //             devpi_wheel_regex: "cp37"
     "3.8": [
         "os":[
+        "linux":[
+                base_image: "python:3.8",
+                agents: [
+                    build:[
+                        dockerfile: "ci/docker/python/linux/Dockerfile",
+                        label: "linux && docker",
+                        additionalBuildArgs: "--build-arg PYTHON_VERSION=3.8",
+                    ],
+                    test:[
+                        sdist:[
+                            dockerfile: "ci/docker/python/linux/Dockerfile",
+                            label: "linux && docker",
+                            additionalBuildArgs: "--build-arg PYTHON_VERSION=3.8",
+                        ]
+                    ],
+                ]
+            ],
             "windows":[
                 python_install_url:"https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe",
                 base_image: "python:3.7",
