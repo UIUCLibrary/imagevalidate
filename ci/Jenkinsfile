@@ -746,6 +746,7 @@ pipeline {
                                 )
                             }
                         }
+                        echo "CONFIGURATION[${PYTHON_VERSION}].os[${PLATFORM}].pkgRegex[${FORMAT}]}"
                         script{
                             findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex[FORMAT]}").each{
                                 timeout(15){
