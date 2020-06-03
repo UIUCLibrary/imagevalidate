@@ -1223,7 +1223,8 @@ setup(
     libraries=[openjpeg_library],
     cmdclass={
         "build_ext": BuildPybind11Extension,
-        "build_openjpeg": BuildCMakeClib,
+        # "build_openjpeg": BuildCMakeClib,
+        "build_clib": BuildCMakeClib,
         # "build_openjpeg": BuildOpenJpegClib,
         # "package_clib": PackageClib,
     }
