@@ -650,7 +650,7 @@ pipeline {
                 axis {
                     name 'FORMAT'
                     values(
-                        "wheel",
+                        "whl",
                         "sdist"
                     )
                 }
@@ -671,7 +671,7 @@ pipeline {
                     }
                     axis {
                         name 'FORMAT'
-                        values 'wheel'
+                        values 'whl'
                     }
                 }
             }
