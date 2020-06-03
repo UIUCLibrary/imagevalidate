@@ -685,7 +685,7 @@ pipeline {
                          }
                     }
                     when{
-                        equals expected: "wheel", actual: FORMAT
+                        equals expected: "whl", actual: FORMAT
                         beforeAgent true
                     }
                     steps{
