@@ -729,7 +729,7 @@ pipeline {
                     }
                     steps{
                         script{
-                            if(FORMAT == "wheel") {
+                            if(FORMAT == "whl") {
                                 unstash "whl ${PYTHON_VERSION}"
                             } else {
                                 unstash "sdist"
