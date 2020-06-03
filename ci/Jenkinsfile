@@ -634,97 +634,242 @@ pipeline {
                     }
                 }
             }
-            stage('Creating Binary Packages'){
-                matrix{
-                    agent none
-                    axes{
-                        axis {
-                            name "PYTHON_VERSION"
-                            values(
-                                "3.6",
-                                "3.7",
-                                "3.8",
+        }
+    }
+    stage('Testing Packages') {
+        matrix{
+            agent none
+            axes{
+                axis {
+                    name 'PLATFORM'
+                    values(
+                        "linux",
+                        "windows"
+                    )
+                }
+                axis {
+                    name 'FORMAT'
+                    values(
+                        "wheel",
+                        "sdist"
+                    )
+                }
+                axis {
+                    name "PYTHON_VERSION"
+                    values(
+                        "3.6",
+                        "3.7",
+                        "3.8"
+                    )
+                }
+            }
+            excludes{
+                exclude {
+                    axis {
+                        name 'PLATFORM'
+                        values 'linux'
+                    }
+                    axis {
+                        name 'FORMAT'
+                        values 'wheel'
+                    }
+                }
+            }
+            stages{
+                stage("Creating bdist wheel"){
+                    agent {
+                        dockerfile {
+                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile.filename}"
+                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile.label}"
+                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile.additionalBuildArgs}"
+                         }
+                    }
+                    when{
+                        equals expected: "wheel", actual: FORMAT
+                        beforeAgent true
+                    }
+                    steps{
+                        timeout(15){
+                            bat(
+                                script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist",
+                                label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
                             )
                         }
                     }
-                    stages{
-                        stage("Creating bdist wheel"){
-                            agent{
-                                dockerfile {
-                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os.windows.agents.build.dockerfile}"
-                                    label "${CONFIGURATIONS[PYTHON_VERSION].os.windows.agents.build.label}"
-                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os.windows.agents.build.additionalBuildArgs}"
+                    post{
+                        always{
+                            script{
+                                findFiles(glob: "build/lib/**/*.pyd").each{
+                                    bat(
+                                        label: "Checking Python extension for dependents",
+                                        script: "dumpbin /DEPENDENTS ${it.path}"
+                                    )
                                 }
                             }
-                            steps{
+                        }
+                        success{
+                            stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
+                            archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
+                        }
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [[pattern: 'dist/', type: 'INCLUDE']]
+                            )
+                        }
+                    }
+                }
+                stage("Testing package"){
+                    agent {
+                        dockerfile {
+                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile.filename}"
+                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile.label}"
+                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile.additionalBuildArgs}"
+                         }
+                    }
+                    steps{
+                        script{
+                            if(FORMAT == "wheel") {
+                                unstash "whl ${PYTHON_VERSION}"
+                            } else {
+                                unstash "sdist"
+                            }
+                            if(PLATFORM == "windows"){
+                                bat(
+                                    label: "Checking Python version",
+                                    script: "python --version"
+                                    )
+                            } else{
+                                sh(
+                                    label: "Checking Python version",
+                                    script: "python --version"
+                                )
+                            }
+                        }
+                        script{
+                            findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex[FORMAT]}").each{
                                 timeout(15){
-                                    bat(
-                                        label: "Checking Python version",
-                                        script: "python --version"
-                                    )
-//                                     unstash "COMPILED_OPENJEG2_WINDOWS"
-                                    bat(
-                                        label: "Creating whl for ${PYTHON_VERSION}",
-                                        script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
-                                    )
-                                }
-                            }
-                            post{
-                                always{
-                                    stash includes: "dist/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['whl']}", name: "whl ${PYTHON_VERSION}"
-                                    script{
-                                        findFiles(glob: "build/lib/**/*.pyd").each{
-                                            bat(
-                                                label: "Checking Python extension for dependents",
-                                                script: "dumpbin /DEPENDENTS ${it.path}"
-                                                )
-                                        }
+                                    if(PLATFORM == "windows"){
+                                        bat(
+                                            script: "tox --installpkg=${it.path} -e py -vv",
+                                            label: "Testing ${it}"
+                                        )
+                                    } else {
+                                        sh(
+                                            script: "tox --installpkg=${it.path} -e py -vv",
+                                            label: "Testing ${it}"
+                                        )
                                     }
                                 }
-                                success{
-                                    archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
-                                }
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: 'build/', type: 'INCLUDE'],
-                                        ]
-                                    )
-                                }
                             }
+                        }
+                    }
+                    post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: 'dist/', type: 'INCLUDE'],
+                                    [pattern: '.tox/', type: 'INCLUDE'],
+                                ]
+                            )
                         }
                     }
                 }
             }
-            stage('Testing all Package') {
-                matrix{
-                    agent none
-                    axes{
-                        axis {
-                            name "PYTHON_VERSION"
-                            values(
-                                "3.6",
-                                "3.7",
-                                "3.8"
-                            )
-                        }
-                        axis {
-                            name "FORMAT"
-                            values(
-                                "whl",
-                                "sdist"
-                            )
-                        }
-                        axis {
-                            name "PLATFORM"
-                            values(
-                                "windows",
+        }
+    }
+//             stage('Creating Binary Packages'){
+//                 matrix{
+//                     agent none
+//                     axes{
+//                         axis {
+//                             name "PYTHON_VERSION"
+//                             values(
+//                                 "3.6",
+//                                 "3.7",
+//                                 "3.8",
+//                             )
+//                         }
+//                     }
+//                     stages{
+//                         stage("Creating bdist wheel"){
+//                             agent{
+//                                 dockerfile {
+//                                     filename "${CONFIGURATIONS[PYTHON_VERSION].os.windows.agents.build.dockerfile}"
+//                                     label "${CONFIGURATIONS[PYTHON_VERSION].os.windows.agents.build.label}"
+//                                     additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os.windows.agents.build.additionalBuildArgs}"
+//                                 }
+//                             }
+//                             steps{
+//                                 timeout(15){
+//                                     bat(
+//                                         label: "Checking Python version",
+//                                         script: "python --version"
+//                                     )
+// //                                     unstash "COMPILED_OPENJEG2_WINDOWS"
+//                                     bat(
+//                                         label: "Creating whl for ${PYTHON_VERSION}",
+//                                         script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
+//                                     )
+//                                 }
+//                             }
+//                             post{
+//                                 always{
+//                                     stash includes: "dist/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['whl']}", name: "whl ${PYTHON_VERSION}"
+//                                     script{
+//                                         findFiles(glob: "build/lib/**/*.pyd").each{
+//                                             bat(
+//                                                 label: "Checking Python extension for dependents",
+//                                                 script: "dumpbin /DEPENDENTS ${it.path}"
+//                                                 )
+//                                         }
+//                                     }
+//                                 }
+//                                 success{
+//                                     archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
+//                                 }
+//                                 cleanup{
+//                                     cleanWs(
+//                                         deleteDirs: true,
+//                                         patterns: [
+//                                             [pattern: 'dist/', type: 'INCLUDE'],
+//                                             [pattern: 'build/', type: 'INCLUDE'],
+//                                         ]
+//                                     )
+//                                 }
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//             stage('Testing all Package') {
+//                 matrix{
+//                     agent none
+//                     axes{
+//                         axis {
+//                             name "PYTHON_VERSION"
+//                             values(
+//                                 "3.6",
+//                                 "3.7",
+//                                 "3.8"
+//                             )
+//                         }
+//                         axis {
+//                             name "FORMAT"
+//                             values(
+//                                 "whl",
+//                                 "sdist"
+//                             )
+//                         }
+//                         axis {
+//                             name "PLATFORM"
+//                             values(
+//                                 "windows",
 //                                 "linux"
-                            )
-                        }
-                    }
+//                             )
+//                         }
+//                     }
 //                     excludes{
 //                         exclude {
 //                             axis {
@@ -737,67 +882,67 @@ pipeline {
 //                             }
 //                         }
 //                     }
-                    stages{
-                        stage("Testing Package"){
-                            agent{
-                                dockerfile {
-                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile}"
-                                    label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].label}"
-                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].additionalBuildArgs}"
-                                }
+//                     stages{
+//                         stage("Testing Package"){
+//                             agent{
 //                                 dockerfile {
-//                                     filename "${CONFIGURATIONS[PYTHON_VERSION].package_testing[PYTHON_PACKAGE_TYPE].dockerfile}"
-//                                     label "${CONFIGURATIONS[PYTHON_VERSION].package_testing[PYTHON_PACKAGE_TYPE].label}"
-//                                     additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].package_testing[PYTHON_PACKAGE_TYPE].additionalBuildArgs}"
+//                                     filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile}"
+//                                     label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].label}"
+//                                     additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].additionalBuildArgs}"
 //                                 }
-                            }
-                            options{
-                                timeout(15)
-                            }
-                            steps{
-                                script{
-                                    if(FORMAT == "whl"){
-                                        unstash "${FORMAT} ${PYTHON_VERSION}"
-                                    }
-                                    if(FORMAT == "sdist"){
-                                        unstash "sdist"
-                                    }
-                                }
-                                bat(
-                                    label: "Checking Python version",
-                                    script: "python --version"
-                                )
-                                script{
-
-                                    findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex[FORMAT]}").each{
-                                        bat(
-                                            script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
-                                            label: "Testing ${it}"
-                                        )
-                                    }
-                                }
-                            }
-                            post{
-                                failure{
-                                    bat "tree .tox\\py\\lib\\site-packages\\uiucprescon /A /F"
-                                }
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: 'build/', type: 'INCLUDE'],
-                                            [pattern: '.tox/', type: 'INCLUDE'],
-                                            ]
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+// //                                 dockerfile {
+// //                                     filename "${CONFIGURATIONS[PYTHON_VERSION].package_testing[PYTHON_PACKAGE_TYPE].dockerfile}"
+// //                                     label "${CONFIGURATIONS[PYTHON_VERSION].package_testing[PYTHON_PACKAGE_TYPE].label}"
+// //                                     additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].package_testing[PYTHON_PACKAGE_TYPE].additionalBuildArgs}"
+// //                                 }
+//                             }
+//                             options{
+//                                 timeout(15)
+//                             }
+//                             steps{
+//                                 script{
+//                                     if(FORMAT == "whl"){
+//                                         unstash "${FORMAT} ${PYTHON_VERSION}"
+//                                     }
+//                                     if(FORMAT == "sdist"){
+//                                         unstash "sdist"
+//                                     }
+//                                 }
+//                                 bat(
+//                                     label: "Checking Python version",
+//                                     script: "python --version"
+//                                 )
+//                                 script{
+//
+//                                     findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex[FORMAT]}").each{
+//                                         bat(
+//                                             script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
+//                                             label: "Testing ${it}"
+//                                         )
+//                                     }
+//                                 }
+//                             }
+//                             post{
+//                                 failure{
+//                                     bat "tree .tox\\py\\lib\\site-packages\\uiucprescon /A /F"
+//                                 }
+//                                 cleanup{
+//                                     cleanWs(
+//                                         deleteDirs: true,
+//                                         patterns: [
+//                                             [pattern: 'dist/', type: 'INCLUDE'],
+//                                             [pattern: 'build/', type: 'INCLUDE'],
+//                                             [pattern: '.tox/', type: 'INCLUDE'],
+//                                             ]
+//                                     )
+//                                 }
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
     stage("Deploy to Devpi"){
         when {
             allOf{
