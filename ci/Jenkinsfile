@@ -12,9 +12,11 @@ def CONFIGURATIONS = [
                         additionalBuildArgs: "--build-arg PYTHON_VERSION=3.6",
                     ],
                     test:[
-                        dockerfile: "ci/docker/python/linux/Dockerfile",
-                        label: "linux && docker",
-                        additionalBuildArgs: "--build-arg PYTHON_VERSION=3.6",
+                        sdist:[
+                            dockerfile: "ci/docker/python/linux/Dockerfile",
+                            label: "linux && docker",
+                            additionalBuildArgs: "--build-arg PYTHON_VERSION=3.6",
+                        ]
                     ],
                 ]
             ],
@@ -60,9 +62,11 @@ def CONFIGURATIONS = [
                         additionalBuildArgs: "--build-arg PYTHON_VERSION=3.7",
                     ],
                     test:[
-                        dockerfile: "ci/docker/python/linux/Dockerfile",
-                        label: "linux && docker",
-                        additionalBuildArgs: "--build-arg PYTHON_VERSION=3.7",
+                        sdist:[
+                            dockerfile: "ci/docker/python/linux/Dockerfile",
+                            label: "linux && docker",
+                            additionalBuildArgs: "--build-arg PYTHON_VERSION=3.7",
+                        ]
                     ],
                 ]
             ],
