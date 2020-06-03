@@ -393,9 +393,9 @@ pipeline {
     stage('Testing') {
         agent {
             dockerfile {
-                    filename "${CONFIGURATIONS["3.7"].os.linux.agents.test.dockerfile}"
-                    label "${CONFIGURATIONS["3.7"].os.linux.agents.test.label}"
-                    additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.test.additionalBuildArgs}"
+                    filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
+                    label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
+                    additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
                 }
 //             dockerfile {
 //                 filename 'ci/docker/python/windows/msvc/build/Dockerfile'
