@@ -599,15 +599,22 @@ pipeline {
     stage("Create Python Packages"){
         stages{
             stage('Creating Source Package') {
-                agent{
+                agent {
                     dockerfile {
-                        filename 'ci/docker/python/windows/msvc/build/Dockerfile'
-                        label 'windows && Docker'
-                        additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                        filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
+                        label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
+                        additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
                     }
                 }
+//                 agent{
+//                     dockerfile {
+//                         filename 'ci/docker/python/windows/msvc/build/Dockerfile'
+//                         label 'windows && Docker'
+//                         additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+//                     }
+//                 }
                 steps {
-                    bat "python setup.py sdist -d dist --format zip"
+                    sh "python setup.py sdist -d dist --format zip"
                 }
                 post{
                     always{
