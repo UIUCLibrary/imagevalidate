@@ -14,11 +14,11 @@ RUN chmod +x /tmp/install_cmake.sh  && /tmp/install_cmake.sh  --skip-license
 RUN apt update && apt install -y ninja-build
 
 ENV PIP_EXTRA_INDEX_URL="https://devpi.library.illinois.edu/production/release"
+RUN python -m pip install --upgrade pip && \
+    pip install --upgrade setuptools
 ADD requirements.txt /requirements.txt
 USER user
 WORKDIR /home/user
-RUN python -m pip install --upgrade pip && \
-    pip install --upgrade setuptools && \
-    pip install wheel && \
-    pip install pytest-cov lxml sphinx mypy flake8 tox devpi-client && \
-    pip install -r /requirements.txt --pre
+RUN pip install --user wheel && \
+    pip install --user pytest-cov lxml sphinx mypy flake8 tox devpi-client && \
+    pip install --user -r /requirements.txt --pre
