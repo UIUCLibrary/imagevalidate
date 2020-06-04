@@ -532,14 +532,14 @@ pipeline {
                     always {
                       archiveArtifacts artifacts: "reports/doctest.txt"
                     }
-                    cleanup{
-                        cleanWs(
-                          deleteDirs: true,
-                          patterns: [
-                            [pattern: 'build/docs/doctrees/', type: 'INCLUDE'],
-                          ]
-                        )
-                    }
+//                     cleanup{
+//                         cleanWs(
+//                           deleteDirs: true,
+//                           patterns: [
+//                             [pattern: 'build/docs/doctrees/', type: 'INCLUDE'],
+//                           ]
+//                         )
+//                     }
                   }
                 }
                 stage("Run MyPy Static Analysis") {
@@ -557,14 +557,6 @@ pipeline {
                         recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
                         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                     }
-//                     cleanup{
-//                         cleanWs(
-//                           deleteDirs: true,
-//                           patterns: [
-//                             [pattern: '.mypy_cache/', type: 'INCLUDE'],
-//                           ]
-//                         )
-//                     }
                   }
                 }
                 stage("Run Flake8 Static Analysis") {
