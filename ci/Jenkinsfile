@@ -419,7 +419,6 @@ pipeline {
                             mkdir -p reports/mypy/html
                         """
                     )
-                    sh "cd uiucprescon && ls -laR"
                 }
             }
             stage("Run Testing"){
