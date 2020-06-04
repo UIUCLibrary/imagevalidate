@@ -26,7 +26,7 @@ def CONFIGURATIONS = [
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
-                        sdist: [
+                        zip: [
                             dockerfile: [
                                 filename: 'ci/docker/python/linux/Dockerfile',
                                 label: 'linux && docker',
@@ -65,7 +65,7 @@ def CONFIGURATIONS = [
                                 additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.6-windowsservercore'
                             ]
                         ],
-                        sdist: [
+                        zip: [
                             dockerfile: [
                                 filename: 'ci/docker/deploy/devpi/test/windows/source/Dockerfile',
                                 label: 'Windows&&Docker',
