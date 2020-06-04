@@ -1170,6 +1170,7 @@ pipeline {
                             steps{
                                 unstash "DIST-INFO"
                                 script{
+                                    echo "PLATFORM = ${PLATFORM}"
                                     def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
                                     if (PLATFORM == "window"){
                                         bat(
