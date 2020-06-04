@@ -108,7 +108,7 @@ def CONFIGURATIONS = [
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
-                        sdist: [
+                        zip: [
                             dockerfile: [
                                 filename: 'ci/docker/python/windows/Dockerfile',
                                 label: 'linux&&docker',
@@ -147,7 +147,7 @@ def CONFIGURATIONS = [
                                 additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.7'
                             ]
                         ],
-                        sdist: [
+                        zip: [
                             dockerfile: [
                                 filename: 'ci/docker/deploy/devpi/test/windows/source/Dockerfile',
                                 label: 'Windows&&Docker',
@@ -190,7 +190,7 @@ def CONFIGURATIONS = [
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
-                        sdist: [
+                        zip: [
                             dockerfile: [
                                 filename: 'ci/docker/python/windows/Dockerfile',
                                 label: 'linux&&docker',
@@ -232,7 +232,7 @@ def CONFIGURATIONS = [
                                 additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.8'
                             ]
                         ],
-                        sdist: [
+                        zip: [
                             dockerfile: [
                                 filename: 'ci/docker/deploy/devpi/test/windows/source/Dockerfile',
                                 label: 'Windows&&Docker',
