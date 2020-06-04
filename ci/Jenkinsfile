@@ -557,14 +557,14 @@ pipeline {
                         recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
                         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                     }
-                    cleanup{
-                        cleanWs(
-                          deleteDirs: true,
-                          patterns: [
-                            [pattern: '.mypy_cache/', type: 'INCLUDE'],
-                          ]
-                        )
-                    }
+//                     cleanup{
+//                         cleanWs(
+//                           deleteDirs: true,
+//                           patterns: [
+//                             [pattern: '.mypy_cache/', type: 'INCLUDE'],
+//                           ]
+//                         )
+//                     }
                   }
                 }
                 stage("Run Flake8 Static Analysis") {
@@ -755,14 +755,6 @@ pipeline {
                     post{
                         always{
                             run_dumpbin("build/lib/**/*.pyd")
-//                             script{
-//                                 findFiles(glob: "build/lib/**/*.pyd").each{
-//                                     bat(
-//                                         label: "Checking Python extension for dependents",
-//                                         script: "dumpbin /DEPENDENTS ${it.path}"
-//                                     )
-//                                 }
-//                             }
                         }
                         success{
                             stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
