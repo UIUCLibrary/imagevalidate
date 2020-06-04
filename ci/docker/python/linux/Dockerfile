@@ -15,10 +15,10 @@ RUN apt update && apt install -y ninja-build
 
 ENV PIP_EXTRA_INDEX_URL="https://devpi.library.illinois.edu/production/release"
 ADD requirements.txt /requirements.txt
+USER user
+WORKDIR /home/user
 RUN python -m pip install --upgrade pip && \
     pip install --upgrade setuptools && \
     pip install wheel && \
     pip install pytest-cov lxml sphinx mypy flake8 tox devpi-client && \
     pip install -r /requirements.txt --pre
-USER user
-WORKDIR /home/user
