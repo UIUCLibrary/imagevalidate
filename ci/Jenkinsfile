@@ -18,6 +18,22 @@ def CONFIGURATIONS = [
                             additionalBuildArgs: "--build-arg PYTHON_VERSION=3.6",
                         ]
                     ],
+                    devpi: [
+                        whl: [
+                            dockerfile: [
+                                filename: 'ci/docker/python/windows/Dockerfile',
+                                label: 'linux&&docker',
+                                additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            ]
+                        ],
+                        sdist: [
+                            dockerfile: [
+                                filename: 'ci/docker/python/windows/Dockerfile',
+                                label: 'linux&&docker',
+                                additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            ]
+                        ]
+                    ]
                 ]
             ],
             "windows":[
@@ -39,6 +55,22 @@ def CONFIGURATIONS = [
                             dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
                             label: "windows && Docker",
                             additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe --build-arg CHOCOLATEY_SOURCE",
+                        ]
+                    ],
+                    devpi: [
+                        wheel: [
+                            dockerfile: [
+                                filename: 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile',
+                                label: 'Windows&&Docker',
+                                additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.6-windowsservercore'
+                            ]
+                        ],
+                        sdist: [
+                            dockerfile: [
+                                filename: 'ci/docker/deploy/devpi/test/windows/source/Dockerfile',
+                                label: 'Windows&&Docker',
+                                additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                            ]
                         ]
                     ]
                 ],
@@ -68,6 +100,22 @@ def CONFIGURATIONS = [
                             additionalBuildArgs: "--build-arg PYTHON_VERSION=3.7",
                         ]
                     ],
+                    devpi: [
+                        whl: [
+                            dockerfile: [
+                                filename: 'ci/docker/python/windows/Dockerfile',
+                                label: 'linux&&docker',
+                                additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            ]
+                        ],
+                        sdist: [
+                            dockerfile: [
+                                filename: 'ci/docker/python/windows/Dockerfile',
+                                label: 'linux&&docker',
+                                additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            ]
+                        ]
+                    ]
                 ]
             ],
             "windows":[
@@ -90,6 +138,22 @@ def CONFIGURATIONS = [
                             label: "windows && Docker",
                             additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe --build-arg CHOCOLATEY_SOURCE",
                         ]
+                    ],
+                    devpi: [
+                        wheel: [
+                            dockerfile: [
+                                filename: 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile',
+                                label: 'Windows&&Docker',
+                                additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.7'
+                            ]
+                        ],
+                        sdist: [
+                            dockerfile: [
+                                filename: 'ci/docker/deploy/devpi/test/windows/source/Dockerfile',
+                                label: 'Windows&&Docker',
+                                additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                            ]
+                        ]
                     ]
                 ],
             ]
@@ -101,24 +165,6 @@ def CONFIGURATIONS = [
             devpi_wheel_regex: "cp37"
         ],
     ],
-//             python_install_url:"https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe",
-//             package_testing: [
-//                 whl: [
-//                     dockerfile: "ci/docker/python/windows/msvc/test/Dockerfile",
-//                     label: "windows && Docker",
-//                     additionalBuildArgs: "--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.7",
-//                     pkgRegex: "*cp37*.whl",
-//                 ],
-//                 sdist: [
-//                     dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
-//                     label: "windows && Docker",
-//                     additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe --build-arg CHOCOLATEY_SOURCE",
-//                     pkgRegex: "*.zip",
-//                 ]
-//             ],
-//             test_docker_image: "python:3.7",
-//             tox_env: "py37",
-//             devpi_wheel_regex: "cp37"
     "3.8": [
         "os":[
         "linux":[
@@ -136,6 +182,22 @@ def CONFIGURATIONS = [
                             additionalBuildArgs: "--build-arg PYTHON_VERSION=3.8",
                         ]
                     ],
+                    devpi: [
+                        whl: [
+                            dockerfile: [
+                                filename: 'ci/docker/python/windows/Dockerfile',
+                                label: 'linux&&docker',
+                                additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            ]
+                        ],
+                        sdist: [
+                            dockerfile: [
+                                filename: 'ci/docker/python/windows/Dockerfile',
+                                label: 'linux&&docker',
+                                additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            ]
+                        ]
+                    ]
                 ]
             ],
             "windows":[
@@ -160,6 +222,22 @@ def CONFIGURATIONS = [
                             dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
                             label: "windows && Docker",
                             additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe --build-arg CHOCOLATEY_SOURCE",
+                        ]
+                    ],
+                    devpi: [
+                        wheel: [
+                            dockerfile: [
+                                filename: 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile',
+                                label: 'Windows&&Docker',
+                                additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.8'
+                            ]
+                        ],
+                        sdist: [
+                            dockerfile: [
+                                filename: 'ci/docker/deploy/devpi/test/windows/source/Dockerfile',
+                                label: 'Windows&&Docker',
+                                additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                            ]
                         ]
                     ]
                 ],
@@ -1041,7 +1119,7 @@ pipeline {
                             agent {
                               dockerfile {
                                 additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].base_image}"
-                                filename 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile'
+                                filename "ci/docker/deploy/devpi/test/windows/whl/Dockerfile"
                                 label 'windows && docker'
                               }
                             }
@@ -1073,9 +1151,9 @@ pipeline {
                         stage("Testing DevPi Source Package"){
                             agent {
                                 dockerfile {
-                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile}"
-                                    label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile.label}"
-                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile.additionalBuildArgs}"
+                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile}"
+                                    label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].label}"
+                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].additionalBuildArgs}"
                                 }
 //                                 dockerfile {
 //                                     additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].python_install_url} --build-arg CHOCOLATEY_SOURCE"
@@ -1093,14 +1171,26 @@ pipeline {
                                     def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
                                     cleanWs(patterns: [[pattern: "uiucprescon.imagevalidate.dist-info/METADATA", type: 'INCLUDE']])
                                     bat "python --version"
-                                    bat(
-                                        label: "Connecting to DevPi index",
-                                        script: "devpi use https://devpi.library.illinois.edu --clientdir certs\\ && devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\ && devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\"
-                                    )
-                                    bat(
-                                        label: "Running tests on Devpi",
-                                        script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
-                                    )
+                                    if (PLATFORM == "window"){
+                                        bat(
+                                            label: "Connecting to DevPi index",
+                                            script: "devpi use https://devpi.library.illinois.edu --clientdir certs\\ && devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\ && devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\"
+                                        )
+                                        bat(
+                                            label: "Running tests on Devpi",
+                                            script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
+                                        )
+                                    } else{
+                                            sh(
+                                                label: "Connecting to DevPi index",
+                                                script: "devpi use https://devpi.library.illinois.edu --clientdir certs\\ && devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs/ && devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\"
+                                            )
+                                            sh(
+                                                label: "Running tests on Devpi",
+                                                script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir certs/ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
+                                            )
+
+                                    }
                                 }
                             }
                         }
@@ -1167,7 +1257,7 @@ pipeline {
                     flatten: false, 
                     makeEmptyDirs: false, 
                     noDefaultExcludes: false, 
-                    patternSeparator: '[, ]+', 
+                    patternSeparator: '[, ]+',
                     remoteDirectory: "${params.DEPLOY_DOCS_URL_SUBFOLDER}", 
                     remoteDirectorySDF: false, 
                     removePrefix: '', 
