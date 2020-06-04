@@ -1009,12 +1009,31 @@ pipeline {
                 matrix {
                     axes {
                         axis {
+                            name 'PLATFORM'
+                            values(
+                                "linux",
+                                "windows"
+                            )
+                        }
+                        axis {
                             name 'PYTHON_VERSION'
                             values '3.6', '3.7', '3.8'
                         }
                         axis {
                             name 'FORMAT'
                             values 'zip', "whl"
+                        }
+                    }
+                    excludes{
+                        exclude {
+                            axis {
+                                name 'PLATFORM'
+                                values 'linux'
+                            }
+                            axis {
+                                name 'FORMAT'
+                                values 'whl'
+                            }
                         }
                     }
                     agent none
