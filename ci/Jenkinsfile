@@ -988,11 +988,11 @@ pipeline {
                         unstash "DIST-INFO"
                         def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                         sh(
-                            label: "Connecting to DevPi Server",
-                            script: 'devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi'
+                            label: "Pushing to DS_Jenkins/${env.BRANCH_NAME} index",
+                            script: """devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi
+                                       devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi
+                                       devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ${WORKSPACE}/devpi"""
                         )
-                        sh """devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi
-                        devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ${WORKSPACE}/devpi"""
 //                         unstash "DIST-INFO"
 //                         def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
 //                         try{
