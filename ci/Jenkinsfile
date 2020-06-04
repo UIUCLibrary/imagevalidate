@@ -746,7 +746,7 @@ pipeline {
                     name 'FORMAT'
                     values(
                         "whl",
-                        "sdist"
+//                         "sdist"
                     )
                 }
                 axis {
@@ -1133,10 +1133,6 @@ pipeline {
                             steps{
                                 timeout(10){
                                     unstash "DIST-INFO"
-                                    bat(
-                                        label: "Checking Python version",
-                                        script: "python --version"
-                                    )
                                     script{
                                         def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
                                         cleanWs(patterns: [[pattern: "uiucprescon.imagevalidate.dist/METADATA", type: 'INCLUDE']])
@@ -1176,6 +1172,10 @@ pipeline {
                                 script{
                                     def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
                                     if (PLATFORM == "window"){
+                                        bat(
+                                            label: "Checking Python version",
+                                            script: "python --version"
+                                        )
                                         bat(
                                             label: "Running tests on Devpi",
                                             script: """devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}\\certs\\
