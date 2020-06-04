@@ -499,7 +499,6 @@ pipeline {
                 }
                 stage("Run PyTest Unit Tests"){
                     steps{
-
                         catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                             sh(
                                 label: "Running Pytest",
@@ -836,9 +835,6 @@ pipeline {
                         additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                       }
                 }
-                options{
-                    timeout(5)
-                }
                 steps {
                     unstash "whl 3.6"
                     unstash "whl 3.7"
@@ -1036,7 +1032,6 @@ pipeline {
     }
     stage("Release") {
       parallel {
-
         stage("Deploy Online Documentation") {
           when {
             allOf{
