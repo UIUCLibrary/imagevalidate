@@ -58,7 +58,7 @@ def CONFIGURATIONS = [
                         ]
                     ],
                     devpi: [
-                        wheel: [
+                        whk: [
                             dockerfile: [
                                 filename: 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile',
                                 label: 'Windows&&Docker',
@@ -140,7 +140,7 @@ def CONFIGURATIONS = [
                         ]
                     ],
                     devpi: [
-                        wheel: [
+                        whl: [
                             dockerfile: [
                                 filename: 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile',
                                 label: 'Windows&&Docker',
@@ -225,7 +225,7 @@ def CONFIGURATIONS = [
                         ]
                     ],
                     devpi: [
-                        wheel: [
+                        whl: [
                             dockerfile: [
                                 filename: 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile',
                                 label: 'Windows&&Docker',
@@ -1148,9 +1148,9 @@ pipeline {
                         stage("Testing DevPi Source Package"){
                             agent {
                                 dockerfile {
-                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.additionalBuildArgs}"
-                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.filename}"
-                                    label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.label}"
+                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.additionalBuildArgs}"
+                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.filename}"
+                                    label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.label}"
                                   }
 //                                 dockerfile {
 //                                     filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile}"
