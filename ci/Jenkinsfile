@@ -267,7 +267,7 @@ def devpiRunTest(pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, de
             sh(
                 label: "Running tests on Devpi",
                 script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
-                           devpi login $devpiUsername --password $devpiPassword% --clientdir certs\\
+                           devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
                            devpi use ${devpiIndex} --clientdir certs\\
                            devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} -v
                            """
@@ -276,7 +276,7 @@ def devpiRunTest(pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, de
             bat(
                 label: "Running tests on Devpi",
                 script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
-                           devpi login %devpiUsername% --password %devpiPassword% --clientdir certs\\
+                           devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
                            devpi use ${devpiIndex} --clientdir certs\\
                            devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} -v
                            """
