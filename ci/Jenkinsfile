@@ -265,12 +265,22 @@ def devpiRunTest(pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, de
 //         cleanWs(patterns: [[pattern: "uiucprescon.imagevalidate.dist/METADATA", type: 'INCLUDE']])
         if (isUnix()){
             sh(
-                label: "Running tests on Devpi",
-                script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
-                           devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
-                           devpi use ${devpiIndex} --clientdir certs\\
-                           devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} -v
-                           """
+                label: "Connecting to Devpi",
+                script: "devpi use https://devpi.library.illinois.edu --clientdir certs/ "
+            )
+
+            sh(
+                label: "Logging into Devpi",
+                script: "devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs/"
+            )
+
+            sh(
+                label: "Selecting Devpi index",
+                script: "devpi use ${devpiIndex} --clientdir certs/"
+            )
+            sh(
+                label: "Running test",
+                script: "devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} -v"
             )
         } else {
             bat(
