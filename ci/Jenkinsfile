@@ -938,26 +938,34 @@ pipeline {
                             }
                             steps{
                                 unstash "DIST-INFO"
-                                script{
-                                    def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
-                                    if (isUnix()){
-                                        sh(
-                                            label: "Running tests on Devpi",
-                                            script: """devpi use https://devpi.library.illinois.edu --clientdir ./certs/
-                                                       devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./certs/
-                                                       devpi use ${env.BRANCH_NAME}_staging --clientdir ./certs/
-                                                       devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir ./certs/ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"""
-                                        )
-                                    } else {
-                                        bat(
-                                            label: "Running tests on Devpi",
-                                            script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
-                                                       devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\
-                                                       devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\
-                                                       devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"""
-                                        )
-                                    }
-                                }
+                                devpiRunTest(
+                                    "uiucprescon.imagevalidate.dist-info/METADATA",
+                                    "${env.BRANCH_NAME}_staging",
+                                    "zip",
+                                    DEVPI_USR,
+                                    DEVPI_PSW,
+                                    CONFIGURATIONS[PYTHON_VERSION].tox_env
+                                )
+//                                 script{
+//                                     def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
+//                                     if (isUnix()){
+//                                         sh(
+//                                             label: "Running tests on Devpi",
+//                                             script: """devpi use https://devpi.library.illinois.edu --clientdir ./certs/
+//                                                        devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./certs/
+//                                                        devpi use ${env.BRANCH_NAME}_staging --clientdir ./certs/
+//                                                        devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir ./certs/ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"""
+//                                         )
+//                                     } else {
+//                                         bat(
+//                                             label: "Running tests on Devpi",
+//                                             script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
+//                                                        devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\
+//                                                        devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\
+//                                                        devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"""
+//                                         )
+//                                     }
+//                                 }
                             }
                         }
                     }
