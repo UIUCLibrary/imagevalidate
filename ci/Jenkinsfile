@@ -1001,7 +1001,7 @@ pipeline {
                     beforeAgent true
                 }
                 options{
-                    timeout(30);
+                      timeout(time: 1, unit: 'DAYS')
                 }
                 input {
                   message 'Release to DevPi Production? '
@@ -1021,8 +1021,7 @@ pipeline {
                         sh(
                             label: "Pushing to DS_Jenkins/${env.BRANCH_NAME} index",
                             script: """devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi
-                                       devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi
-                                       devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ${WORKSPACE}/devpi"""
+                                       devpi push --index /DS_Jenkins/${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} production/release --clientdir ${WORKSPACE}/devpi"""
                         )
 //                         unstash "DIST-INFO"
 //                         def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
