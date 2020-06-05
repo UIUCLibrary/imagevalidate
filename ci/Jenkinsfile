@@ -999,6 +999,7 @@ pipeline {
                         branch "master"
                     }
                     beforeAgent true
+                    beforeInput true
                 }
                 options{
                       timeout(time: 1, unit: 'DAYS')
