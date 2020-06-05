@@ -263,14 +263,25 @@ def devpiRunTest(pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, de
     script{
         def props = readProperties interpolate: true, file: pkgPropertiesFile
 //         cleanWs(patterns: [[pattern: "uiucprescon.imagevalidate.dist/METADATA", type: 'INCLUDE']])
-        bat(
-            label: "Running tests on Devpi",
-            script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
-                       devpi login %devpiUsername% --password %devpiPassword% --clientdir certs\\
-                       devpi use ${devpiIndex} --clientdir certs\\
-                       devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} -v
-                       """
-        )
+        if (isUnix()){
+            sh(
+                label: "Running tests on Devpi",
+                script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
+                           devpi login $devpiUsername --password $devpiPassword% --clientdir certs\\
+                           devpi use ${devpiIndex} --clientdir certs\\
+                           devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} -v
+                           """
+            )
+        } else {
+            bat(
+                label: "Running tests on Devpi",
+                script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
+                           devpi login %devpiUsername% --password %devpiPassword% --clientdir certs\\
+                           devpi use ${devpiIndex} --clientdir certs\\
+                           devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} -v
+                           """
+            )
+        }
     }
 }
 
