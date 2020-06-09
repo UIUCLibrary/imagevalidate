@@ -444,7 +444,6 @@ pipeline {
                    }
                    always{
                         recordIssues(filters: [excludeFile('build/*')], tools: [gcc(pattern: 'logs/python_build.log')])
-
                    }
                    failure{
                         cleanWs(
