@@ -432,13 +432,18 @@ pipeline {
                 steps {
                     sh(
                         label: "Building",
-                        script: "python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace"
+                        script: '''mkdir -p logs
+                                   python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace | tee logs/python_build.log
+                        '''
                         )
                 }
                 post{
                    success{
                        stash includes: "uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd,uiucprescon/imagevalidate/*.so", name: 'COMPILED_BINARIES'
                        stash includes: "build/**", name: 'LINUX_BUILD_DIRECTORY'
+                   }
+                   always{
+                        recordIssues(tools: [gcc(pattern: 'logs/python_build.log')])
                    }
                    failure{
                         cleanWs(
