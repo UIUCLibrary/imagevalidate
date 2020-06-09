@@ -443,7 +443,7 @@ pipeline {
                        stash includes: "build/**", name: 'LINUX_BUILD_DIRECTORY'
                    }
                    always{
-                        recordIssues(tools: [gcc(pattern: 'logs/python_build.log')])
+                        recordIssues(filters: [excludeFile('build/*')], tools: [gcc(pattern: 'logs/python_build.log')])
 
                    }
                    failure{
