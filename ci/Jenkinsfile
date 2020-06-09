@@ -433,7 +433,7 @@ pipeline {
                     sh(
                         label: "Building",
                         script: '''mkdir -p logs
-                                   python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace | tee logs/python_build.log
+                                   python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace 2>&1 | tee logs/python_build.log
                         '''
                         )
                 }
@@ -444,6 +444,7 @@ pipeline {
                    }
                    always{
                         recordIssues(tools: [gcc(pattern: 'logs/python_build.log')])
+
                    }
                    failure{
                         cleanWs(
