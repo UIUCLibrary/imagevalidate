@@ -378,7 +378,6 @@ pipeline {
   }
   environment {
     build_number = VersionNumber(projectStartDate: '2018-6-12', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
-    PIPENV_NOSPIN="DISABLED"
   }
   parameters {
       booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
@@ -419,7 +418,6 @@ pipeline {
             }
         }
     stage("Building"){
-
         agent {
             dockerfile {
                 filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
@@ -455,7 +453,7 @@ pipeline {
                 steps {
                     sh(
                         label: "Building docs on ${env.NODE_NAME}",
-                        script: "python -m sphinx -b html docs/source ${WORKSPACE}/build/docs/html -d ${WORKSPACE}/build/docs/doctrees"
+                        script: 'python -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees'
                     )
                 }
                 post{
@@ -465,7 +463,7 @@ pipeline {
                             unstash "DIST-INFO"
                             def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
                             def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
-                            zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
                             stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
                         }
                     }
@@ -488,24 +486,21 @@ pipeline {
                     additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
                 }
         }
-        environment{
-            junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
-        }
         stages{
-            stage("Setting up tests"){
-                steps{
-                    unstash "COMPILED_BINARIES"
-                    sh(
-                        label: "Creating logging and report directories",
-                        script: """
-                            mkdir -p logs
-                            mkdir -p reports/coverage
-                            mkdir -p reports/doctests
-                            mkdir -p reports/mypy/html
-                        """
-                    )
-                }
-            }
+//             stage("Setting up tests"){
+//                 steps{
+//                     unstash "COMPILED_BINARIES"
+//                     sh(
+//                         label: "Creating logging and report directories",
+//                         script: """
+//                             mkdir -p logs
+//                             mkdir -p reports/coverage
+//                             mkdir -p reports/doctests
+//                             mkdir -p reports/mypy/html
+//                         """
+//                     )
+//                 }
+//             }
             stage("Run Testing"){
               parallel {
                 stage("Tox") {
@@ -515,40 +510,28 @@ pipeline {
                     steps {
                         sh (
                             label: "Run Tox",
-                            script: "tox --workdir ${WORKSPACE}/.tox -vv  -e py -- --junitxml=${WORKSPACE}/reports/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                            script: 'tox --workdir .tox -vv  -e py'
                         )
-                    }
-                    post {
-                        always {
-                            archiveArtifacts allowEmptyArchive: true, artifacts: '.tox/py*/log/*.log,.tox/log/*.log,logs/tox_report.json'
-                            recordIssues(tools: [pep8(id: 'tox', name: 'Tox', pattern: '.tox/py*/log/*.log,.tox/log/*.log')])
-                        }
-                        cleanup{
-                            cleanWs(
-                                patterns: [
-                                    [pattern: '.tox/py*/log/*.log', type: 'INCLUDE'],
-                                    [pattern: '.tox/log/*.log', type: 'INCLUDE'],
-                                    [pattern: 'logs/rox_report.json', type: 'INCLUDE']
-                                ]
-                            )
-                        }
                     }
                 }
                 stage("Run PyTest Unit Tests"){
                     steps{
+                        unstash "COMPILED_BINARIES"
                         catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                             sh(
                                 label: "Running Pytest",
-                                script:"python -m pytest --junitxml=reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/pytestcoverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --integration --cov-config=${WORKSPACE}/setup.cfg"
+                                script:'''mkdir -p reports
+                                          python -m pytest --junitxml=reports/pytest.xml --cov-report html:reports/pytestcoverage/  --cov-report xml:reports/coverage.xml --cov=uiucprescon --integration --cov-config=setup.cfg
+                                          '''
                             )
                         }
                     }
                     post {
                         always {
-                            junit "reports/pytest/${junit_filename}"
-                            stash includes: "reports/pytest/*.xml", name: "PYTEST_UNIT_TEST_RESULTS"
+                            junit "reports/pytest.xml"
+                            stash includes: "reports/pytest.xml", name: "PYTEST_REPORT"
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/pytestcoverage", reportFiles: 'index.html', reportName: 'Coverage.py', reportTitles: ''])
-                            stash includes: "reports/coverage.xml", name: "COVERAGE_REPORT_DATA"
+                            stash includes: "reports/coverage.xml", name: "COVERAGE_REPORT"
                             publishCoverage adapters: [
                                         coberturaAdapter('reports/coverage.xml')
                                     ],
@@ -560,7 +543,7 @@ pipeline {
                 stage("Run Doctest Tests"){
                   steps {
                     catchError(buildResult: "SUCCESS", message: 'Doctest found issues', stageResult: "UNSTABLE") {
-                        sh "python -m sphinx -b doctest docs/source ${WORKSPACE}/build/docs -d ${WORKSPACE}/build/docs/doctrees -v"
+                        sh "python -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v"
                     }
                     sh "mv build/docs/output.txt reports/doctest.txt"
                   }
@@ -584,7 +567,9 @@ pipeline {
                     catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
                         sh(
                             label: "Running Mypy",
-                            script: "mypy -p uiucprescon --html-report ${WORKSPACE}/reports/mypy/html > ${WORKSPACE}/logs/mypy.log"
+                            script: '''mkdir -p logs
+                                       mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log
+                                       '''
                         )
                     }
                   }
@@ -598,18 +583,20 @@ pipeline {
                 stage("Run Flake8 Static Analysis") {
                     steps{
                         catchError(buildResult: "SUCCESS", message: 'Flake8 found issues', stageResult: "UNSTABLE") {
-                            sh "flake8 uiucprescon --format=pylint --tee --output-file=logs/flake8.log"
+                            sh '''mkdir -p logs
+                                  flake8 uiucprescon --format=pylint --tee --output-file=logs/flake8.log
+                                  '''
                         }
                     }
                     post {
                         always {
                             recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                            stash includes: "logs/flake8.log", name: "FLAKE8_REPORT"
                         }
                     }
                 }
               }
           }
-
       }
       post{
         cleanup{
@@ -620,6 +607,66 @@ pipeline {
         }
       }
     }
+    stage("Sonarcloud Analysis"){
+            agent {
+              dockerfile {
+                filename 'ci/docker/sonarcloud/Dockerfile'
+                label 'linux && docker'
+              }
+            }
+            options{
+                lock("uiucprescon.imagevalidate-sonarscanner")
+            }
+            steps{
+                checkout scm
+                sh "git fetch --all"
+                unstash "COVERAGE_REPORT"
+                unstash "PYTEST_REPORT"
+//                 unstash "BANDIT_REPORT"
+//                 unstash "PYLINT_REPORT"
+                unstash "FLAKE8_REPORT"
+                script{
+                    withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-uiucprescon.imagevalidate') {
+                        unstash "DIST-INFO"
+                        def props = readProperties(interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA")
+                        if (env.CHANGE_ID){
+                            sh(
+                                label: "Running Sonar Scanner",
+                                script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
+                                )
+                        } else {
+                            sh(
+                                label: "Running Sonar Scanner",
+                                script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
+                                )
+                        }
+                    }
+                    timeout(time: 1, unit: 'HOURS') {
+                        def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                        if (sonarqube_result.status != 'OK') {
+                            unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                        }
+                        def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
+                        writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+                    }
+                }
+            }
+            post {
+                always{
+                    archiveArtifacts(
+                        allowEmptyArchive: true,
+                        artifacts: ".scannerwork/report-task.txt"
+                    )
+                    script{
+                        if(fileExists('reports/sonar-report.json')){
+                            stash includes: "reports/sonar-report.json", name: 'SONAR_REPORT'
+                            archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
+                            recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                        }
+                    }
+                }
+            }
+        }
 //     stage("Run Sonarqube Analysis"){
 //         agent {
 //           label 'windows && !docker'
@@ -775,7 +822,7 @@ pipeline {
                     steps{
                         timeout(15){
                             bat(
-                                script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist",
+                                script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d dist",
                                 label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
                             )
                         }
@@ -880,9 +927,10 @@ pipeline {
                     unstash "DOCS_ARCHIVE"
                     sh(
                         label: "Uploading to DevPi Staging",
-                        script: """devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi
-                                   devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi
-                                   devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
+                        script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                   devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                   devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging --clientdir ./devpi
+                                   devpi upload --from-dir dist --clientdir ./devpi"""
                     )
                 }
             }
@@ -1021,9 +1069,10 @@ pipeline {
                         def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                         sh(
                             label: "Pushing to DS_Jenkins/${env.BRANCH_NAME} index",
-                            script: """devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi
-                                       devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi
-                                       devpi push --index DS_Jenkins/${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} production/release --clientdir ${WORKSPACE}/devpi"""
+                            script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                       devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                       devpi push --index DS_Jenkins/${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} production/release --clientdir ./devpi
+                                       """
                         )
 //                         unstash "DIST-INFO"
 //                         def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
@@ -1048,9 +1097,11 @@ pipeline {
                             def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                             sh(
                                 label: "Connecting to DevPi Server",
-                                script: """devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi
-                                           devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi
-                                           devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ${WORKSPACE}/devpi"""
+                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                           devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ./devpi
+                                           devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ./devpi
+                                           """
                             )
                         }
                    }
@@ -1064,10 +1115,11 @@ pipeline {
                             def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                             sh(
                                 label: "Connecting to DevPi Server",
-                                script: """devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi
-                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi
-                                           devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi
-                                           devpi remove -y ${props.Name}==${props.Version} --clientdir ${WORKSPACE}/devpi"""
+                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                           devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ./devpi
+                                           devpi remove -y ${props.Name}==${props.Version} --clientdir ./devpi
+                                           """
                                )
                         }
                    }
@@ -1085,7 +1137,7 @@ pipeline {
             }
           }
           steps {
-            dir("${WORKSPACE}\\build/docs/html/"){
+            dir("build/docs/html/"){
               input 'Update project documentation?'
               sshPublisher(
                 publishers: [
