@@ -454,7 +454,7 @@ pipeline {
                 steps {
                     sh(
                         label: "Building docs on ${env.NODE_NAME}",
-                        script: "python -m sphinx -b html docs/source ${WORKSPACE}/build/docs/html -d ${WORKSPACE}/build/docs/doctrees"
+                        script: 'python -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees'
                     )
                 }
                 post{
@@ -1063,9 +1063,10 @@ pipeline {
                         def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                         sh(
                             label: "Pushing to DS_Jenkins/${env.BRANCH_NAME} index",
-                            script: """devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi
-                                       devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi
-                                       devpi push --index DS_Jenkins/${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} production/release --clientdir ${WORKSPACE}/devpi"""
+                            script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                       devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                       devpi push --index DS_Jenkins/${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} production/release --clientdir ./devpi
+                                       """
                         )
 //                         unstash "DIST-INFO"
 //                         def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
@@ -1090,9 +1091,11 @@ pipeline {
                             def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                             sh(
                                 label: "Connecting to DevPi Server",
-                                script: """devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi
-                                           devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi
-                                           devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ${WORKSPACE}/devpi"""
+                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                           devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ./devpi
+                                           devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ./devpi
+                                           """
                             )
                         }
                    }
@@ -1106,10 +1109,11 @@ pipeline {
                             def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                             sh(
                                 label: "Connecting to DevPi Server",
-                                script: """devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi
-                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi
-                                           devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi
-                                           devpi remove -y ${props.Name}==${props.Version} --clientdir ${WORKSPACE}/devpi"""
+                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                           devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ./devpi
+                                           devpi remove -y ${props.Name}==${props.Version} --clientdir ./devpi
+                                           """
                                )
                         }
                    }
@@ -1127,7 +1131,7 @@ pipeline {
             }
           }
           steps {
-            dir("${WORKSPACE}\\build/docs/html/"){
+            dir("build/docs/html/"){
               input 'Update project documentation?'
               sshPublisher(
                 publishers: [
