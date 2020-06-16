@@ -418,7 +418,6 @@ pipeline {
             }
         }
     stage("Building"){
-
         agent {
             dockerfile {
                 filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
@@ -464,7 +463,7 @@ pipeline {
                             unstash "DIST-INFO"
                             def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
                             def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
-                            zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
                             stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
                         }
                     }
@@ -511,7 +510,7 @@ pipeline {
                     steps {
                         sh (
                             label: "Run Tox",
-                            script: "tox --workdir ${WORKSPACE}/.tox -vv  -e py"
+                            script: 'tox --workdir .tox -vv  -e py'
                         )
                     }
                 }
@@ -544,7 +543,7 @@ pipeline {
                 stage("Run Doctest Tests"){
                   steps {
                     catchError(buildResult: "SUCCESS", message: 'Doctest found issues', stageResult: "UNSTABLE") {
-                        sh "python -m sphinx -b doctest docs/source ${WORKSPACE}/build/docs -d ${WORKSPACE}/build/docs/doctrees -v"
+                        sh "python -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v"
                     }
                     sh "mv build/docs/output.txt reports/doctest.txt"
                   }
@@ -823,7 +822,7 @@ pipeline {
                     steps{
                         timeout(15){
                             bat(
-                                script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist",
+                                script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d dist",
                                 label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
                             )
                         }
