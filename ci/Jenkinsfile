@@ -517,19 +517,20 @@ pipeline {
                 }
                 stage("Run PyTest Unit Tests"){
                     steps{
+                        unstash "COMPILED_BINARIES"
                         catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                             sh(
                                 label: "Running Pytest",
                                 script:'''mkdir -p reports
-                                          python -m pytest --junitxml=reports/pytest/pytest.log --cov-report html:reports/pytestcoverage/  --cov-report xml:reports/coverage.xml --cov=uiucprescon --integration --cov-config=setup.cfg
+                                          python -m pytest --junitxml=reports/pytest.log --cov-report html:reports/pytestcoverage/  --cov-report xml:reports/coverage.xml --cov=uiucprescon --integration --cov-config=setup.cfg
                                           '''
                             )
                         }
                     }
                     post {
                         always {
-                            junit "reports/pytest/pytest.log"
-                            stash includes: "reports/pytest/*.xml", name: "PYTEST_REPORT"
+                            junit "reports/pytest.log"
+                            stash includes: "reports/pytest.xml", name: "PYTEST_REPORT"
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/pytestcoverage", reportFiles: 'index.html', reportName: 'Coverage.py', reportTitles: ''])
                             stash includes: "reports/coverage.xml", name: "COVERAGE_REPORT"
                             publishCoverage adapters: [
