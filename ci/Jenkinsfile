@@ -487,9 +487,6 @@ pipeline {
                     additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
                 }
         }
-        environment{
-            junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
-        }
         stages{
             stage("Setting up tests"){
                 steps{
@@ -514,23 +511,8 @@ pipeline {
                     steps {
                         sh (
                             label: "Run Tox",
-                            script: "tox --workdir ${WORKSPACE}/.tox -vv  -e py -- --junitxml=${WORKSPACE}/reports/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                            script: "tox --workdir ${WORKSPACE}/.tox -vv  -e py"
                         )
-                    }
-                    post {
-                        always {
-                            archiveArtifacts allowEmptyArchive: true, artifacts: '.tox/py*/log/*.log,.tox/log/*.log,logs/tox_report.json'
-                            recordIssues(tools: [pep8(id: 'tox', name: 'Tox', pattern: '.tox/py*/log/*.log,.tox/log/*.log')])
-                        }
-                        cleanup{
-                            cleanWs(
-                                patterns: [
-                                    [pattern: '.tox/py*/log/*.log', type: 'INCLUDE'],
-                                    [pattern: '.tox/log/*.log', type: 'INCLUDE'],
-                                    [pattern: 'logs/rox_report.json', type: 'INCLUDE']
-                                ]
-                            )
-                        }
                     }
                 }
                 stage("Run PyTest Unit Tests"){
@@ -538,13 +520,13 @@ pipeline {
                         catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                             sh(
                                 label: "Running Pytest",
-                                script:"python -m pytest --junitxml=reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/pytestcoverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --integration --cov-config=${WORKSPACE}/setup.cfg"
+                                script:"python -m pytest --junitxml=reports/pytest/pytest.log --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/pytestcoverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --integration --cov-config=${WORKSPACE}/setup.cfg"
                             )
                         }
                     }
                     post {
                         always {
-                            junit "reports/pytest/${junit_filename}"
+                            junit "reports/pytest/pytest.log"
                             stash includes: "reports/pytest/*.xml", name: "PYTEST_REPORT"
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/pytestcoverage", reportFiles: 'index.html', reportName: 'Coverage.py', reportTitles: ''])
                             stash includes: "reports/coverage.xml", name: "COVERAGE_REPORT"
