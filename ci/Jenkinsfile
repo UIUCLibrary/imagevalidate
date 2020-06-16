@@ -522,14 +522,14 @@ pipeline {
                             sh(
                                 label: "Running Pytest",
                                 script:'''mkdir -p reports
-                                          python -m pytest --junitxml=reports/pytest.log --cov-report html:reports/pytestcoverage/  --cov-report xml:reports/coverage.xml --cov=uiucprescon --cov-config=setup.cfg
+                                          python -m pytest --junitxml=reports/pytest.xml --cov-report html:reports/pytestcoverage/  --cov-report xml:reports/coverage.xml --cov=uiucprescon --integration --cov-config=setup.cfg
                                           '''
                             )
                         }
                     }
                     post {
                         always {
-                            junit "reports/pytest.log"
+                            junit "reports/pytest.xml"
                             stash includes: "reports/pytest.xml", name: "PYTEST_REPORT"
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/pytestcoverage", reportFiles: 'index.html', reportName: 'Coverage.py', reportTitles: ''])
                             stash includes: "reports/coverage.xml", name: "COVERAGE_REPORT"
