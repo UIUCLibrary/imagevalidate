@@ -522,7 +522,7 @@ pipeline {
                             sh(
                                 label: "Running Pytest",
                                 script:'''mkdir -p reports
-                                          python -m pytest --junitxml=reports/pytest.log --cov-report html:reports/pytestcoverage/  --cov-report xml:reports/coverage.xml --cov=uiucprescon --integration --cov-config=setup.cfg
+                                          python -m pytest --junitxml=reports/pytest.log --cov-report html:reports/pytestcoverage/  --cov-report xml:reports/coverage.xml --cov=uiucprescon --cov-config=setup.cfg
                                           '''
                             )
                         }
