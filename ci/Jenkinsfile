@@ -615,7 +615,7 @@ pipeline {
               }
             }
             options{
-                lock("uiucprescon.images-sonarscanner")
+                lock("uiucprescon.imagevalidate-sonarscanner")
             }
             steps{
                 checkout scm
