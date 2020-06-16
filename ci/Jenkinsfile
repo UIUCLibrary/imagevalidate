@@ -520,7 +520,9 @@ pipeline {
                         catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                             sh(
                                 label: "Running Pytest",
-                                script:"python -m pytest --junitxml=reports/pytest/pytest.log --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/pytestcoverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --integration --cov-config=${WORKSPACE}/setup.cfg"
+                                script:'''mkdir -p reports
+                                          python -m pytest --junitxml=reports/pytest/pytest.log --cov-report html:reports/pytestcoverage/  --cov-report xml:reports/coverage.xml --cov=uiucprescon --integration --cov-config=setup.cfg
+                                          '''
                             )
                         }
                     }
@@ -565,7 +567,9 @@ pipeline {
                     catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
                         sh(
                             label: "Running Mypy",
-                            script: "mypy -p uiucprescon --html-report ${WORKSPACE}/reports/mypy/html > ${WORKSPACE}/logs/mypy.log"
+                            script: '''mkdir -p logs
+                                       mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log
+                                       '''
                         )
                     }
                   }
@@ -579,7 +583,9 @@ pipeline {
                 stage("Run Flake8 Static Analysis") {
                     steps{
                         catchError(buildResult: "SUCCESS", message: 'Flake8 found issues', stageResult: "UNSTABLE") {
-                            sh "flake8 uiucprescon --format=pylint --tee --output-file=logs/flake8.log"
+                            sh '''mkdir -p logs
+                                  flake8 uiucprescon --format=pylint --tee --output-file=logs/flake8.log
+                                  '''
                         }
                     }
                     post {
