@@ -488,20 +488,20 @@ pipeline {
                 }
         }
         stages{
-            stage("Setting up tests"){
-                steps{
-                    unstash "COMPILED_BINARIES"
-                    sh(
-                        label: "Creating logging and report directories",
-                        script: """
-                            mkdir -p logs
-                            mkdir -p reports/coverage
-                            mkdir -p reports/doctests
-                            mkdir -p reports/mypy/html
-                        """
-                    )
-                }
-            }
+//             stage("Setting up tests"){
+//                 steps{
+//                     unstash "COMPILED_BINARIES"
+//                     sh(
+//                         label: "Creating logging and report directories",
+//                         script: """
+//                             mkdir -p logs
+//                             mkdir -p reports/coverage
+//                             mkdir -p reports/doctests
+//                             mkdir -p reports/mypy/html
+//                         """
+//                     )
+//                 }
+//             }
             stage("Run Testing"){
               parallel {
                 stage("Tox") {
