@@ -830,9 +830,9 @@ pipeline {
                     post{
                         always{
                             run_dumpbin("build/lib/**/*.pyd")
+                            stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
                         }
                         success{
-                            stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
                             archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
                         }
                         cleanup{
