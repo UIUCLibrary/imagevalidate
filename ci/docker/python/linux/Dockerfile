@@ -9,14 +9,15 @@ RUN chmod +x /tmp/install_cmake.sh  && /tmp/install_cmake.sh  --skip-license
 RUN apt update && apt install -y ninja-build
 ARG PYTHON_INDEX=https://devpi.library.illinois.edu/production/release
 ENV PIP_EXTRA_INDEX_URL=${PYTHON_INDEX}
-ADD requirements.txt /requirements.txt
+ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
 RUN python -m pip install --upgrade pip && \
     pip install --upgrade setuptools && \
-    pip install wheel && \
-    pip wheel --wheel-dir=/wheels pytest-cov lxml sphinx mypy flake8 tox devpi-client -i ${PYTHON_INDEX} -v && \
-    pip wheel --wheel-dir=/wheels -r /requirements.txt --pre -i ${PYTHON_INDEX} -v
+    pip install wheel
 
-
+RUN pip wheel --wheel-dir=/wheels  \
+        -r /requirements/requirements.txt \
+        -r /requirements/requirements-ci.txt \
+         -i ${PYTHON_INDEX} -v
 
 FROM python:${PYTHON_VERSION}
 
@@ -33,14 +34,20 @@ RUN chmod +x /tmp/install_cmake.sh  && /tmp/install_cmake.sh  --skip-license
 RUN apt update && apt install -y ninja-build
 
 ENV PIP_EXTRA_INDEX_URL="https://devpi.library.illinois.edu/production/release"
-COPY --from=wheel_builder /wheels /wheels/
-ADD requirements.txt /requirements.txt
-ENV PIP_FIND_LINKS=/wheels
+
 RUN python -m pip install --upgrade pip && \
     pip install --upgrade setuptools && \
-    pip install wheel && \
-    pip install pytest-cov lxml sphinx mypy flake8 tox devpi-client && \
-    pip install --no-index  -r /requirements.txt --pre
+    pip install wheel
+
+COPY --from=wheel_builder /wheels /wheels/
+
+ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+RUN pip install --no-index --find-links=/wheels  \
+        -r /requirements/requirements.txt --pre && \
+    pip install --no-index --find-links=/wheels  \
+        -r /requirements/requirements-ci.txt
+
+ENV PIP_FIND_LINKS=/wheels
 
 USER user
 WORKDIR /home/user

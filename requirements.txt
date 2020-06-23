@@ -3,6 +3,6 @@ attrs==18.1.0
 more-itertools==4.2.0
 py==1.5.3
 pytest
-pytest-runner==4.2
+pytest-runner
 six
-py3exiv2bind
+py3exiv2bind>=0.1.5b3

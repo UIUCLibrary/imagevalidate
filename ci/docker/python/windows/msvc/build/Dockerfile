@@ -17,6 +17,7 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
     { `
         Write-Host "Adding $env:CHOCOLATEY_SOURCE to chocolatey sources" ; `
         choco source add -n=CHOCOLATEY_SOURCE --priority=1 -s=\"$env:CHOCOLATEY_SOURCE\"; `
+        choco source remove -n chocolatey ; choco source add -n=chocolatey_repo -s=\"$env:CHOCOLATEY_REPO\" ; `
     }; `
     Remove-Item C:\ProgramData\chocolatey\bin\cpack.exe
 
@@ -52,10 +53,18 @@ RUN Invoke-WebRequest $Env:PYTHON_INSTALLER_URL -OutFile c:\python-installer.exe
     Start-Process python-installer.exe -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1' -Wait ; `
     Remove-Item c:\python-installer.exe -Force
 
-ADD requirements.txt c:\temp\
 ENV PIP_EXTRA_INDEX_URL="https://devpi.library.illinois.edu/production/release"
 RUN python -m pip install --upgrade pip ; `
     pip install --upgrade setuptools ; `
-    pip install wheel ;`
-    pip install pytest-cov lxml sphinx mypy flake8 tox devpi-client; `
-    pip install -r c:\temp\requirements.txt --pre
+    pip install wheel
+
+ADD requirements.txt ci/docker/shared/python/requirements-ci.txt c:\temp\
+
+RUN pip wheel --wheel-dir c:/wheels/ `
+    -r c:\temp\requirements.txt `
+    -r c:\temp\requirements-ci.txt
+
+RUN pip install --no-index  --find-links=c:\wheels\ `
+    -r c:\temp\requirements.txt --pre
+
+ENV PIP_FIND_LINKS=c:\wheels\
