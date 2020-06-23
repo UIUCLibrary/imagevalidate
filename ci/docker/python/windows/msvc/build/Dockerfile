@@ -24,7 +24,7 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
 ADD ci/docker/shared/chocolatey/packages.config choco/packages.config
 RUN choco sources ; `
     choco install -y choco/packages.config --no-progress --stoponfirstfailure; `
-    Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse `
+    Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ;`
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
     if (!(Test-Path 'C:\Program Files\CMake\bin\cmake.exe')) `
     { `
