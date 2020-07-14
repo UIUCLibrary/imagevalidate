@@ -520,9 +520,12 @@ pipeline {
                 stage("Run Doctest Tests"){
                   steps {
                     catchError(buildResult: "SUCCESS", message: 'Doctest found issues', stageResult: "UNSTABLE") {
-                        sh "coverage run --parallel-mode --source=uiucprescon -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v"
+                        sh( label: "Running Doctest",
+                            script: '''coverage run --parallel-mode --source=uiucprescon -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v
+                                       mv build/docs/output.txt reports/doctest.txt
+                                       '''
+                            )
                     }
-                    sh "mv build/docs/output.txt reports/doctest.txt"
                   }
                   post{
                     always {
