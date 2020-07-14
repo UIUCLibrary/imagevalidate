@@ -484,20 +484,6 @@ pipeline {
                 }
         }
         stages{
-//             stage("Setting up tests"){
-//                 steps{
-//                     unstash "COMPILED_BINARIES"
-//                     sh(
-//                         label: "Creating logging and report directories",
-//                         script: """
-//                             mkdir -p logs
-//                             mkdir -p reports/coverage
-//                             mkdir -p reports/doctests
-//                             mkdir -p reports/mypy/html
-//                         """
-//                     )
-//                 }
-//             }
             stage("Run Testing"){
               parallel {
                 stage("Tox") {
@@ -518,7 +504,7 @@ pipeline {
                             sh(
                                 label: "Running Pytest",
                                 script:'''mkdir -p reports
-                                          python -m pytest --junitxml=reports/pytest.xml --cov-report html:reports/pytestcoverage/  --cov-report xml:reports/coverage.xml --cov=uiucprescon --integration --cov-config=setup.cfg
+                                          coverage run --parallel-mode --source=uiucprescon -m pytest --junitxml=reports/pytest.xml --integration"
                                           '''
                             )
                         }
@@ -527,20 +513,13 @@ pipeline {
                         always {
                             junit "reports/pytest.xml"
                             stash includes: "reports/pytest.xml", name: "PYTEST_REPORT"
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/pytestcoverage", reportFiles: 'index.html', reportName: 'Coverage.py', reportTitles: ''])
-                            stash includes: "reports/coverage.xml", name: "COVERAGE_REPORT"
-                            publishCoverage adapters: [
-                                        coberturaAdapter('reports/coverage.xml')
-                                    ],
-                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                                calculateDiffForChangeRequests: true
                         }
                     }
                 }
                 stage("Run Doctest Tests"){
                   steps {
                     catchError(buildResult: "SUCCESS", message: 'Doctest found issues', stageResult: "UNSTABLE") {
-                        sh "python -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v"
+                        sh "coverage run --parallel-mode --source=uiucprescon -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v"
                     }
                     sh "mv build/docs/output.txt reports/doctest.txt"
                   }
@@ -548,19 +527,10 @@ pipeline {
                     always {
                       archiveArtifacts artifacts: "reports/doctest.txt"
                     }
-//                     cleanup{
-//                         cleanWs(
-//                           deleteDirs: true,
-//                           patterns: [
-//                             [pattern: 'build/docs/doctrees/', type: 'INCLUDE'],
-//                           ]
-//                         )
-//                     }
                   }
                 }
                 stage("Run MyPy Static Analysis") {
                   steps{
-
                     catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
                         sh(
                             label: "Running Mypy",
@@ -593,9 +563,25 @@ pipeline {
                     }
                 }
               }
-          }
+        }
       }
       post{
+        always{
+            sh(label: "combining coverage data",
+               script: '''coverage combine
+                          coverage xml -o ./reports/coverage.xml
+                          coverage html -d ./reports/coverage
+               '''
+           )
+            stash(includes: "reports/coverage.xml", name: "COVERAGE_REPORT")
+            publishCoverage(
+                adapters: [
+                    coberturaAdapter('reports/coverage.xml')
+                ],
+                sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                calculateDiffForChangeRequests: true
+            )
+        }
         cleanup{
             cleanWs(patterns: [
             [pattern: 'logs/flake8.log', type: 'INCLUDE'],
