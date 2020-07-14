@@ -119,9 +119,6 @@ def defaultChocolateySource = getChocolateySource()
 
 pipeline {
     agent none
-  triggers {
-    parameterizedCron '@daily % DEPLOY_DEVPI=true; TEST_RUN_TOX=true'
-    }
   options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
         timeout(120)  // Timeout after 120 minutes. This shouldn't take this long but it hangs for some reason
