@@ -899,7 +899,7 @@ pipeline {
                     steps{
                         unstash "whl ${PLATFORM} ${PYTHON_VERSION}"
                         catchError(stageResult: 'FAILURE') {
-                            test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['whl']}}", 15)
+                            test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['whl']}", 15)
                         }
 //                         script{
 //                             findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['whl']}").each{
