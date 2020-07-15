@@ -1134,6 +1134,7 @@ pipeline {
               equals expected: true, actual: params.DEPLOY_DOCS
               branch "master"
             }
+            beforeAgent true
           }
           steps {
             dir("build/docs/html/"){
