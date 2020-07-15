@@ -47,7 +47,7 @@ def CONFIGURATIONS = [
                 ],
                 devpiSelector: [
                         sdist: "zip",
-                        wheel: "36m-manylinux*.*whl",
+                        whl: "36m-manylinux*.*whl",
                 ],
             ],
             "windows":[
@@ -95,7 +95,7 @@ def CONFIGURATIONS = [
                 ],
                 devpiSelector: [
                     sdist: "zip",
-                    wheel: "36m-win*.*whl",
+                    whl: "36m-win*.*whl",
                 ]
             ]
         ],
@@ -152,7 +152,7 @@ def CONFIGURATIONS = [
                 ],
                 devpiSelector: [
                     sdist: "zip",
-                    wheel: "37m-manylinux*.*whl",
+                    whl: "37m-manylinux*.*whl",
                 ],
             ],
             "windows":[
@@ -200,7 +200,7 @@ def CONFIGURATIONS = [
                 ],
                 devpiSelector: [
                     sdist: "zip",
-                    wheel: "37m-win*.*whl",
+                    whl: "37m-win*.*whl",
                 ],
             ]
         ],
@@ -257,7 +257,7 @@ def CONFIGURATIONS = [
                 ],
                 devpiSelector: [
                         sdist: "zip",
-                        wheel: "38-manylinux*.*whl",
+                        whl: "38-manylinux*.*whl",
                 ],
             ],
             "windows":[
@@ -305,7 +305,7 @@ def CONFIGURATIONS = [
                 ],
                 devpiSelector: [
                     sdist: "zip",
-                    wheel: "38-win*.*whl",
+                    whl: "38-win*.*whl",
                 ],
             ]
         ],
