@@ -331,25 +331,14 @@ def run_dumpbin(glob){
 def devpiRunTest(pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
     script{
         def props = readProperties interpolate: true, file: pkgPropertiesFile
-//         cleanWs(patterns: [[pattern: "uiucprescon.imagevalidate.dist/METADATA", type: 'INCLUDE']])
         if (isUnix()){
             sh(
-                label: "Connecting to Devpi",
-                script: "devpi use https://devpi.library.illinois.edu --clientdir certs/ "
-            )
-
-            sh(
-                label: "Logging into Devpi",
-                script: "devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs/"
-            )
-
-            sh(
-                label: "Selecting Devpi index",
-                script: "devpi use ${devpiIndex} --clientdir certs/"
-            )
-            sh(
                 label: "Running test",
-                script: "devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\""
+                script: """devpi use https://devpi.library.illinois.edu --clientdir certs/
+                           devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
+                           devpi use ${devpiIndex} --clientdir certs/
+                           devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
+                """
             )
         } else {
             bat(
@@ -1004,7 +993,7 @@ pipeline {
                     )
                 }
             }
-            stage("Test DevPi packages") {
+            stage("Test DevPi Package") {
                 matrix {
                     axes {
                         axis {
@@ -1025,17 +1014,13 @@ pipeline {
                     }
                     agent none
                     stages{
-                        stage("Testing DevPi Wheel Package"){
+                        stage("Testing DevPi Package"){
                             agent {
                               dockerfile {
                                 additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.additionalBuildArgs}"
                                 filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.filename}"
                                 label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.label}"
                               }
-                            }
-                            when{
-                                equals expected: "whl", actual: FORMAT
-                                beforeAgent true
                             }
                             steps{
                                 timeout(10){
@@ -1049,50 +1034,6 @@ pipeline {
                                         CONFIGURATIONS[PYTHON_VERSION].tox_env
                                         )
                                 }
-                            }
-                        }
-                        stage("Testing DevPi Source Package"){
-                            agent {
-                                dockerfile {
-                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.additionalBuildArgs}"
-                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.filename}"
-                                    label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.label}"
-                                }
-                            }
-                            when{
-                                equals expected: "zip", actual: FORMAT
-                                beforeAgent true
-                            }
-                            steps{
-                                unstash "DIST-INFO"
-                                devpiRunTest(
-                                    "uiucprescon.imagevalidate.dist-info/METADATA",
-                                    "${env.BRANCH_NAME}_staging",
-                                    "zip",
-                                    DEVPI_USR,
-                                    DEVPI_PSW,
-                                    CONFIGURATIONS[PYTHON_VERSION].tox_env
-                                )
-//                                 script{
-//                                     def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
-//                                     if (isUnix()){
-//                                         sh(
-//                                             label: "Running tests on Devpi",
-//                                             script: """devpi use https://devpi.library.illinois.edu --clientdir ./certs/
-//                                                        devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./certs/
-//                                                        devpi use ${env.BRANCH_NAME}_staging --clientdir ./certs/
-//                                                        devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir ./certs/ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"""
-//                                         )
-//                                     } else {
-//                                         bat(
-//                                             label: "Running tests on Devpi",
-//                                             script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
-//                                                        devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\
-//                                                        devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\
-//                                                        devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"""
-//                                         )
-//                                     }
-//                                 }
                             }
                         }
                     }
