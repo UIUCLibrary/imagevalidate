@@ -1,5 +1,5 @@
 FROM quay.io/pypa/manylinux2014_x86_64
-
+#FROM quay.io/pypa/manylinux2010_x86_64
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 
@@ -11,6 +11,9 @@ RUN curl -L --output  /tmp/install_cmake.sh $CMAKE_DOWNLOAD_URL && \
     chmod +x /tmp/install_cmake.sh  && \
     /tmp/install_cmake.sh  --skip-license --prefix=/usr && \
     cmake --version
+
+RUN ln -sf /usr/bin/python2 /usr/bin/python && \
+    yum install -y openjpeg2-devel
 
 ARG PYTHON_VERSION=3.8
 RUN declare -A python_versions && \
