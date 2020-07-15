@@ -966,6 +966,9 @@ pipeline {
                     unstash "whl windows 3.6"
                     unstash "whl windows 3.7"
                     unstash "whl windows 3.8"
+                    unstash "whl linux 3.6"
+                    unstash "whl linux 3.7"
+                    unstash "whl linux 3.8"
                     unstash "sdist"
                     unstash "DOCS_ARCHIVE"
                     sh(
