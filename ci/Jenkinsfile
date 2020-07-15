@@ -848,7 +848,11 @@ pipeline {
                     steps{
                         timeout(15){
                             build_wheel()
-//                             script{
+                            script{
+                                if(PLATFORM == "linux"){
+                                    sh "auditwheel repair ./dist/*.whl -w ./dist"
+                                }
+                            }
 //                                  if (isUnix()){
 //                                  }
 //                                  else{
@@ -862,8 +866,16 @@ pipeline {
                     }
                     post{
                         always{
-                            run_dumpbin("build/lib/**/*.pyd")
-                            stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
+                            script{
+                                if (!isUnix()){
+                                    run_dumpbin("build/lib/**/*.pyd")
+                                }
+                                if(PLATFORM == "linux"){
+                                    stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION}"
+                                } else{
+                                    stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
+                                }
+                            }
                         }
                         success{
                             archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
