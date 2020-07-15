@@ -7,13 +7,18 @@ def CONFIGURATIONS = [
                 base_image: "python:3.6",
                 agents: [
                     build:[
-                        dockerfile: "ci/docker/python/linux/Dockerfile",
+                        dockerfile: "ci/docker/python/linux/build/Dockerfile",
                         label: "linux && docker",
                         additionalBuildArgs: "--build-arg PYTHON_VERSION=3.6",
                     ],
                     test:[
                         sdist:[
-                            dockerfile: "ci/docker/python/linux/Dockerfile",
+                            dockerfile: "ci/docker/python/linux/build/Dockerfile",
+                            label: "linux && docker",
+                            additionalBuildArgs: "--build-arg PYTHON_VERSION=3.6",
+                        ],
+                        whl:[
+                            dockerfile: "ci/docker/python/linux/build/Dockerfile",
                             label: "linux && docker",
                             additionalBuildArgs: "--build-arg PYTHON_VERSION=3.6",
                         ]
@@ -21,14 +26,14 @@ def CONFIGURATIONS = [
                     devpi: [
                         whl: [
                             dockerfile: [
-                                filename: 'ci/docker/python/linux/Dockerfile',
+                                filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
                         zip: [
                             dockerfile: [
-                                filename: 'ci/docker/python/linux/Dockerfile',
+                                filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
@@ -89,13 +94,18 @@ def CONFIGURATIONS = [
                 base_image: "python:3.7",
                 agents: [
                     build:[
-                        dockerfile: "ci/docker/python/linux/Dockerfile",
+                        dockerfile: "ci/docker/python/linux/build/Dockerfile",
                         label: "linux && docker",
                         additionalBuildArgs: "--build-arg PYTHON_VERSION=3.7",
                     ],
                     test:[
-                        sdist:[
-                            dockerfile: "ci/docker/python/linux/Dockerfile",
+                        whl: [
+                            dockerfile: "ci/docker/python/linux/build/Dockerfile",
+                            label: "linux && docker",
+                            additionalBuildArgs: "--build-arg PYTHON_VERSION=3.7",
+                        ],
+                        sdist: [
+                            dockerfile: "ci/docker/python/linux/build/Dockerfile",
                             label: "linux && docker",
                             additionalBuildArgs: "--build-arg PYTHON_VERSION=3.7",
                         ]
@@ -103,14 +113,14 @@ def CONFIGURATIONS = [
                     devpi: [
                         whl: [
                             dockerfile: [
-                                filename: 'ci/docker/python/linux/Dockerfile',
+                                filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
                         zip: [
                             dockerfile: [
-                                filename: 'ci/docker/python/linux/Dockerfile',
+                                filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
@@ -171,13 +181,18 @@ def CONFIGURATIONS = [
                 base_image: "python:3.8",
                 agents: [
                     build:[
-                        dockerfile: "ci/docker/python/linux/Dockerfile",
+                        dockerfile: "ci/docker/python/linux/build/Dockerfile",
                         label: "linux && docker",
                         additionalBuildArgs: "--build-arg PYTHON_VERSION=3.8",
                     ],
                     test:[
-                        sdist:[
-                            dockerfile: "ci/docker/python/linux/Dockerfile",
+                        whl: [
+                            dockerfile: "ci/docker/python/linux/build/Dockerfile",
+                            label: "linux && docker",
+                            additionalBuildArgs: "--build-arg PYTHON_VERSION=3.8",
+                        ],
+                        sdist: [
+                            dockerfile: "ci/docker/python/linux/build/Dockerfile",
                             label: "linux && docker",
                             additionalBuildArgs: "--build-arg PYTHON_VERSION=3.8",
                         ]
@@ -185,14 +200,14 @@ def CONFIGURATIONS = [
                     devpi: [
                         whl: [
                             dockerfile: [
-                                filename: 'ci/docker/python/linux/Dockerfile',
+                                filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
                         zip: [
                             dockerfile: [
-                                filename: 'ci/docker/python/linux/Dockerfile',
+                                filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
