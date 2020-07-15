@@ -1097,9 +1097,9 @@ class BuildPybind11Extension(build_ext):
     def build_extension(self, ext):
         missing = self.find_missing_libraries(ext)
         if self.compiler.compiler_type == "unix":
-            ext.extra_compile_args.append("-std=c++14")
+            ext.extra_compile_args.append("-std=c++11")
         else:
-            ext.extra_compile_args.append("/std:c++14")
+            ext.extra_compile_args.append("/std:c++11")
 
             # self.compiler.add_library("shell32")
 
