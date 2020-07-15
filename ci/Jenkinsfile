@@ -36,7 +36,7 @@ def CONFIGURATIONS = [
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
-                        zip: [
+                        sdist: [
                             dockerfile: [
                                 filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
@@ -84,7 +84,7 @@ def CONFIGURATIONS = [
                                 additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.6-windowsservercore'
                             ]
                         ],
-                        zip: [
+                        sdist: [
                             dockerfile: [
                                 filename: 'ci/docker/python/windows/msvc/build/Dockerfile',
                                 label: 'Windows&&Docker',
@@ -141,7 +141,7 @@ def CONFIGURATIONS = [
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
-                        zip: [
+                        sdist: [
                             dockerfile: [
                                 filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
@@ -189,7 +189,7 @@ def CONFIGURATIONS = [
                                 additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.7'
                             ]
                         ],
-                        zip: [
+                        sdist: [
                             dockerfile: [
                                 filename: 'ci/docker/python/windows/msvc/build/Dockerfile',
                                 label: 'Windows&&Docker',
@@ -246,7 +246,7 @@ def CONFIGURATIONS = [
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
-                        zip: [
+                        sdist: [
                             dockerfile: [
                                 filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
@@ -294,7 +294,7 @@ def CONFIGURATIONS = [
                                 additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.8'
                             ]
                         ],
-                        zip: [
+                        sdist: [
                             dockerfile: [
                                 filename: 'ci/docker/python/windows/msvc/build/Dockerfile',
                                 label: 'Windows&&Docker',
@@ -1009,7 +1009,7 @@ pipeline {
                         }
                         axis {
                             name 'FORMAT'
-                            values 'zip', "whl"
+                            values 'sdist', "whl"
                         }
                     }
                     agent none
