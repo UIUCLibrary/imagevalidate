@@ -329,19 +329,19 @@ def get_package_name(stashName, metadataFile){
         }
     }
 }
-
-def test_wheel(pkgRegex, python_version){
-    script{
-
-        bat "python -m venv venv\\${NODE_NAME}\\${python_version} && venv\\${NODE_NAME}\\${python_version}\\Scripts\\python.exe -m pip install pip --upgrade && venv\\${NODE_NAME}\\${python_version}\\Scripts\\pip.exe install tox --upgrade"
-
-        def python_wheel = findFiles glob: "**/${pkgRegex}"
-        python_wheel.each{
-            echo "Testing ${it}"
-            bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
-        }
-    }
-}
+//
+// def test_wheel(pkgRegex, python_version){
+//     script{
+//
+//         bat "python -m venv venv\\${NODE_NAME}\\${python_version} && venv\\${NODE_NAME}\\${python_version}\\Scripts\\python.exe -m pip install pip --upgrade && venv\\${NODE_NAME}\\${python_version}\\Scripts\\pip.exe install tox --upgrade"
+//
+//         def python_wheel = findFiles glob: "**/${pkgRegex}"
+//         python_wheel.each{
+//             echo "Testing ${it}"
+//             bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
+//         }
+//     }
+// }
 
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
@@ -391,6 +391,38 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
          writeJSON file: outputJson, json: outstandingIssues
      }
 }
+def build_wheel(){
+    if(isUnix()){
+        sh(label: "Building Python Wheel",
+            script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
+        )
+    } else{
+        bat(label: "Building Python Wheel",
+            script: "python setup.py build -b build/ -j ${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist"
+        )
+    }
+}
+
+def test_pkg(glob, timeout_time){
+
+    findFiles( glob: glob).each{
+        timeout(timeout_time){
+            if(isUnix()){
+                sh(label: "Testing ${it}",
+                   script: """python --version
+                              tox --installpkg=${it.path} -e py -vv
+                              """
+                )
+            } else {
+                bat(label: "Testing ${it}",
+                    script: """python --version
+                               tox --installpkg=${it.path} -e py -vv
+                               """
+                )
+            }
+        }
+    }
+}
 
 def defaultChocolateySource = getChocolateySource()
 
@@ -404,7 +436,8 @@ pipeline {
   }
   parameters {
       booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
-      booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
+//       TODO: turn BUILD_PACKAGES default to false
+      booleanParam(name: "BUILD_PACKAGES", defaultValue: true, description: "Build Python packages")
       booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
       booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only")
       booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation. Release Branch Only")
@@ -742,12 +775,6 @@ pipeline {
                     )
                 }
                 axis {
-                    name 'FORMAT'
-                    values(
-                        "whl", "sdist"
-                    )
-                }
-                axis {
                     name "PYTHON_VERSION"
                     values(
                         "3.6",
@@ -756,37 +783,28 @@ pipeline {
                     )
                 }
             }
-            excludes{
-                exclude {
-                    axis {
-                        name 'PLATFORM'
-                        values 'linux'
-                    }
-                    axis {
-                        name 'FORMAT'
-                        values 'whl'
-                    }
-                }
-            }
             stages{
                 stage("Creating bdist wheel"){
                     agent {
                         dockerfile {
                             filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile}"
-                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.label}"
+                            label "${PLATFORM} && docker"
                             additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.additionalBuildArgs}"
                          }
                     }
-                    when{
-                        equals expected: "whl", actual: FORMAT
-                        beforeAgent true
-                    }
                     steps{
                         timeout(15){
-                            bat(
-                                script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d dist",
-                                label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
-                            )
+                            build_wheel()
+//                             script{
+//                                  if (isUnix()){
+//                                  }
+//                                  else{
+//                                     bat(
+//                                         script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d dist",
+//                                         label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
+//                                     )
+//                                  }
+//                             }
                         }
                     }
                     post{
@@ -805,39 +823,36 @@ pipeline {
                         }
                     }
                 }
-                stage("Testing package"){
+                stage("Testing wheel package"){
                     agent {
                         dockerfile {
-                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile}"
-                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].label}"
-                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].additionalBuildArgs}"
+                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['whl'].dockerfile}"
+                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['whl'].label}"
+                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['whl'].additionalBuildArgs}"
                          }
                     }
                     steps{
-                        script{
-                            if(FORMAT == "whl") {
-                                unstash "whl ${PYTHON_VERSION}"
-                            } else {
-                                unstash "sdist"
-                            }
+                        unstash "whl ${PYTHON_VERSION}"
+                        catchError(stageResult: 'FAILURE') {
+                            test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['whl']}}", 15)
                         }
-                        script{
-                            findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex[FORMAT]}").each{
-                                timeout(15){
-                                    if(PLATFORM == "windows"){
-                                        bat(
-                                            script: "tox --installpkg=${it.path} -e py -vv",
-                                            label: "Testing ${it}"
-                                        )
-                                    } else {
-                                        sh(
-                                            script: "tox --installpkg=${it.path} -e py -vv",
-                                            label: "Testing ${it}"
-                                        )
-                                    }
-                                }
-                            }
-                        }
+//                         script{
+//                             findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['whl']}").each{
+//                                 timeout(15){
+//                                     if(PLATFORM == "windows"){
+//                                         bat(
+//                                             script: "tox --installpkg=${it.path} -e py -vv",
+//                                             label: "Testing ${it}"
+//                                         )
+//                                     } else {
+//                                         sh(
+//                                             script: "tox --installpkg=${it.path} -e py -vv",
+//                                             label: "Testing ${it}"
+//                                         )
+//                                     }
+//                                 }
+//                             }
+//                         }
                     }
                     post{
                         cleanup{
