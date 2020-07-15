@@ -436,6 +436,8 @@ pipeline {
   }
   parameters {
       booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
+      //       TODO: turn USE_SONARQUBE default to true
+      booleanParam(name: "USE_SONARQUBE", defaultValue: false, description: "Send data test data to SonarQube")
 //       TODO: turn BUILD_PACKAGES default to false
       booleanParam(name: "BUILD_PACKAGES", defaultValue: true, description: "Build Python packages")
       booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
@@ -663,6 +665,11 @@ pipeline {
         }
         options{
             lock("uiucprescon.imagevalidate-sonarscanner")
+        }
+        when{
+            equals expected: true, actual: params.USE_SONARQUBE
+            beforeAgent true
+            beforeOptions true
         }
         steps{
             checkout scm
