@@ -1055,7 +1055,7 @@ pipeline {
             success{
                 node('linux && docker') {
                    script{
-                        docker.build("imagevalidate:devpi.${env.BUILD_ID}",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                        docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                             unstash "DIST-INFO"
                             def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                             sh(
@@ -1073,7 +1073,7 @@ pipeline {
             cleanup{
                 node('linux && docker') {
                    script{
-                        docker.build("imagevalidate:devpi.${env.BUILD_ID}",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                        docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                             unstash "DIST-INFO"
                             def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                             sh(
