@@ -903,7 +903,7 @@ pipeline {
                          }
                     }
                     steps{
-                        unstash "whl ${PLATFORM} ${PYTHON_VERSION}"
+                        unstash "sdist"
                         catchError(stageResult: 'FAILURE') {
                             test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['sdist']}", 15)
                         }
