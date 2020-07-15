@@ -95,7 +95,7 @@ def CONFIGURATIONS = [
         pkgRegex: [
             whl: "*cp36*.whl",
             sdist: "*.zip",
-            devpi_wheel_regex: "cp36"
+            devpi_wheel_regex: "36m-win*.*whl"
         ],
     ],
     "3.7": [
@@ -192,7 +192,7 @@ def CONFIGURATIONS = [
         pkgRegex: [
             whl: "*cp37*.whl",
             sdist: "*.zip",
-            devpi_wheel_regex: "cp37"
+            devpi_wheel_regex: "37m-win*.*whl"
         ],
     ],
     "3.8": [
@@ -289,7 +289,7 @@ def CONFIGURATIONS = [
         pkgRegex: [
             whl: "*cp38*.whl",
             sdist: "*.zip",
-            devpi_wheel_regex: "cp38"
+            devpi_wheel_regex: "38-win*.*whl"
         ],
     ]
 ]
@@ -1022,7 +1022,11 @@ pipeline {
                               }
                             }
                             when{
-                                equals expected: "whl", actual: FORMAT
+                                allOf{
+                                    equals expected: "whl", actual: FORMAT
+                                    equals expected: "windows", actual: PLATFORM
+
+                                }
                                 beforeAgent true
                             }
                             steps{
