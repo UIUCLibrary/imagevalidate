@@ -1023,18 +1023,6 @@ pipeline {
                             values 'zip', "whl"
                         }
                     }
-                    excludes{
-                        exclude {
-                            axis {
-                                name 'PLATFORM'
-                                values 'linux'
-                            }
-                            axis {
-                                name 'FORMAT'
-                                values 'whl'
-                            }
-                        }
-                    }
                     agent none
                     stages{
                         stage("Testing DevPi Wheel Package"){
