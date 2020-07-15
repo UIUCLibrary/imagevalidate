@@ -738,31 +738,6 @@ pipeline {
 //                 unstash "PYLINT_REPORT"
             unstash "FLAKE8_REPORT"
             sonarcloudSubmit("uiucprescon.imagevalidate.dist-info/METADATA", "reports/sonar-report.json", 'sonarcloud-uiucprescon.imagevalidate')
-//             script{
-//                 withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-uiucprescon.imagevalidate') {
-//                     unstash "DIST-INFO"
-//                     def props = readProperties(interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA")
-//                     if (env.CHANGE_ID){
-//                         sh(
-//                             label: "Running Sonar Scanner",
-//                             script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
-//                             )
-//                     } else {
-//                         sh(
-//                             label: "Running Sonar Scanner",
-//                             script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
-//                             )
-//                     }
-//                 }
-//                 timeout(time: 1, unit: 'HOURS') {
-//                     def sonarqube_result = waitForQualityGate(abortPipeline: false)
-//                     if (sonarqube_result.status != 'OK') {
-//                         unstable "SonarQube quality gate: ${sonarqube_result.status}"
-//                     }
-//                     def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
-//                     writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-//                 }
-//             }
         }
         post {
             always{
@@ -866,15 +841,6 @@ pipeline {
                                     sh "auditwheel repair ./dist/*.whl -w ./dist"
                                 }
                             }
-//                                  if (isUnix()){
-//                                  }
-//                                  else{
-//                                     bat(
-//                                         script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d dist",
-//                                         label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
-//                                     )
-//                                  }
-//                             }
                         }
                     }
                     post{
@@ -914,23 +880,33 @@ pipeline {
                         catchError(stageResult: 'FAILURE') {
                             test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['whl']}", 15)
                         }
-//                         script{
-//                             findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['whl']}").each{
-//                                 timeout(15){
-//                                     if(PLATFORM == "windows"){
-//                                         bat(
-//                                             script: "tox --installpkg=${it.path} -e py -vv",
-//                                             label: "Testing ${it}"
-//                                         )
-//                                     } else {
-//                                         sh(
-//                                             script: "tox --installpkg=${it.path} -e py -vv",
-//                                             label: "Testing ${it}"
-//                                         )
-//                                     }
-//                                 }
-//                             }
-//                         }
+                    }
+                    post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                notFailBuild: true,
+                                patterns: [
+                                    [pattern: 'dist/', type: 'INCLUDE'],
+                                    [pattern: '.tox/', type: 'INCLUDE'],
+                                ]
+                            )
+                        }
+                    }
+                }
+                stage("Testing sdist package"){
+                    agent {
+                        dockerfile {
+                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile}"
+                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].label}"
+                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].additionalBuildArgs}"
+                         }
+                    }
+                    steps{
+                        unstash "whl ${PLATFORM} ${PYTHON_VERSION}"
+                        catchError(stageResult: 'FAILURE') {
+                            test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['sdist']}", 15)
+                        }
                     }
                     post{
                         cleanup{
