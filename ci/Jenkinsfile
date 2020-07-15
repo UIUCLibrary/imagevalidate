@@ -7,13 +7,23 @@ def CONFIGURATIONS = [
                 base_image: "python:3.6",
                 agents: [
                     build:[
-                        dockerfile: "ci/docker/python/linux/Dockerfile",
+                        dockerfile: "ci/docker/python/linux/build/Dockerfile",
+                        label: "linux && docker",
+                        additionalBuildArgs: "--build-arg PYTHON_VERSION=3.6",
+                    ],
+                    package:[
+                        dockerfile: "ci/docker/python/linux/package/Dockerfile",
                         label: "linux && docker",
                         additionalBuildArgs: "--build-arg PYTHON_VERSION=3.6",
                     ],
                     test:[
                         sdist:[
-                            dockerfile: "ci/docker/python/linux/Dockerfile",
+                            dockerfile: "ci/docker/python/linux/build/Dockerfile",
+                            label: "linux && docker",
+                            additionalBuildArgs: "--build-arg PYTHON_VERSION=3.6",
+                        ],
+                        whl:[
+                            dockerfile: "ci/docker/python/linux/build/Dockerfile",
                             label: "linux && docker",
                             additionalBuildArgs: "--build-arg PYTHON_VERSION=3.6",
                         ]
@@ -21,14 +31,14 @@ def CONFIGURATIONS = [
                     devpi: [
                         whl: [
                             dockerfile: [
-                                filename: 'ci/docker/python/linux/Dockerfile',
+                                filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
                         zip: [
                             dockerfile: [
-                                filename: 'ci/docker/python/linux/Dockerfile',
+                                filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
@@ -41,6 +51,11 @@ def CONFIGURATIONS = [
                 base_image: "python:3.6.8-windowsservercore",
                 agents: [
                     build:[
+                        dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
+                        label: "windows && Docker",
+                        additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe --build-arg CHOCOLATEY_SOURCE",
+                    ],
+                    package:[
                         dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
                         label: "windows && Docker",
                         additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe --build-arg CHOCOLATEY_SOURCE",
@@ -89,13 +104,23 @@ def CONFIGURATIONS = [
                 base_image: "python:3.7",
                 agents: [
                     build:[
-                        dockerfile: "ci/docker/python/linux/Dockerfile",
+                        dockerfile: "ci/docker/python/linux/build/Dockerfile",
+                        label: "linux && docker",
+                        additionalBuildArgs: "--build-arg PYTHON_VERSION=3.7",
+                    ],
+                    package:[
+                        dockerfile: "ci/docker/python/linux/package/Dockerfile",
                         label: "linux && docker",
                         additionalBuildArgs: "--build-arg PYTHON_VERSION=3.7",
                     ],
                     test:[
-                        sdist:[
-                            dockerfile: "ci/docker/python/linux/Dockerfile",
+                        whl: [
+                            dockerfile: "ci/docker/python/linux/build/Dockerfile",
+                            label: "linux && docker",
+                            additionalBuildArgs: "--build-arg PYTHON_VERSION=3.7",
+                        ],
+                        sdist: [
+                            dockerfile: "ci/docker/python/linux/build/Dockerfile",
                             label: "linux && docker",
                             additionalBuildArgs: "--build-arg PYTHON_VERSION=3.7",
                         ]
@@ -103,14 +128,14 @@ def CONFIGURATIONS = [
                     devpi: [
                         whl: [
                             dockerfile: [
-                                filename: 'ci/docker/python/linux/Dockerfile',
+                                filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
                         zip: [
                             dockerfile: [
-                                filename: 'ci/docker/python/linux/Dockerfile',
+                                filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
@@ -123,6 +148,11 @@ def CONFIGURATIONS = [
                 base_image: "python:3.7",
                 agents: [
                     build:[
+                        dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
+                        label: "windows && Docker",
+                        additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe --build-arg CHOCOLATEY_SOURCE",
+                    ],
+                    package:[
                         dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
                         label: "windows && Docker",
                         additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe --build-arg CHOCOLATEY_SOURCE",
@@ -171,13 +201,23 @@ def CONFIGURATIONS = [
                 base_image: "python:3.8",
                 agents: [
                     build:[
-                        dockerfile: "ci/docker/python/linux/Dockerfile",
+                        dockerfile: "ci/docker/python/linux/build/Dockerfile",
+                        label: "linux && docker",
+                        additionalBuildArgs: "--build-arg PYTHON_VERSION=3.8",
+                    ],
+                    package:[
+                        dockerfile: "ci/docker/python/linux/package/Dockerfile",
                         label: "linux && docker",
                         additionalBuildArgs: "--build-arg PYTHON_VERSION=3.8",
                     ],
                     test:[
-                        sdist:[
-                            dockerfile: "ci/docker/python/linux/Dockerfile",
+                        whl: [
+                            dockerfile: "ci/docker/python/linux/build/Dockerfile",
+                            label: "linux && docker",
+                            additionalBuildArgs: "--build-arg PYTHON_VERSION=3.8",
+                        ],
+                        sdist: [
+                            dockerfile: "ci/docker/python/linux/build/Dockerfile",
                             label: "linux && docker",
                             additionalBuildArgs: "--build-arg PYTHON_VERSION=3.8",
                         ]
@@ -185,14 +225,14 @@ def CONFIGURATIONS = [
                     devpi: [
                         whl: [
                             dockerfile: [
-                                filename: 'ci/docker/python/linux/Dockerfile',
+                                filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
                         zip: [
                             dockerfile: [
-                                filename: 'ci/docker/python/linux/Dockerfile',
+                                filename: 'ci/docker/python/linux/build/Dockerfile',
                                 label: 'linux && docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
@@ -205,6 +245,11 @@ def CONFIGURATIONS = [
                 base_image: "python:3.7",
                 agents: [
                     build:[
+                        dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
+                        label: "windows && Docker",
+                        additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe --build-arg CHOCOLATEY_SOURCE",
+                    ],
+                    package:[
                         dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
                         label: "windows && Docker",
                         additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe --build-arg CHOCOLATEY_SOURCE",
@@ -329,19 +374,19 @@ def get_package_name(stashName, metadataFile){
         }
     }
 }
-
-def test_wheel(pkgRegex, python_version){
-    script{
-
-        bat "python -m venv venv\\${NODE_NAME}\\${python_version} && venv\\${NODE_NAME}\\${python_version}\\Scripts\\python.exe -m pip install pip --upgrade && venv\\${NODE_NAME}\\${python_version}\\Scripts\\pip.exe install tox --upgrade"
-
-        def python_wheel = findFiles glob: "**/${pkgRegex}"
-        python_wheel.each{
-            echo "Testing ${it}"
-            bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
-        }
-    }
-}
+//
+// def test_wheel(pkgRegex, python_version){
+//     script{
+//
+//         bat "python -m venv venv\\${NODE_NAME}\\${python_version} && venv\\${NODE_NAME}\\${python_version}\\Scripts\\python.exe -m pip install pip --upgrade && venv\\${NODE_NAME}\\${python_version}\\Scripts\\pip.exe install tox --upgrade"
+//
+//         def python_wheel = findFiles glob: "**/${pkgRegex}"
+//         python_wheel.each{
+//             echo "Testing ${it}"
+//             bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
+//         }
+//     }
+// }
 
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
@@ -391,6 +436,38 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
          writeJSON file: outputJson, json: outstandingIssues
      }
 }
+def build_wheel(){
+    if(isUnix()){
+        sh(label: "Building Python Wheel",
+            script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
+        )
+    } else{
+        bat(label: "Building Python Wheel",
+            script: "python setup.py build -b build/ -j ${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist"
+        )
+    }
+}
+
+def test_pkg(glob, timeout_time){
+
+    findFiles( glob: glob).each{
+        timeout(timeout_time){
+            if(isUnix()){
+                sh(label: "Testing ${it}",
+                   script: """python --version
+                              tox --installpkg=${it.path} -e py -vv
+                              """
+                )
+            } else {
+                bat(label: "Testing ${it}",
+                    script: """python --version
+                               tox --installpkg=${it.path} -e py -vv
+                               """
+                )
+            }
+        }
+    }
+}
 
 def defaultChocolateySource = getChocolateySource()
 
@@ -404,7 +481,10 @@ pipeline {
   }
   parameters {
       booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
-      booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
+      //       TODO: turn USE_SONARQUBE default to true
+      booleanParam(name: "USE_SONARQUBE", defaultValue: false, description: "Send data test data to SonarQube")
+//       TODO: turn BUILD_PACKAGES default to false
+      booleanParam(name: "BUILD_PACKAGES", defaultValue: true, description: "Build Python packages")
       booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
       booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only")
       booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation. Release Branch Only")
@@ -548,6 +628,7 @@ pipeline {
                     catchError(buildResult: "SUCCESS", message: 'Doctest found issues', stageResult: "UNSTABLE") {
                         sh( label: "Running Doctest",
                             script: '''coverage run --parallel-mode --source=uiucprescon -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v
+                                       mkdir -p reports
                                        mv build/docs/output.txt reports/doctest.txt
                                        '''
                             )
@@ -629,6 +710,11 @@ pipeline {
         }
         options{
             lock("uiucprescon.imagevalidate-sonarscanner")
+        }
+        when{
+            equals expected: true, actual: params.USE_SONARQUBE
+            beforeAgent true
+            beforeOptions true
         }
         steps{
             checkout scm
@@ -742,12 +828,6 @@ pipeline {
                     )
                 }
                 axis {
-                    name 'FORMAT'
-                    values(
-                        "whl", "sdist"
-                    )
-                }
-                axis {
                     name "PYTHON_VERSION"
                     values(
                         "3.6",
@@ -756,43 +836,46 @@ pipeline {
                     )
                 }
             }
-            excludes{
-                exclude {
-                    axis {
-                        name 'PLATFORM'
-                        values 'linux'
-                    }
-                    axis {
-                        name 'FORMAT'
-                        values 'whl'
-                    }
-                }
-            }
             stages{
                 stage("Creating bdist wheel"){
                     agent {
                         dockerfile {
-                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile}"
-                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.label}"
+                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile}"
+                            label "${PLATFORM} && docker"
                             additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.additionalBuildArgs}"
                          }
                     }
-                    when{
-                        equals expected: "whl", actual: FORMAT
-                        beforeAgent true
-                    }
                     steps{
                         timeout(15){
-                            bat(
-                                script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d dist",
-                                label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
-                            )
+                            build_wheel()
+                            script{
+                                if(PLATFORM == "linux"){
+                                    sh "auditwheel repair ./dist/*.whl -w ./dist"
+                                }
+                            }
+//                                  if (isUnix()){
+//                                  }
+//                                  else{
+//                                     bat(
+//                                         script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d dist",
+//                                         label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
+//                                     )
+//                                  }
+//                             }
                         }
                     }
                     post{
                         always{
-                            run_dumpbin("build/lib/**/*.pyd")
-                            stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
+                            script{
+                                if (!isUnix()){
+                                    run_dumpbin("build/lib/**/*.pyd")
+                                }
+                                if(PLATFORM == "linux"){
+                                    stash includes: 'dist/*manylinux*.whl', name: "whl ${PLATFORM} ${PYTHON_VERSION}"
+                                } else{
+                                    stash includes: 'dist/*.whl', name: "whl ${PLATFORM} ${PYTHON_VERSION}"
+                                }
+                            }
                         }
                         success{
                             archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
@@ -805,39 +888,36 @@ pipeline {
                         }
                     }
                 }
-                stage("Testing package"){
+                stage("Testing wheel package"){
                     agent {
                         dockerfile {
-                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile}"
-                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].label}"
-                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].additionalBuildArgs}"
+                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['whl'].dockerfile}"
+                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['whl'].label}"
+                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['whl'].additionalBuildArgs}"
                          }
                     }
                     steps{
-                        script{
-                            if(FORMAT == "whl") {
-                                unstash "whl ${PYTHON_VERSION}"
-                            } else {
-                                unstash "sdist"
-                            }
+                        unstash "whl ${PLATFORM} ${PYTHON_VERSION}"
+                        catchError(stageResult: 'FAILURE') {
+                            test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['whl']}", 15)
                         }
-                        script{
-                            findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex[FORMAT]}").each{
-                                timeout(15){
-                                    if(PLATFORM == "windows"){
-                                        bat(
-                                            script: "tox --installpkg=${it.path} -e py -vv",
-                                            label: "Testing ${it}"
-                                        )
-                                    } else {
-                                        sh(
-                                            script: "tox --installpkg=${it.path} -e py -vv",
-                                            label: "Testing ${it}"
-                                        )
-                                    }
-                                }
-                            }
-                        }
+//                         script{
+//                             findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['whl']}").each{
+//                                 timeout(15){
+//                                     if(PLATFORM == "windows"){
+//                                         bat(
+//                                             script: "tox --installpkg=${it.path} -e py -vv",
+//                                             label: "Testing ${it}"
+//                                         )
+//                                     } else {
+//                                         sh(
+//                                             script: "tox --installpkg=${it.path} -e py -vv",
+//                                             label: "Testing ${it}"
+//                                         )
+//                                     }
+//                                 }
+//                             }
+//                         }
                     }
                     post{
                         cleanup{
@@ -883,9 +963,12 @@ pipeline {
                       }
                 }
                 steps {
-                    unstash "whl 3.6"
-                    unstash "whl 3.7"
-                    unstash "whl 3.8"
+                    unstash "whl windows 3.6"
+                    unstash "whl windows 3.7"
+                    unstash "whl windows 3.8"
+                    unstash "whl linux 3.6"
+                    unstash "whl linux 3.7"
+                    unstash "whl linux 3.8"
                     unstash "sdist"
                     unstash "DOCS_ARCHIVE"
                     sh(
