@@ -1046,11 +1046,7 @@ pipeline {
                               }
                             }
                             when{
-                                allOf{
-                                    equals expected: "whl", actual: FORMAT
-                                    equals expected: "windows", actual: PLATFORM
-
-                                }
+                                equals expected: "whl", actual: FORMAT
                                 beforeAgent true
                             }
                             steps{
