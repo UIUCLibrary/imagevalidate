@@ -871,9 +871,9 @@ pipeline {
                                     run_dumpbin("build/lib/**/*.pyd")
                                 }
                                 if(PLATFORM == "linux"){
-                                    stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION}"
+                                    stash includes: 'dist/*manylinux*.whl', name: "whl ${PLATFORM} ${PYTHON_VERSION}"
                                 } else{
-                                    stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
+                                    stash includes: 'dist/*.whl', name: "whl ${PLATFORM} ${PYTHON_VERSION}"
                                 }
                             }
                         }
@@ -897,7 +897,7 @@ pipeline {
                          }
                     }
                     steps{
-                        unstash "whl ${PYTHON_VERSION}"
+                        unstash "whl ${PLATFORM} ${PYTHON_VERSION}"
                         catchError(stageResult: 'FAILURE') {
                             test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex['whl']}}", 15)
                         }
@@ -963,9 +963,9 @@ pipeline {
                       }
                 }
                 steps {
-                    unstash "whl 3.6"
-                    unstash "whl 3.7"
-                    unstash "whl 3.8"
+                    unstash "whl windows 3.6"
+                    unstash "whl windows 3.7"
+                    unstash "whl windows 3.8"
                     unstash "sdist"
                     unstash "DOCS_ARCHIVE"
                     sh(
