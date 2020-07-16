@@ -1029,10 +1029,11 @@ pipeline {
                 when {
                     allOf{
                         equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
-                        branch "master"
+                        anyOf {
+                            branch "master"
+                            tag "*"
+                        }
                     }
-                    beforeAgent true
-                    beforeInput true
                 }
                 options{
                       timeout(time: 1, unit: 'DAYS')
