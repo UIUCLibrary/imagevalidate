@@ -1068,18 +1068,20 @@ pipeline {
             success{
                 node('linux && docker') {
                    script{
-                        docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                            unstash "DIST-INFO"
-                            def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
-                            sh(
-                                label: "Moving DevPi package from staging index to index",
-                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                           devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
-                                           devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ./devpi
-                                           """
-                            )
-                        }
+                        if (!env.TAG_NAME?.trim()){
+                            docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                                unstash "DIST-INFO"
+                                def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
+                                sh(
+                                    label: "Moving DevPi package from staging index to index",
+                                    script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                               devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                               devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
+                                               devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ./devpi
+                                               """
+                                )
+                            }
+                       }
                    }
                 }
             }
