@@ -744,6 +744,7 @@ pipeline {
 //                 unstash "BANDIT_REPORT"
 //                 unstash "PYLINT_REPORT"
             unstash "FLAKE8_REPORT"
+            unstash "DIST-INFO"
             sonarcloudSubmit("uiucprescon.imagevalidate.dist-info/METADATA", "reports/sonar-report.json", 'sonarcloud-uiucprescon.imagevalidate')
         }
         post {
