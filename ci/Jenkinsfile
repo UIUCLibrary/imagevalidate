@@ -1034,6 +1034,7 @@ pipeline {
                             tag "*"
                         }
                     }
+                    beforeInput true
                 }
                 options{
                       timeout(time: 1, unit: 'DAYS')
