@@ -1050,12 +1050,11 @@ pipeline {
                     }
                 }
                 steps {
-
                     script {
                         unstash "DIST-INFO"
                         def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                         sh(
-                            label: "Pushing to DS_Jenkins/${env.BRANCH_NAME} index",
+                            label: "Pushing to production/release index",
                             script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
                                        devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
                                        devpi push --index DS_Jenkins/${env.devpiStagingIndex} ${props.Name}==${props.Version} production/release --clientdir ./devpi
@@ -1073,7 +1072,7 @@ pipeline {
                             unstash "DIST-INFO"
                             def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                             sh(
-                                label: "Connecting to DevPi Server",
+                                label: "Moving DevPi package from staging index to index",
                                 script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
                                            devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
                                            devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
@@ -1091,7 +1090,7 @@ pipeline {
                             unstash "DIST-INFO"
                             def props = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                             sh(
-                                label: "Connecting to DevPi Server",
+                                label: "Removing Package from DevPi staging index",
                                 script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
                                            devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
                                            devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
