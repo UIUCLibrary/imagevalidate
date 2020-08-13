@@ -52,7 +52,7 @@ def CONFIGURATIONS = [
             ],
             "windows":[
                 python_install_url:"https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe",
-                base_image: "python:3.6.8-windowsservercore",
+                base_image: "python:3.6-windowsservercore",
                 agents: [
                     build:[
                         dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
@@ -68,7 +68,7 @@ def CONFIGURATIONS = [
                         whl: [
                             dockerfile: "ci/docker/python/windows/msvc/test/Dockerfile",
                             label: "windows && Docker",
-                            additionalBuildArgs: "--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.6.8-windowsservercore",
+                            additionalBuildArgs: "--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.6-windowsservercore",
                         ],
                         sdist: [
                             dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
