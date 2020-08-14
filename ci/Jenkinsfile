@@ -438,11 +438,11 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
 def build_wheel(){
     if(isUnix()){
         sh(label: "Building Python Wheel",
-            script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
+           script: 'python -m pep517.build --binary .'
         )
     } else{
         bat(label: "Building Python Wheel",
-            script: "python setup.py build -b build/ -j ${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist"
+            script: 'python -m pep517.build --binary .'
         )
     }
 }
@@ -773,14 +773,14 @@ pipeline {
                     }
                 }
                 steps {
-                    sh "python setup.py sdist -d dist --format zip"
+                    sh "python -m pep517.build --source ."
                 }
                 post{
                     always{
-                        stash includes: 'dist/*.zip', name: "sdist"
+                        stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
                     }
                     success{
-                        archiveArtifacts artifacts: "dist/*.zip", fingerprint: true
+                        archiveArtifacts artifacts: "dist/*.zip,dist/*.tar.gz", fingerprint: true
                     }
                     cleanup{
                         cleanWs(
