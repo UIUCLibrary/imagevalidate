@@ -12,12 +12,12 @@ RUN apt update && apt install -y ninja-build \
 
 ARG PYTHON_INDEX=https://devpi.library.illinois.edu/production/release
 ENV PIP_EXTRA_INDEX_URL=${PYTHON_INDEX}
+ENV PIP_NO_CACHE_DIR=1
 ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
 RUN python -m pip install --upgrade pip && \
     pip install --upgrade setuptools && \
-    pip install wheel
-
-RUN pip wheel --wheel-dir=/wheels  \
+    pip install wheel && \
+    pip wheel --wheel-dir=/wheels  \
         -r /requirements/requirements.txt \
         -r /requirements/requirements-ci.txt \
          -i ${PYTHON_INDEX} -v
@@ -54,6 +54,6 @@ RUN pip install --no-index --find-links=/wheels  \
         -r /requirements/requirements-ci.txt
 
 ENV PIP_FIND_LINKS=/wheels
-
+ENV PIP_NO_CACHE_DIR=1
 USER user
 WORKDIR /home/user
