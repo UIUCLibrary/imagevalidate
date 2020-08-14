@@ -411,20 +411,6 @@ def get_sonarqube_unresolved_issues(report_task_file){
     }
 }
 
-def getChocolateySource(){
-    script{
-        try{
-            configFileProvider([configFile(fileId: 'local_chocolatey_cache', variable: 'CHOCO_PROP_FILES')]) {
-                def props = readProperties(CHOCO_PROP_FILES)
-                return CHOCO_PROP_FILES.url
-            }
-        } catch (exc) {
-            return 'https://chocolatey.org/api/v2/'
-        }
-    }
-}
-
-
 def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
     def props = readProperties interpolate: true, file: metadataFile
     withSonarQubeEnv(installationName:"sonarcloud", credentialsId: sonarCredentials) {
@@ -491,7 +477,6 @@ def test_pkg(glob, timeout_time){
     }
 }
 
-def defaultChocolateySource = getChocolateySource()
 
 pipeline {
     agent none
