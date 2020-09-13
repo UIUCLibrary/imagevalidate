@@ -698,10 +698,10 @@ pipeline {
                                   coverage xml -o ./reports/coverage-python.xml
                                   coverage html -d ./reports/coverage
                                   gcovr -h
-                                  gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
+                                  gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml --sonarqube=reports/sonarqube-coverage-c-extension.xml
                                   '''
                    )
-                    stash(includes: "reports/coverage*.xml", name: "COVERAGE_REPORT")
+                    stash(includes: "reports/sonarqube-coverage-c-extension.xml,reports/coverage*.xml", name: "COVERAGE_REPORT")
                     publishCoverage(
                         adapters: [
                             coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
