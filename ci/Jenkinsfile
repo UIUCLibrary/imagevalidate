@@ -540,7 +540,7 @@ pipeline {
                 steps {
                     sh(
                         label: "Building",
-                        script: "python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace"
+                        script: 'CFLAGS="--coverage" CC="ccache gcc" python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
                         )
                 }
                 post{
