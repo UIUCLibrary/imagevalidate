@@ -413,7 +413,6 @@ def get_sonarqube_unresolved_issues(report_task_file){
 
 def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
     def props = readProperties interpolate: true, file: metadataFile
-    sh "mkdir -p build && (cd build && build-wrapper-linux-x86-64 --out-dir build_wrapper_output_directory)"
     withSonarQubeEnv(installationName:"sonarcloud", credentialsId: sonarCredentials) {
         if (env.CHANGE_ID){
             sh(
@@ -698,10 +697,10 @@ pipeline {
                        script: '''coverage combine
                                   coverage xml -o ./reports/coverage-python.xml
                                   coverage html -d ./reports/coverage
-                                  gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml --sonarqube=reports/sonarqube-coverage-c-extension.xml
-                                  '''
+                                  gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
+                       '''
                    )
-                    stash(includes: "reports/sonarqube-coverage-c-extension.xml,reports/coverage*.xml", name: "COVERAGE_REPORT")
+                    stash(includes: "reports/coverage*.xml", name: "COVERAGE_REPORT")
                     publishCoverage(
                         adapters: [
                             coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
