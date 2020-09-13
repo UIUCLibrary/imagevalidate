@@ -627,7 +627,6 @@ pipeline {
                                         label: "Running Pytest",
                                         script:'''mkdir -p reports/coverage
                                                   coverage run --parallel-mode --source=uiucprescon -m pytest --junitxml=reports/pytest.xml --integration
-                                                  gcovr --filter uiucprescon/imagevalidate --print-summary --html-details -o reports/coverage/index.html
                                                   '''
                                     )
                                 }
@@ -696,14 +695,15 @@ pipeline {
                 always{
                     sh(label: "combining coverage data",
                        script: '''coverage combine
-                                  coverage xml -o ./reports/coverage.xml
+                                  coverage xml -o ./reports/coverage-python.xml
                                   coverage html -d ./reports/coverage
+                                  gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
                        '''
                    )
-                    stash(includes: "reports/coverage.xml", name: "COVERAGE_REPORT")
+                    stash(includes: "reports/coverage*.xml", name: "COVERAGE_REPORT")
                     publishCoverage(
                         adapters: [
-                            coberturaAdapter('reports/coverage.xml')
+                            coberturaAdapter('reports/coverage*.xml')
                         ],
                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                         calculateDiffForChangeRequests: true
@@ -712,7 +712,7 @@ pipeline {
                 cleanup{
                     cleanWs(patterns: [
                     [pattern: 'logs/flake8.log', type: 'INCLUDE'],
-                    [pattern: 'reports/coverage.xml"', type: 'INCLUDE'],
+                    [pattern: 'reports/coverage*.xml"', type: 'INCLUDE'],
                     ])
                 }
               }
