@@ -36,7 +36,7 @@ RUN wget -O /tmp/install_cmake.sh $CMAKE_DOWNLOAD_URL && \
     /tmp/install_cmake.sh  --skip-license && \
     rm /tmp/install_cmake.sh
 
-RUN apt update && apt install -y ninja-build && \
+RUN apt update && apt install -y ninja-build ccache && \
     rm -rf /var/lib/apt/lists/*
 
 ENV PIP_EXTRA_INDEX_URL="https://devpi.library.illinois.edu/production/release"
