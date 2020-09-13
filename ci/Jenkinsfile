@@ -621,11 +621,13 @@ pipeline {
                         stage("Run PyTest Unit Tests"){
                             steps{
                                 unstash "COMPILED_BINARIES"
+                                unstash "LINUX_BUILD_DIRECTORY"
                                 catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                                     sh(
                                         label: "Running Pytest",
-                                        script:'''mkdir -p reports
+                                        script:'''mkdir -p reports/coverage
                                                   coverage run --parallel-mode --source=uiucprescon -m pytest --junitxml=reports/pytest.xml --integration
+                                                  gcovr --filter uiucprescon/imagevalidate --print-summary --html-details -o reports/coverage/index.html
                                                   '''
                                     )
                                 }
