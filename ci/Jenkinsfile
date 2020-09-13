@@ -697,7 +697,7 @@ pipeline {
                        script: '''coverage combine
                                   coverage xml -o ./reports/coverage-python.xml
                                   coverage html -d ./reports/coverage
-                                  gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml --sonarqube -o reports/sonarqube-coverage-c-extension.xml
+                                  gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml --sonarqube=reports/sonarqube-coverage-c-extension.xml
                        '''
                    )
                     stash(includes: "reports/sonarqube-coverage-c-extension.xml,reports/coverage*.xml", name: "COVERAGE_REPORT")
