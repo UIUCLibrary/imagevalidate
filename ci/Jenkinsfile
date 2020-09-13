@@ -539,7 +539,6 @@ pipeline {
             stage("Building Python Package"){
                 environment{
                     CFLAGS="--coverage"
-                    CC="ccache gcc"
                 }
                 steps {
                     sh(
