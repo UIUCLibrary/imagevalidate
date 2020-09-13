@@ -537,10 +537,14 @@ pipeline {
         }
         stages{
             stage("Building Python Package"){
+                environment{
+                    CFLAGS="--coverage"
+                    CC="ccache gcc"
+                }
                 steps {
                     sh(
                         label: "Building",
-                        script: 'CFLAGS="--coverage" CC="ccache gcc" python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
+                        script: 'python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
                         )
                 }
                 post{
