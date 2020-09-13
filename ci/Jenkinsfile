@@ -413,7 +413,7 @@ def get_sonarqube_unresolved_issues(report_task_file){
 
 def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
     def props = readProperties interpolate: true, file: metadataFile
-    sh "mkdir -p build && (cd build && /home/user/.sonar/build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir build_wrapper_output_directory make clean all)"
+    sh "mkdir -p build && (cd build && build-wrapper-linux-x86-64 --out-dir build_wrapper_output_directory make clean all)"
     withSonarQubeEnv(installationName:"sonarcloud", credentialsId: sonarCredentials) {
         if (env.CHANGE_ID){
             sh(
