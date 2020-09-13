@@ -1,4 +1,5 @@
 coverage
+cmake
 devpi-client
 flake8
 lxml
