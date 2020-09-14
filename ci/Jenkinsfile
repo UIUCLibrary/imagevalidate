@@ -537,10 +537,13 @@ pipeline {
         }
         stages{
             stage("Building Python Package"){
+                environment{
+                    CFLAGS="--coverage"
+                }
                 steps {
                     sh(
                         label: "Building",
-                        script: "python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace"
+                        script: 'python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
                         )
                 }
                 post{
@@ -618,10 +621,11 @@ pipeline {
                         stage("Run PyTest Unit Tests"){
                             steps{
                                 unstash "COMPILED_BINARIES"
+                                unstash "LINUX_BUILD_DIRECTORY"
                                 catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                                     sh(
                                         label: "Running Pytest",
-                                        script:'''mkdir -p reports
+                                        script:'''mkdir -p reports/coverage
                                                   coverage run --parallel-mode --source=uiucprescon -m pytest --junitxml=reports/pytest.xml --integration
                                                   '''
                                     )
@@ -691,14 +695,15 @@ pipeline {
                 always{
                     sh(label: "combining coverage data",
                        script: '''coverage combine
-                                  coverage xml -o ./reports/coverage.xml
+                                  coverage xml -o ./reports/coverage-python.xml
                                   coverage html -d ./reports/coverage
+                                  gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
                        '''
                    )
-                    stash(includes: "reports/coverage.xml", name: "COVERAGE_REPORT")
+                    stash(includes: "reports/coverage*.xml", name: "COVERAGE_REPORT")
                     publishCoverage(
                         adapters: [
-                            coberturaAdapter('reports/coverage.xml')
+                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
                         ],
                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                         calculateDiffForChangeRequests: true
@@ -707,7 +712,7 @@ pipeline {
                 cleanup{
                     cleanWs(patterns: [
                     [pattern: 'logs/flake8.log', type: 'INCLUDE'],
-                    [pattern: 'reports/coverage.xml"', type: 'INCLUDE'],
+                    [pattern: 'reports/coverage*.xml"', type: 'INCLUDE'],
                     ])
                 }
               }

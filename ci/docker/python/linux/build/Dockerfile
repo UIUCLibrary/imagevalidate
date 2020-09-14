@@ -1,11 +1,6 @@
 ARG PYTHON_VERSION=3.8
 
 FROM python:${PYTHON_VERSION} as wheel_builder
-ARG CMAKE_DOWNLOAD_URL=https://github.com/Kitware/CMake/releases/download/v3.17.3/cmake-3.17.3-Linux-x86_64.sh
-
-RUN wget -O /tmp/install_cmake.sh $CMAKE_DOWNLOAD_URL && \
-    chmod +x /tmp/install_cmake.sh  && \
-    /tmp/install_cmake.sh  --skip-license
 
 RUN apt update && apt install -y ninja-build \
     && rm -rf /var/lib/apt/lists/*
@@ -30,13 +25,7 @@ ARG GROUP_ID=1000
 RUN groupadd -g $GROUP_ID user && \
     useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
 
-ARG CMAKE_DOWNLOAD_URL=https://github.com/Kitware/CMake/releases/download/v3.17.3/cmake-3.17.3-Linux-x86_64.sh
-RUN wget -O /tmp/install_cmake.sh $CMAKE_DOWNLOAD_URL && \
-    chmod +x /tmp/install_cmake.sh  && \
-    /tmp/install_cmake.sh  --skip-license && \
-    rm /tmp/install_cmake.sh
-
-RUN apt update && apt install -y ninja-build && \
+RUN apt update && apt install -y ninja-build ccache && \
     rm -rf /var/lib/apt/lists/*
 
 ENV PIP_EXTRA_INDEX_URL="https://devpi.library.illinois.edu/production/release"
