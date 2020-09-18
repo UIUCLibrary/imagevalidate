@@ -604,7 +604,8 @@ pipeline {
                 steps{
                     sh(label: "Testing CPP code",
                        script: """conan install . -if build
-                                  cmake -B build
+                                  cmake -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake
+                                  cmake --build build
                                   """
                     )
                 }
