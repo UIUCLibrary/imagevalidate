@@ -2,7 +2,7 @@ import os
 
 from conans import ConanFile, CMake
 
-class pykduConan(ConanFile):
+class ImageValidate(ConanFile):
     requires = [
         "openjpeg/2.3.1",
     ]
