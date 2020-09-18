@@ -418,7 +418,8 @@ class BuildCMakeClib(build_clib):
 
     def finalize_options(self):
         super().finalize_options()
-        assert self.cmake_path, "CMake required to build clibs"
+        if not os.path.exists(str(self.cmake_path)):
+            self.warn( "CMake required to build clibs")
 
         self.source_archive_path = os.path.join(
                 self.build_temp,

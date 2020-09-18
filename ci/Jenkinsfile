@@ -476,6 +476,32 @@ def test_pkg(glob, timeout_time){
         }
     }
 }
+def startup(){
+    node('linux && docker') {
+        timeout(2){
+            ws{
+                checkout scm
+                try{
+                    docker.image('python:3.8').inside {
+                        stage("Getting Distribution Info"){
+                            sh(
+                               label: "Running setup.py with dist_info",
+                               script: """python --version
+                                          python setup.py dist_info
+                                       """
+                            )
+                            stash includes: "uiucprescon.imagevalidate.dist-info/**", name: 'DIST-INFO'
+                            archiveArtifacts artifacts: "uiucprescon.imagevalidate.dist-info/**"
+                        }
+                    }
+                } finally{
+                    deleteDir()
+                }
+            }
+        }
+    }
+}
+startup()
 
 
 pipeline {
@@ -498,35 +524,6 @@ pipeline {
   }
 
   stages {
-        stage("Getting Distribution Info"){
-            agent {
-                dockerfile {
-                    filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
-                    label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
-                    additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
-                }
-            }
-            steps{
-                timeout(5){
-                    sh "python setup.py dist_info"
-                }
-            }
-            post{
-                success{
-                    stash includes: "uiucprescon.imagevalidate.dist-info/**", name: 'DIST-INFO'
-                    archiveArtifacts artifacts: "uiucprescon.imagevalidate.dist-info/**"
-                }
-                cleanup{
-                    cleanWs(
-                        deleteDirs: true,
-                        patterns: [
-                            [pattern: "uiucprescon.imagevalidate.dist-info/", type: 'INCLUDE'],
-                            [pattern: ".eggs/", type: 'INCLUDE'],
-                        ]
-                    )
-                }
-            }
-        }
     stage("Building"){
         agent {
             dockerfile {
@@ -596,7 +593,36 @@ pipeline {
             equals expected: true, actual: params.RUN_CHECKS
         }
         stages{
-            stage('Testing') {
+            stage('Testing CPP code') {
+                agent {
+                    dockerfile {
+                        filename "ci/docker/cpp/Dockerfile"
+                        additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                        label "linux && docker"
+                    }
+                }
+                stages{
+                    stage("Build CPP"){
+                        steps{
+                            sh(label: "Testing CPP code",
+                               script: """conan install . -if build
+                                          cmake -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true
+                                          cmake --build build
+                                          """
+                            )
+                        }
+                    }
+                    stage("Ctest"){
+                        steps{
+                            sh(label: "Running ctest",
+                               script: 'cd build && ctest'
+                            )
+                        }
+                    }
+                }
+
+            }
+            stage('Testing Python') {
                 agent {
                     dockerfile {
                         filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
@@ -605,7 +631,7 @@ pipeline {
                     }
                 }
                 stages{
-                    stage("Run Testing"){
+                    stage("Run Python Testing"){
                       parallel {
                         stage("Tox") {
                             when {
