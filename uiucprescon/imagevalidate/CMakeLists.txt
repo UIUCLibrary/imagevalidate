@@ -40,6 +40,11 @@ if(CONAN_OPENJPEG_ROOT)
             ${OPENJPEG_INCLUDE_DIRS}
             )
     target_link_libraries(glue PUBLIC ${OPENJPEG_LIBRARIES})
+    if(UNIX)
+        if(NOT APPLE)
+            target_link_libraries(glue PUBLIC pthread)
+        endif()
+    endif()
 endif()
 Python3_add_library(openjp2wrap MODULE openjp2wrap.cpp)
 
