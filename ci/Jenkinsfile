@@ -596,7 +596,20 @@ pipeline {
             equals expected: true, actual: params.RUN_CHECKS
         }
         stages{
-            stage('Testing') {
+            stage('Testing CPP code') {
+                agent {
+                    dockerfile {
+                        filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
+                        label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
+                        additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
+                    }
+                }
+                steps{
+                    echo "Testing CPP code"
+                }
+
+            }
+            stage('Testing Python') {
                 agent {
                     dockerfile {
                         filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
@@ -605,7 +618,7 @@ pipeline {
                     }
                 }
                 stages{
-                    stage("Run Testing"){
+                    stage("Run Python Testing"){
                       parallel {
                         stage("Tox") {
                             when {
