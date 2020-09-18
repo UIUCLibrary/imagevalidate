@@ -597,9 +597,8 @@ pipeline {
             stage('Testing CPP code') {
                 agent {
                     dockerfile {
-                        filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
-                        label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
-                        additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
+                        filename "ci/docker/cpp/Dockerfile"
+                        additionalBuildArgs "--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)"
                     }
                 }
                 steps{
