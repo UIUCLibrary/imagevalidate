@@ -1,3 +1,4 @@
+conan
 coverage
 cmake
 devpi-client
