@@ -1013,16 +1013,22 @@ class BuildPybind11Extension(build_ext):
         return None
 
     def run(self):
-        self.include_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "include")))
-        self.library_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "lib")))
+        # self.include_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "include")))
+        # self.library_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "lib")))
         pybind11_include_path = self.get_pybind11_include_path()
         if pybind11_include_path is not None:
             self.include_dirs.insert(0, pybind11_include_path)
-        build_clib_cmd = self.get_finalized_command("build_clib")
-        openjpeg_include_path = self.find_openjpeg_header_path(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
-        if openjpeg_include_path is not None:
-            self.include_dirs.insert(0, openjpeg_include_path)
+        self.run_command("build_conan")
+        # build_conan_cmd = self.get_finalized_command("build_conan")
+        # print("he")
+        # build_clib_cmd = self.get_finalized_command("build_clib")
+        # openjpeg_include_path = self.find_openjpeg_header_path(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
+        # if openjpeg_include_path is not None:
+        #     self.include_dirs.insert(0, openjpeg_include_path)
 
+        # for e in self.extensions:
+        #     m = self.find_missing_libraries(e)
+        #     pass
         super().run()
 
         for e in self.extensions:
@@ -1083,24 +1089,39 @@ class BuildPybind11Extension(build_ext):
             # for i in os.scandir(include_dir):
 
 
-
     def find_missing_libraries(self, ext):
+        system_lib_dirs = [
+            "/usr/local/lib",
+            os.path.join(sys.base_prefix, "libs")
+        ]
         missing_libs = []
-        build_clib_cmd = self.get_finalized_command("build_clib")
+
+        library_search_paths = \
+            self.library_dirs + ext.library_dirs + system_lib_dirs
 
         for lib in ext.libraries:
-            expected_header_files = []
-            for libname, lib_data in build_clib_cmd.libraries:
-                if libname == lib:
-                    expected_header_files += lib_data['expected_headers']
-            if self.compiler.find_library_file(self.library_dirs, lib) is None:
-                missing_libs.append(lib)
-                continue
+            if self.compiler.find_library_file(library_search_paths, lib) \
+                    is None:
 
-            if self.find_header_file_path(self.include_dirs, expected_header_files) is None:
                 missing_libs.append(lib)
-
         return missing_libs
+    # def find_missing_libraries(self, ext):
+    #     missing_libs = []
+    #     build_clib_cmd = self.get_finalized_command("build_clib")
+    #
+    #     for lib in ext.libraries:
+    #         expected_header_files = []
+    #         for libname, lib_data in build_clib_cmd.libraries:
+    #             if libname == lib:
+    #                 expected_header_files += lib_data['expected_headers']
+    #         if self.compiler.find_library_file(self.library_dirs, lib) is None:
+    #             missing_libs.append(lib)
+    #             continue
+    #
+    #         if self.find_header_file_path(self.include_dirs, expected_header_files) is None:
+    #             missing_libs.append(lib)
+    #
+    #     return missing_libs
 
     def build_extension(self, ext):
         missing = self.find_missing_libraries(ext)
@@ -1113,7 +1134,6 @@ class BuildPybind11Extension(build_ext):
 
             ext.libraries.append("shell32")
 
-
         if len(missing) > 0:
             self.announce(f"missing required deps [{', '.join(missing)}]. "
                           f"Trying to build them", 5)
@@ -1123,19 +1143,33 @@ class BuildPybind11Extension(build_ext):
                 raise FileNotFoundError(
                     "Still Missing missing required deps [{}]".format(
                         ', '.join(missing)))
-            # self.run_command("build_clib")
-            # build_clib_cmd = self.get_finalized_command("build_clib")
-            # open_jpeg_include_path = self.find_openjpeg_header_path(os.path.join(build_clib_cmd.build_clib, "include"))
-            build_conan_cmd = self.get_finalized_command("build_conan")
-            #
-            # if open_jpeg_include_path is not None:
-            #     ext.include_dirs.append(os.path.abspath(open_jpeg_include_path))
-            #
-            # open_jpeg_library_path = self.find_openjpeg_lib_path(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "lib")))
-            # if open_jpeg_library_path is not None:
-            #     ext.library_dirs.append(os.path.abspath(open_jpeg_library_path))
+
+        new_libs = []
+        ext.libraries += new_libs
 
         super().build_extension(ext)
+        # if len(missing) > 0:
+        #     self.announce(f"missing required deps [{', '.join(missing)}]. "
+        #                   f"Trying to build them", 5)
+        #     self.run_command("build_conan")
+        #     missing = self.find_missing_libraries(ext)
+        #     if len(missing) > 0:
+        #         raise FileNotFoundError(
+        #             "Still Missing missing required deps [{}]".format(
+        #                 ', '.join(missing)))
+        #     # self.run_command("build_clib")
+        #     # build_clib_cmd = self.get_finalized_command("build_clib")
+        #     # open_jpeg_include_path = self.find_openjpeg_header_path(os.path.join(build_clib_cmd.build_clib, "include"))
+        #     build_conan_cmd = self.get_finalized_command("build_conan")
+        #     #
+        #     # if open_jpeg_include_path is not None:
+        #     #     ext.include_dirs.append(os.path.abspath(open_jpeg_include_path))
+        #     #
+        #     # open_jpeg_library_path = self.find_openjpeg_lib_path(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "lib")))
+        #     # if open_jpeg_library_path is not None:
+        #     #     ext.library_dirs.append(os.path.abspath(open_jpeg_library_path))
+
+        # super().build_extension(ext)
 
     def get_pybind11_include_path(self):
         pybind11_archive_filename = os.path.split(self.pybind11_url)[1]
@@ -1267,17 +1301,19 @@ class BuildConan(setuptools.Command):
         }
 
     def initialize_options(self):
+        pass
         self.conan_exec = None
 
     def finalize_options(self):
-        if self.conan_exec is None:
-            self.conan_exec = shutil.which("conan")
-            if self.conan_exec is None:
-                self.conan_exec = \
-                    shutil.which("conan", path=sysconfig.get_path('scripts'))
-
-                if self.conan_exec is None:
-                    raise FileNotFoundError("missing conan_exec")
+        pass
+        # if self.conan_exec is None:
+        #     self.conan_exec = shutil.which("conan")
+        #     if self.conan_exec is None:
+        #         self.conan_exec = \
+        #             shutil.which("conan", path=sysconfig.get_path('scripts'))
+        #
+        #         if self.conan_exec is None:
+        #             raise FileNotFoundError("missing conan_exec")
 
     def getConanBuildInfo(self, root_dir):
         for root, dirs, files in os.walk(root_dir):
@@ -1420,7 +1456,8 @@ setup(
     tests_require=['pytest'],
     zip_safe=False,
     ext_modules=[open_jpeg_extension],
-    libraries=[openjpeg_library],
+    libraries=[],
+    # libraries=[openjpeg_library],
     cmdclass={
         "build_ext": BuildPybind11Extension,
         # "build_openjpeg": BuildCMakeClib,
