@@ -19,23 +19,23 @@ target_include_directories(glue PUBLIC
 
 if(CONAN_OPENJPEG_ROOT)
 
-        find_path(openjpeg_include_path
+        find_path(OPENJPEG_INCLUDE_DIRS
             NAMES openjpeg.h
             PATHS ${CONAN_OPENJPEG_ROOT}/include/
             PATH_SUFFIXES openjpeg-2.3
             )
-    target_include_directories(glue PUBLIC
-        ${openjpeg_include_path}
-            )
-    find_library(openjp2_LIB
+    target_include_directories(glue PUBLIC ${OPENJPEG_INCLUDE_DIRS})
+    find_library(OPENJPEG_LIBRARIES
             NAMES
                 openjpeg
+                openjpeg.so
                 libopenjp2
                 libopenjp2.a
+                libopenjp2.so
             PATHS ${CONAN_OPENJPEG_ROOT}/lib
             )
-    target_link_libraries(glue PUBLIC ${openjp2_LIB})
-    else()
+    target_link_libraries(glue PUBLIC ${OPENJPEG_LIBRARIES})
+else()
     target_include_directories(glue PUBLIC
             ${OPENJPEG_INCLUDE_DIRS}
             )
