@@ -52,4 +52,5 @@ RUN conan config home
 COPY conanfile.py /tmp/conanfile.py
 RUN conan install /tmp --build missing --no-import && \
     conan remove --locks && \
-    conan remove "*" -b --src -f
+    conan remove "*" -b --src -f &&\
+    chown -R user:user  /home/user/.conan
