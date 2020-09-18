@@ -602,15 +602,24 @@ pipeline {
                         label "linux && docker"
                     }
                 }
-                steps{
-                    sh(label: "Testing CPP code",
-                       script: """conan install . -if build
-                                  cmake -B build -DCMAKE_TOOLCHAIN_FILE=${WORKSPACE}/build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true
-                                  cmake --build build --target tester
-                                  cd build && ctest
-                                  """
-//
-                    )
+                stages{
+                    stage("Build CPP"){
+                        steps{
+                            sh(label: "Testing CPP code",
+                               script: """conan install . -if build
+                                          cmake -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true
+                                          cmake --build build --target tester
+                                          """
+                            )
+                        }
+                    }
+                    stage("Ctest"){
+                        steps{
+                            sh(label: "Running ctest",
+                               script: 'cd build && ctest'
+                            )
+                        }
+                    }
                 }
 
             }
