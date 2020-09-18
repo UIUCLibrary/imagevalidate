@@ -4,7 +4,11 @@ include(FetchContent)
 find_package(Python3 REQUIRED COMPONENTS Development)
 #find_package(PythonInterp 3)
 #find_package(PythonLibs)
-find_package(OpenJPEG)
+
+if(NOT CONAN_OPENJPEG_ROOT)
+    find_package(OpenJPEG)
+endif()
+
 FetchContent_Declare(libpybind11
         URL https://github.com/pybind/pybind11/archive/v2.2.3.tar.gz
         URL_HASH SHA1=0acaeb967f09dbef53a1e2a4366780548597beba
@@ -38,5 +42,5 @@ add_subdirectory(uiucprescon/imagevalidate)
 #    LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG}
 #
 #    )
-include(CTest)
+#include(CTest)
 add_subdirectory(tests)
