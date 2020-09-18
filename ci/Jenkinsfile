@@ -524,71 +524,71 @@ pipeline {
   }
 
   stages {
-
-    stage("Building"){
-        agent {
-            dockerfile {
-                filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
-                label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
-                additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
-            }
-        }
-        stages{
-            stage("Building Python Package"){
-                environment{
-                    CFLAGS="--coverage"
-                }
-                steps {
-                    sh(
-                        label: "Building",
-                        script: 'python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
-                        )
-                }
-                post{
-                   success{
-                       stash includes: "uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd,uiucprescon/imagevalidate/*.so", name: 'COMPILED_BINARIES'
-                       stash includes: "build/**", name: 'LINUX_BUILD_DIRECTORY'
-                   }
-                   failure{
-                        cleanWs(
-                            deleteDirs: true,
-                            patterns: [
-                                [pattern: 'build/', type: 'INCLUDE'],
-                                [pattern: ".eggs/", type: 'INCLUDE']
-                            ]
-                        )
-                   }
-                }
-            }
-            stage("Sphinx Documentation"){
-                steps {
-                    sh(
-                        label: "Building docs on ${env.NODE_NAME}",
-                        script: 'python -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees'
-                    )
-                }
-                post{
-                    success{
-                        publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                        script{
-                            unstash "DIST-INFO"
-                            def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
-                            def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
-                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-                            stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
-                        }
-                    }
-                    cleanup{
-                        cleanWs(patterns: [
-                            [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
-                            [pattern: "dist/*.doc.zip", type: 'INCLUDE']
-                            ]
-                        )
-                    }
-                }
-            }
-        }
-    }
+//
+//     stage("Building"){
+//         agent {
+//             dockerfile {
+//                 filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
+//                 label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
+//                 additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
+//             }
+//         }
+//         stages{
+//             stage("Building Python Package"){
+//                 environment{
+//                     CFLAGS="--coverage"
+//                 }
+//                 steps {
+//                     sh(
+//                         label: "Building",
+//                         script: 'python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
+//                         )
+//                 }
+//                 post{
+//                    success{
+//                        stash includes: "uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd,uiucprescon/imagevalidate/*.so", name: 'COMPILED_BINARIES'
+//                        stash includes: "build/**", name: 'LINUX_BUILD_DIRECTORY'
+//                    }
+//                    failure{
+//                         cleanWs(
+//                             deleteDirs: true,
+//                             patterns: [
+//                                 [pattern: 'build/', type: 'INCLUDE'],
+//                                 [pattern: ".eggs/", type: 'INCLUDE']
+//                             ]
+//                         )
+//                    }
+//                 }
+//             }
+//             stage("Sphinx Documentation"){
+//                 steps {
+//                     sh(
+//                         label: "Building docs on ${env.NODE_NAME}",
+//                         script: 'python -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees'
+//                     )
+//                 }
+//                 post{
+//                     success{
+//                         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+//                         script{
+//                             unstash "DIST-INFO"
+//                             def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
+//                             def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
+//                             zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+//                             stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
+//                         }
+//                     }
+//                     cleanup{
+//                         cleanWs(patterns: [
+//                             [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
+//                             [pattern: "dist/*.doc.zip", type: 'INCLUDE']
+//                             ]
+//                         )
+//                     }
+//                 }
+//             }
+//         }
+//     }
     stage("Checks"){
         when{
             equals expected: true, actual: params.RUN_CHECKS
