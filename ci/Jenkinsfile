@@ -603,8 +603,10 @@ pipeline {
                     }
                 }
                 steps{
-                    sh(label: "Testing CPP code"
-                       script: "cmake -B build"
+                    sh(label: "Testing CPP code",
+                       script: """conan install -if build
+                                  cmake -B build
+                                  """
                     )
                 }
 
