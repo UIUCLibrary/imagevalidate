@@ -1,4 +1,4 @@
-#if(BUILD_TESTING)
+if(BUILD_TESTING)
     include(FetchContent)
 
     FetchContent_Declare(
@@ -65,5 +65,5 @@
             TEST_PREFIX imagevalidate.
             )
 
-#endif()
+endif()
 
