@@ -1291,12 +1291,12 @@ class BuildConan(setuptools.Command):
         build_dir = build_ext_cmd.build_temp
 
         build_dir_full_path = os.path.abspath(build_dir)
-        conan_cache = os.path.join(build_dir, "conan_cache")
-        self.mkpath(conan_cache)
+        # conan_cache = os.path.join(build_dir, "conan_cache")
+        # self.mkpath(conan_cache)
         self.mkpath(build_dir_full_path)
         self.mkpath(os.path.join(build_dir_full_path, "lib"))
 
-        conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
+        conan = conan_api.Conan()
         conan_options = []
         conan.install(
             options=conan_options,
