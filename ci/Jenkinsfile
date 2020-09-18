@@ -603,7 +603,9 @@ pipeline {
                     }
                 }
                 steps{
-                    echo "Testing CPP code"
+                    sh(label: "Testing CPP code"
+                       script: "cmake -B build"
+                    )
                 }
 
             }
