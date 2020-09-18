@@ -7,7 +7,9 @@ import sys
 import tarfile
 import urllib
 import zipfile
-from typing import Iterable, Tuple, List, Optional
+import sysconfig
+from functools import reduce
+from typing import Iterable, Tuple, List, Optional, Dict, Any, Union
 import abc
 from distutils.sysconfig import customize_compiler
 from urllib import request
@@ -18,6 +20,11 @@ from setuptools.command.build_ext import build_ext
 from setuptools.command.build_clib import build_clib
 from setuptools import Command
 from ctypes.util import find_library
+
+try:
+    from conans.client import conan_api
+except ModuleNotFoundError:
+    print("Conan not installed", file=sys.stderr)
 
 CMAKE = shutil.which("cmake")
 PACKAGE_NAME = "uiucprescon.imagevalidate"
@@ -1110,15 +1117,23 @@ class BuildPybind11Extension(build_ext):
         if len(missing) > 0:
             self.announce(f"missing required deps [{', '.join(missing)}]. "
                           f"Trying to build them", 5)
-            self.run_command("build_clib")
-            build_clib_cmd = self.get_finalized_command("build_clib")
-            open_jpeg_include_path = self.find_openjpeg_header_path(os.path.join(build_clib_cmd.build_clib, "include"))
-            if open_jpeg_include_path is not None:
-                ext.include_dirs.append(os.path.abspath(open_jpeg_include_path))
-
-            open_jpeg_library_path = self.find_openjpeg_lib_path(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "lib")))
-            if open_jpeg_library_path is not None:
-                ext.library_dirs.append(os.path.abspath(open_jpeg_library_path))
+            self.run_command("build_conan")
+            missing = self.find_missing_libraries(ext)
+            if len(missing) > 0:
+                raise FileNotFoundError(
+                    "Still Missing missing required deps [{}]".format(
+                        ', '.join(missing)))
+            # self.run_command("build_clib")
+            # build_clib_cmd = self.get_finalized_command("build_clib")
+            # open_jpeg_include_path = self.find_openjpeg_header_path(os.path.join(build_clib_cmd.build_clib, "include"))
+            build_conan_cmd = self.get_finalized_command("build_conan")
+            #
+            # if open_jpeg_include_path is not None:
+            #     ext.include_dirs.append(os.path.abspath(open_jpeg_include_path))
+            #
+            # open_jpeg_library_path = self.find_openjpeg_lib_path(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "lib")))
+            # if open_jpeg_library_path is not None:
+            #     ext.library_dirs.append(os.path.abspath(open_jpeg_library_path))
 
         super().build_extension(ext)
 
@@ -1185,6 +1200,190 @@ class BuildPybind11Extension(build_ext):
 #         #     self.compiler.initialize()
 #         self.compiler.spawn(fixup_command)
 #
+class ConanBuildInfoParser:
+    def __init__(self, fp):
+        self._fp = fp
+
+    def parse(self) -> Dict[str, List[str]]:
+        data = dict()
+        for subject_chunk in self.iter_subject_chunk():
+            subject_title = subject_chunk[0][1:-1]
+
+            data[subject_title] = subject_chunk[1:]
+        return data
+
+    def iter_subject_chunk(self) -> Iterable[Any]:
+        buffer = []
+        for line in self._fp:
+            line = line.strip()
+            if len(line) == 0:
+                continue
+            if line.startswith("[") and line.endswith("]") and len(buffer) > 0:
+                yield buffer
+                buffer.clear()
+            buffer.append(line)
+        yield buffer
+        buffer.clear()
+class ConanImportManifestParser:
+    def __init__(self, fp):
+        self._fp = fp
+
+    def parse(self) -> List[str]:
+        libs = set()
+        for line in self._fp:
+            t = line.split()[0].strip(":\n")
+            if os.path.exists(t):
+                libs.add(t)
+        return list(libs)
+
+
+
+class BuildConan(setuptools.Command):
+    user_options = [
+        ('conan-exec=', "c", 'conan executable')
+    ]
+
+    description = "Get the required dependencies from a Conan package manager"
+
+    def get_from_txt(self, conanbuildinfo_file):
+        definitions = []
+        include_paths = []
+        lib_paths = []
+        libs = []
+
+        with open(conanbuildinfo_file, "r") as f:
+            parser = ConanBuildInfoParser(f)
+            data = parser.parse()
+            definitions = data['defines']
+            include_paths = data['includedirs']
+            lib_paths = data['libdirs']
+            libs = data['libs']
+
+        return {
+            "definitions": definitions,
+            "include_paths": list(include_paths),
+            "lib_paths": list(lib_paths),
+            "libs": list(libs)
+        }
+
+    def initialize_options(self):
+        self.conan_exec = None
+
+    def finalize_options(self):
+        if self.conan_exec is None:
+            self.conan_exec = shutil.which("conan")
+            if self.conan_exec is None:
+                self.conan_exec = \
+                    shutil.which("conan", path=sysconfig.get_path('scripts'))
+
+                if self.conan_exec is None:
+                    raise FileNotFoundError("missing conan_exec")
+
+    def getConanBuildInfo(self, root_dir):
+        for root, dirs, files in os.walk(root_dir):
+            for f in files:
+                if f == "conanbuildinfo.json":
+                    return os.path.join(root, f)
+        return None
+
+    def run(self):
+        build_ext_cmd = self.get_finalized_command("build_ext")
+        build_dir = build_ext_cmd.build_temp
+
+        build_dir_full_path = os.path.abspath(build_dir)
+        conan_cache = os.path.join(build_dir, "conan_cache")
+        self.mkpath(conan_cache)
+        self.mkpath(build_dir_full_path)
+        self.mkpath(os.path.join(build_dir_full_path, "lib"))
+
+        conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
+        conan_options = []
+        conan.install(
+            options=conan_options,
+            cwd=build_dir,
+            path=os.path.abspath(os.path.dirname(__file__)),
+            install_folder=build_dir_full_path
+        )
+
+        conanbuildinfotext = os.path.join(build_dir, "conanbuildinfo.txt")
+        assert os.path.exists(conanbuildinfotext)
+        text_md = self.get_from_txt(conanbuildinfotext)
+        build_ext_cmd.include_dirs = list(
+            set(text_md['include_paths']) | set(build_ext_cmd.include_dirs))
+
+        build_ext_cmd.library_dirs = list(
+            set(text_md['lib_paths']) | set(build_ext_cmd.library_dirs))
+
+        build_ext_cmd.libraries = list(
+            set(text_md['libs']) | set(build_ext_cmd.libraries))
+
+        conanbuildinfo_file = self.getConanBuildInfo(build_dir_full_path)
+        if conanbuildinfo_file is None:
+            raise FileNotFoundError("Unable to locate conanbuildinfo.json")
+
+        with open(conanbuildinfo_file) as f:
+            conan_build_info = json.loads(f.read())
+        for extension in build_ext_cmd.extensions:
+            for dep in conan_build_info['dependencies']:
+                extension.include_dirs += dep['include_paths']
+                extension.library_dirs += dep['lib_paths']
+                extension.libraries += dep['libs']
+                extension.define_macros += [(d,) for d in dep['defines']]
+
+    def get_import_paths_from_import_manifest(self, manifest_file) -> \
+            List[str]:
+
+        lib_dirs = set()
+        for lib in self.get_libraries_from_import_manifest(manifest_file):
+            lib_dirs.add(os.path.dirname(lib))
+        return list(lib_dirs)
+
+    def get_libraries_from_import_manifest(self, manifest_file) -> List[str]:
+        with open(manifest_file, "r") as f:
+            parser = ConanImportManifestParser(f)
+            return parser.parse()
+
+    def get_from_json(self, conanbuildinfo_file) -> \
+            Dict[str, List[Union[str, Tuple[str, Optional[str]]]]]:
+
+        if conanbuildinfo_file is None:
+            raise FileNotFoundError("Unable to locate conanbuildinfo.json")
+        self.announce(f"Reading from {conanbuildinfo_file}", 5)
+        with open(conanbuildinfo_file) as f:
+            conan_build_info = json.loads(f.read())
+
+        def reduce_dups(a, b, key):
+
+            if isinstance(a, set):
+                collection = a
+            else:
+                collection = set(a[key])
+            collection = collection.union(b[key])
+            return collection
+
+        libs = reduce(lambda a, b: reduce_dups(a, b, key="libs"),
+                      conan_build_info['dependencies'])
+        include_paths = reduce(
+            lambda a, b: reduce_dups(a, b, key="include_paths"),
+            conan_build_info['dependencies'])
+        self.announce(f"Adding [{','.join(include_paths)}] to include path", 4)
+        lib_paths = reduce(lambda a, b: reduce_dups(a, b, key="lib_paths"),
+                           conan_build_info['dependencies'])
+        self.announce(
+            f"Adding [{', '.join(lib_paths)}] to library search path", 4)
+
+        definitions = list()
+        for dep in conan_build_info['dependencies']:
+            definitions += [(d,) for d in dep['defines']]
+
+        return {
+            "definitions": definitions,
+            "include_paths": list(include_paths),
+            "lib_paths": list(lib_paths),
+            "libs": list(libs)
+        }
+
+
 
 open_jpeg_extension = setuptools.Extension(
     "uiucprescon.imagevalidate.openjp2wrap",
@@ -1226,6 +1425,7 @@ setup(
         "build_ext": BuildPybind11Extension,
         # "build_openjpeg": BuildCMakeClib,
         "build_clib": BuildCMakeClib,
+        "build_conan": BuildConan
         # "build_openjpeg": BuildOpenJpegClib,
         # "package_clib": PackageClib,
     }
