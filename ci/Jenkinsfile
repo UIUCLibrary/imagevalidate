@@ -604,7 +604,7 @@ pipeline {
                 steps{
                     sh(label: "Testing CPP code",
                        script: """conan install . -if build
-                                  cmake -B build -DCMAKE_TOOLCHAIN_FILE=${WORKSPACE}/build/conan_paths.cmake
+                                  cmake -B build -DCMAKE_TOOLCHAIN_FILE=${WORKSPACE}/build/conan_paths.cmake  -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=True
                                   cmake --build build --target tester
                                   """
                     )
