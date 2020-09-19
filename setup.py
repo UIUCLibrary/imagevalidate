@@ -1152,34 +1152,15 @@ class BuildPybind11Extension(build_ext):
 
                 missing_libs.append(lib)
         return missing_libs
-    # def find_missing_libraries(self, ext):
-    #     missing_libs = []
-    #     build_clib_cmd = self.get_finalized_command("build_clib")
-    #
-    #     for lib in ext.libraries:
-    #         expected_header_files = []
-    #         for libname, lib_data in build_clib_cmd.libraries:
-    #             if libname == lib:
-    #                 expected_header_files += lib_data['expected_headers']
-    #         if self.compiler.find_library_file(self.library_dirs, lib) is None:
-    #             missing_libs.append(lib)
-    #             continue
-    #
-    #         if self.find_header_file_path(self.include_dirs, expected_header_files) is None:
-    #             missing_libs.append(lib)
-    #
-    #     return missing_libs
 
     def build_extension(self, ext):
         missing = self.find_missing_libraries(ext)
         if self.compiler.compiler_type == "unix":
-            ext.extra_compile_args.append("-std=c++14")
+            ext.extra_compile_args.append("-std=c++11")
         else:
             ext.extra_compile_args.append("/std:c++14")
 
-            # self.compiler.add_library("shell32")
-
-            ext.libraries.append("shell32")
+            # ext.libraries.append("shell32")
 
         if len(missing) > 0:
             self.announce(f"missing required deps [{', '.join(missing)}]. "
@@ -1195,28 +1176,6 @@ class BuildPybind11Extension(build_ext):
         ext.libraries += new_libs
 
         super().build_extension(ext)
-        # if len(missing) > 0:
-        #     self.announce(f"missing required deps [{', '.join(missing)}]. "
-        #                   f"Trying to build them", 5)
-        #     self.run_command("build_conan")
-        #     missing = self.find_missing_libraries(ext)
-        #     if len(missing) > 0:
-        #         raise FileNotFoundError(
-        #             "Still Missing missing required deps [{}]".format(
-        #                 ', '.join(missing)))
-        #     # self.run_command("build_clib")
-        #     # build_clib_cmd = self.get_finalized_command("build_clib")
-        #     # open_jpeg_include_path = self.find_openjpeg_header_path(os.path.join(build_clib_cmd.build_clib, "include"))
-        #     build_conan_cmd = self.get_finalized_command("build_conan")
-        #     #
-        #     # if open_jpeg_include_path is not None:
-        #     #     ext.include_dirs.append(os.path.abspath(open_jpeg_include_path))
-        #     #
-        #     # open_jpeg_library_path = self.find_openjpeg_lib_path(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "lib")))
-        #     # if open_jpeg_library_path is not None:
-        #     #     ext.library_dirs.append(os.path.abspath(open_jpeg_library_path))
-
-        # super().build_extension(ext)
     def _get_path_dirs(self):
         if platform.system() == "Windows":
             paths = os.environ['path'].split(";")
@@ -1253,41 +1212,6 @@ class BuildPybind11Extension(build_ext):
                         os.path.join(root, ".."),
                         os.path.dirname(__file__)
                     ))
-
-
-# class BuildOpenJp2Extension(BuildPybind11Ext):
-#
-#     def links_to_dynamic(self, ext):
-#         return super().links_to_dynamic(ext)
-#
-#     def run(self):
-#         clib_command = self.get_finalized_command("build_clib")
-#
-#         self.include_dirs.insert(
-#             0, os.path.join(
-#                 clib_command.build_clib,
-#                 "include",
-#                 "openjpeg-2.3"
-#                 )
-#         )
-#         self.library_dirs.insert(
-#             0, os.path.join(clib_command.build_clib, "lib"))
-#
-#         super().run()
-#         extension = os.path.join(self.build_lib, self.get_ext_filename(self.extensions[0].name))
-#         bin_dir = os.path.join(clib_command.build_temp, "bin")
-#         fixup_command = [
-#             clib_command.cmake_path,
-#             f'-DPYTHON_CEXTENSION={extension}',
-#             f'-DDIRECTORIES={bin_dir}',
-#             "-P",
-#             "cmake/fixup.cmake",
-#         ]
-#         # if not self.compiler.initialized:
-#         #     self.compiler.initialize()
-#         self.compiler.spawn(fixup_command)
-#
-
 
 
 class AbsSoHandler(abc.ABC):
@@ -1402,6 +1326,7 @@ class DllHandlerStrategy(AbsSoHandler):
             )
             return BuildPybind11Extension.parse_dumpbin_deps(dump_file=output_file)
 
+
 class ConanBuildInfoParser:
     def __init__(self, fp):
         self._fp = fp
@@ -1426,6 +1351,8 @@ class ConanBuildInfoParser:
             buffer.append(line)
         yield buffer
         buffer.clear()
+
+
 class ConanImportManifestParser:
     def __init__(self, fp):
         self._fp = fp
