@@ -9,6 +9,7 @@ include cmake/fixup.cmake
 
 # C++ Source files
 include CMakeLists.txt
+include conanfile.py
 recursive-include uiucprescon/imagevalidate CMakeLists.txt *.cpp *.h
 
 # Running requirements
