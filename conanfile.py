@@ -10,7 +10,7 @@ class ImageValidate(ConanFile):
 
     generators = ["json", "cmake_paths"]
     default_options = {
-        "openjpeg:shared": True
+        # "openjpeg:shared": True
     }
     #
     # def imports(self):
