@@ -1091,6 +1091,7 @@ class BuildPybind11Extension(build_ext):
             self.compiler.runtime_library_dirs + \
             self.library_dirs + \
             self._get_path_dirs()
+        search_paths.append(self.build_temp)
 
         for lib_path in library_search_paths:
             if not os.path.exists(lib_path):
