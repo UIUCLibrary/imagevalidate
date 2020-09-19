@@ -605,7 +605,7 @@ pipeline {
                     stage("Build CPP"){
                         steps{
                             sh(label: "Testing CPP code",
-                               script: """conan install . -if build
+                               script: """conan install . -if build -o "*:shared=true"
                                           cmake -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true
                                           cmake --build build
                                           """
