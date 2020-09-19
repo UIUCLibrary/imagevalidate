@@ -1399,7 +1399,7 @@ class DllHandlerStrategy(AbsSoHandler):
                     f'/out:{output_file}'
                 ]
             )
-            return BuildPybind11Extension.parse_dumpbin_deps(file=output_file)
+            return BuildPybind11Extension.parse_dumpbin_deps(dump_file=output_file)
 
 class ConanBuildInfoParser:
     def __init__(self, fp):
