@@ -15,7 +15,7 @@ RUN python -m pip install --upgrade pip && \
     pip wheel --wheel-dir=/wheels  \
         -r /requirements/requirements.txt \
         -r /requirements/requirements-ci.txt \
-         -i ${PYTHON_INDEX} -v
+         -i ${PYTHON_INDEX}
 
 FROM python:${PYTHON_VERSION}
 
@@ -46,3 +46,11 @@ ENV PIP_FIND_LINKS=/wheels
 ENV PIP_NO_CACHE_DIR=1
 USER user
 WORKDIR /home/user
+#COPY --chown=user:user ci/docker/shared/conan/remotes.json /home/user/.conan/remotes.json
+ENV CONAN_USER_HOME=/home/user/
+RUN conan config home
+COPY conanfile.py /tmp/conanfile.py
+RUN conan install /tmp --build missing --no-import && \
+    conan remove --locks && \
+    conan remove "*" -b --src -f &&\
+    chown -R user:user  /home/user/.conan/data

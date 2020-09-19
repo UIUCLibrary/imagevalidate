@@ -9,7 +9,8 @@ RUN groupadd -g $GROUP_ID user && \
 
 USER user
 WORKDIR /home/user
-ADD conanfile.py /tmp/conanfile.py
+COPY --chown=user:user ci/docker/shared/conan/remotes.json /home/user/.conan/remotes.json
+COPY conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=/home/user/
 RUN conan config home
 RUN conan install /tmp --build  missing --no-import

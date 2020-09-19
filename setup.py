@@ -7,17 +7,28 @@ import sys
 import tarfile
 import urllib
 import zipfile
-from typing import Iterable, Tuple, List, Optional
+import sysconfig
+import tempfile
+from functools import reduce
+from typing import Iterable, Tuple, List, Optional, Dict, Any, Union
 import abc
 from distutils.sysconfig import customize_compiler
 from urllib import request
-
+try:
+    from macholib import MachO, MachOStandalone
+except ImportError:
+    pass
 import setuptools
 from setuptools import setup
 from setuptools.command.build_ext import build_ext
 from setuptools.command.build_clib import build_clib
 from setuptools import Command
 from ctypes.util import find_library
+
+try:
+    from conans.client import conan_api
+except ModuleNotFoundError:
+    print("Conan not installed", file=sys.stderr)
 
 CMAKE = shutil.which("cmake")
 PACKAGE_NAME = "uiucprescon.imagevalidate"
@@ -1006,66 +1017,115 @@ class BuildPybind11Extension(build_ext):
         return None
 
     def run(self):
-        self.include_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "include")))
-        self.library_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "lib")))
+        # self.include_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "include")))
+        # self.library_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "lib")))
         pybind11_include_path = self.get_pybind11_include_path()
         if pybind11_include_path is not None:
             self.include_dirs.insert(0, pybind11_include_path)
-        build_clib_cmd = self.get_finalized_command("build_clib")
-        openjpeg_include_path = self.find_openjpeg_header_path(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
-        if openjpeg_include_path is not None:
-            self.include_dirs.insert(0, openjpeg_include_path)
+        self.run_command("build_conan")
+        # build_conan_cmd = self.get_finalized_command("build_conan")
+        # print("he")
+        # build_clib_cmd = self.get_finalized_command("build_clib")
+        # openjpeg_include_path = self.find_openjpeg_header_path(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
+        # if openjpeg_include_path is not None:
+        #     self.include_dirs.insert(0, openjpeg_include_path)
 
+        #     m = self.find_missing_libraries(e)
+        #     pass
         super().run()
 
         for e in self.extensions:
             dll_name = \
                 os.path.join(self.build_lib, self.get_ext_filename(e.name))
+            search_dirs = self.get_library_paths()
+            self.resolve_shared_library(dll_name, search_dirs)
+            # dll_name = \
+            #     os.path.join(self.build_lib, self.get_ext_filename(e.name))
+            #
+            # output_file = os.path.join(self.build_temp, f'{os.path.splitext(e.name)[0].replace(".", "-")}.dependents')
+            # if self.compiler.compiler_type != "unix":
+            #     if not self.compiler.initialized:
+            #         self.compiler.initialize()
+            #     dll_file = \
+            #         os.path.abspath(os.path.join(self.build_lib, self.get_ext_filename(e.name)))
+            #
+            #     assert os.path.exists(dll_file), "Unable to located {}".format(dll_file)
+            #     assert os.path.exists(self.build_temp), "Unable to located {}".format(self.build_temp)
+            #     self.compiler.spawn(
+            #         [
+            #             'dumpbin',
+            #             '/DEPENDENTS',
+            #             f'/OUT:{output_file}',
+            #             dll_name,
+            #         ]
+            #     )
+            #     deps = self.parse_dumpbin_deps(dump_file=output_file)
+            #     deps = self.remove_system_dlls(deps)
+            #     dest = os.path.dirname(dll_name)
+            #     self.announce("Copying dependencies to {}".format(dest))
+            #     for dep in deps:
+            #         dll = self.find_deps(dep)
+            #         if dll is not None:
+            #             self.copy_file(dll, dest)
+            #             if self.inplace:
+            #                 self.copy_file(dll, os.path.dirname(self.get_ext_filename(e.name)))
+            #         else:
+            #             print("Unable to locate deps for {}".format(dep), file=sys.stderr)
 
-            output_file = os.path.join(self.build_temp, f'{os.path.splitext(e.name)[0].replace(".", "-")}.dependents')
-            if self.compiler.compiler_type != "unix":
-                if not self.compiler.initialized:
-                    self.compiler.initialize()
-                dll_file = \
-                    os.path.abspath(os.path.join(self.build_lib, self.get_ext_filename(e.name)))
-
-                assert os.path.exists(dll_file), "Unable to located {}".format(dll_file)
-                assert os.path.exists(self.build_temp), "Unable to located {}".format(self.build_temp)
-                self.compiler.spawn(
-                    [
-                        'dumpbin',
-                        '/DEPENDENTS',
-                        f'/OUT:{output_file}',
-                        dll_name,
-                    ]
+    def resolve_shared_library(self, dll_name, search_paths=None):
+        dll_dumper = get_so_handler(dll_name, self)
+        dll_dumper.set_compiler(self.compiler)
+        try:
+            dll_dumper.resolve(search_paths)
+        except FileNotFoundError:
+            if search_paths is not None:
+                self.announce(
+                    "Error: Not all required shared libraries were resolved. "
+                    "Searched:\n{}".format('\n'.join(search_paths)), 5
                 )
-                deps = self.parse_dumpbin_deps(dump_file=output_file)
-                deps = self.remove_system_dlls(deps)
-                dest = os.path.dirname(dll_name)
-                self.announce("Copying dependencies to {}".format(dest))
-                for dep in deps:
-                    dll = self.find_deps(dep)
-                    if dll is not None:
-                        self.copy_file(dll, dest)
-                        if self.inplace:
-                            self.copy_file(dll, os.path.dirname(self.get_ext_filename(e.name)))
-                    else:
-                        print("Unable to locate deps for {}".format(dep), file=sys.stderr)
+            raise
+    def get_library_paths(self):
+        search_paths = []
+        library_search_paths = \
+            self.compiler.library_dirs + \
+            self.compiler.runtime_library_dirs + \
+            self.library_dirs + \
+            self._get_path_dirs()
+        search_paths.append(self.build_temp)
 
+        for lib_path in library_search_paths:
+            if not os.path.exists(lib_path):
+                continue
+            if lib_path in search_paths:
+                continue
+            search_paths.append(lib_path)
 
-    def find_deps(self, lib):
-        build_clib_cmd = self.get_finalized_command("build_clib")
-        paths = os.environ['path'].split(";")
-        paths.insert(0, os.path.join(build_clib_cmd.build_clib, "bin"))
+        return search_paths
 
-        for path in paths:
+    def find_deps(self, lib,  search_paths=None):
+        search_paths = search_paths or os.environ['path'].split(";")
+
+        for path in search_paths:
             if not os.path.exists(path):
+                self.announce(f"Skipping invalid path: {path}", 5)
                 continue
             for f in os.scandir(path):
                 if f.name.lower() == lib.lower():
                     return f.path
 
-        return None
+    # def find_deps(self, lib):
+    #     build_clib_cmd = self.get_finalized_command("build_clib")
+    #     paths = os.environ['path'].split(";")
+    #     paths.insert(0, os.path.join(build_clib_cmd.build_clib, "bin"))
+    #
+    #     for path in paths:
+    #         if not os.path.exists(path):
+    #             continue
+    #         for f in os.scandir(path):
+    #             if f.name.lower() == lib.lower():
+    #                 return f.path
+    #
+    #     return None
     def find_header_file_path(self, include_dirs: List[str], headers:List[str]) -> Optional[str]:
         for include_dir in include_dirs:
             for h in headers:
@@ -1076,51 +1136,52 @@ class BuildPybind11Extension(build_ext):
             # for i in os.scandir(include_dir):
 
 
-
     def find_missing_libraries(self, ext):
+        system_lib_dirs = [
+            "/usr/local/lib",
+            os.path.join(sys.base_prefix, "libs")
+        ]
         missing_libs = []
-        build_clib_cmd = self.get_finalized_command("build_clib")
+
+        library_search_paths = \
+            self.library_dirs + ext.library_dirs + system_lib_dirs
 
         for lib in ext.libraries:
-            expected_header_files = []
-            for libname, lib_data in build_clib_cmd.libraries:
-                if libname == lib:
-                    expected_header_files += lib_data['expected_headers']
-            if self.compiler.find_library_file(self.library_dirs, lib) is None:
-                missing_libs.append(lib)
-                continue
+            if self.compiler.find_library_file(library_search_paths, lib) \
+                    is None:
 
-            if self.find_header_file_path(self.include_dirs, expected_header_files) is None:
                 missing_libs.append(lib)
-
         return missing_libs
 
     def build_extension(self, ext):
         missing = self.find_missing_libraries(ext)
         if self.compiler.compiler_type == "unix":
-            ext.extra_compile_args.append("-std=c++14")
+            ext.extra_compile_args.append("-std=c++11")
         else:
             ext.extra_compile_args.append("/std:c++14")
 
-            # self.compiler.add_library("shell32")
-
-            ext.libraries.append("shell32")
-
+            # ext.libraries.append("shell32")
 
         if len(missing) > 0:
             self.announce(f"missing required deps [{', '.join(missing)}]. "
                           f"Trying to build them", 5)
-            self.run_command("build_clib")
-            build_clib_cmd = self.get_finalized_command("build_clib")
-            open_jpeg_include_path = self.find_openjpeg_header_path(os.path.join(build_clib_cmd.build_clib, "include"))
-            if open_jpeg_include_path is not None:
-                ext.include_dirs.append(os.path.abspath(open_jpeg_include_path))
+            self.run_command("build_conan")
+            missing = self.find_missing_libraries(ext)
+            if len(missing) > 0:
+                raise FileNotFoundError(
+                    "Still Missing missing required deps [{}]".format(
+                        ', '.join(missing)))
 
-            open_jpeg_library_path = self.find_openjpeg_lib_path(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "lib")))
-            if open_jpeg_library_path is not None:
-                ext.library_dirs.append(os.path.abspath(open_jpeg_library_path))
+        new_libs = []
+        ext.libraries += new_libs
 
         super().build_extension(ext)
+    def _get_path_dirs(self):
+        if platform.system() == "Windows":
+            paths = os.environ['path'].split(";")
+        else:
+            paths = os.environ['PATH'].split(":")
+        return [path for path in paths if os.path.exists(path)]
 
     def get_pybind11_include_path(self):
         pybind11_archive_filename = os.path.split(self.pybind11_url)[1]
@@ -1153,38 +1214,428 @@ class BuildPybind11Extension(build_ext):
                     ))
 
 
-# class BuildOpenJp2Extension(BuildPybind11Ext):
-#
-#     def links_to_dynamic(self, ext):
-#         return super().links_to_dynamic(ext)
-#
-#     def run(self):
-#         clib_command = self.get_finalized_command("build_clib")
-#
-#         self.include_dirs.insert(
-#             0, os.path.join(
-#                 clib_command.build_clib,
-#                 "include",
-#                 "openjpeg-2.3"
-#                 )
-#         )
-#         self.library_dirs.insert(
-#             0, os.path.join(clib_command.build_clib, "lib"))
-#
-#         super().run()
-#         extension = os.path.join(self.build_lib, self.get_ext_filename(self.extensions[0].name))
-#         bin_dir = os.path.join(clib_command.build_temp, "bin")
-#         fixup_command = [
-#             clib_command.cmake_path,
-#             f'-DPYTHON_CEXTENSION={extension}',
-#             f'-DDIRECTORIES={bin_dir}',
-#             "-P",
-#             "cmake/fixup.cmake",
-#         ]
-#         # if not self.compiler.initialized:
-#         #     self.compiler.initialize()
-#         self.compiler.spawn(fixup_command)
-#
+class AbsSoHandler(abc.ABC):
+    def __init__(self, library_file, context):
+        self.library_file = library_file
+        self._compiler = None
+        self.context = context
+
+    def set_compiler(self, compiler):
+        self._compiler = compiler
+
+    @classmethod
+    def is_system_file(cls, filename) -> bool:
+        return False
+
+    @abc.abstractmethod
+    def get_deps(self) -> List[str]:
+        pass
+
+    def resolve(self, search_paths=None) -> None:
+        dest = os.path.dirname(self.library_file)
+        for dep in filter(lambda x: not self.is_system_file(x),
+                          self.get_deps()):
+
+            if os.path.exists(os.path.join(dest, dep)):
+                continue
+            if search_paths is None:
+                if platform.system() == "Windows":
+                    search_paths = self.context.compiler.library_dirs + \
+                                   os.environ['path'].split(";")
+                else:
+                    search_paths = self.context.compiler.library_dirs + \
+                                   os.environ['PATH'].split(":")
+
+            dll = self.context.find_deps(dep, search_paths)
+            if dll is None:
+                raise FileNotFoundError(f"Unable to locate {dep} for "
+                                        f"{self.library_file}")
+            if not self.is_system_file(dll):
+                type(self)(dll, self.context).resolve(search_paths)
+
+
+class DllHandlerStrategy(AbsSoHandler):
+    def __init__(self, library_file, context):
+        super().__init__(library_file, context)
+        self._compiler = None
+
+    def resolve(self, search_paths=None) -> None:
+        dest = os.path.dirname(self.library_file)
+        for dep_name in self.get_deps():
+            if self.is_system_file(dep_name):
+                continue
+            dep = self.find_lib(dep_name, search_paths=search_paths)
+            if not dep:
+                raise FileNotFoundError(
+                    f"Unable to locate {dep_name} required by "
+                    f"{self.library_file}")
+
+            new_dll = os.path.join(dest, os.path.split(dep)[-1])
+            if os.path.exists(new_dll):
+                continue
+            self.context.copy_file(dep, new_dll)
+            DllHandlerStrategy(new_dll, self.context).resolve(search_paths)
+
+    def find_lib(self, lib, search_paths=None):
+        if search_paths is None:
+            search_paths = os.environ['path'].split(";")
+
+        for path in search_paths:
+            if not os.path.exists(path):
+                self.context.announce(f"Skipping invalid path: {path}", 5)
+                continue
+            for f in os.scandir(path):
+                if f.name.lower() == lib.lower():
+                    return f.path
+
+    @classmethod
+    def is_system_file(cls, filename: str) -> bool:
+        system_libs = [
+            i for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll")
+        ]
+
+        if filename in system_libs:
+            return True
+
+        if "api-ms-win-crt" in filename:
+            return True
+
+        if filename.startswith("python"):
+            return True
+        if filename == "KERNEL32.dll":
+            return True
+        return False
+
+    def get_deps(self) -> List[str]:
+        if not self.context.compiler.initialized:
+            self.context.compiler.initialize()
+        so_name = os.path.split(self.library_file)[-1]
+        with tempfile.TemporaryDirectory() as td:
+            output_file = os.path.join(td, f'{so_name}.dependents')
+            dumpbin = \
+                shutil.which("dumpbin",
+                             path=os.path.dirname(self.context.compiler.cc))
+
+            self.context.compiler.spawn(
+                [
+                    dumpbin,
+                    '/dependents',
+                    os.path.abspath(self.library_file),
+                    f'/out:{output_file}'
+                ]
+            )
+            return BuildPybind11Extension.parse_dumpbin_deps(dump_file=output_file)
+
+
+class ConanBuildInfoParser:
+    def __init__(self, fp):
+        self._fp = fp
+
+    def parse(self) -> Dict[str, List[str]]:
+        data = dict()
+        for subject_chunk in self.iter_subject_chunk():
+            subject_title = subject_chunk[0][1:-1]
+
+            data[subject_title] = subject_chunk[1:]
+        return data
+
+    def iter_subject_chunk(self) -> Iterable[Any]:
+        buffer = []
+        for line in self._fp:
+            line = line.strip()
+            if len(line) == 0:
+                continue
+            if line.startswith("[") and line.endswith("]") and len(buffer) > 0:
+                yield buffer
+                buffer.clear()
+            buffer.append(line)
+        yield buffer
+        buffer.clear()
+
+
+class ConanImportManifestParser:
+    def __init__(self, fp):
+        self._fp = fp
+
+    def parse(self) -> List[str]:
+        libs = set()
+        for line in self._fp:
+            t = line.split()[0].strip(":\n")
+            if os.path.exists(t):
+                libs.add(t)
+        return list(libs)
+
+class AbsSoHandler(abc.ABC):
+    def __init__(self, library_file, context):
+        self.library_file = library_file
+        self._compiler = None
+        self.context = context
+
+    def set_compiler(self, compiler):
+        self._compiler = compiler
+
+    @classmethod
+    def is_system_file(cls, filename) -> bool:
+        return False
+
+    @abc.abstractmethod
+    def get_deps(self) -> List[str]:
+        pass
+
+    def resolve(self, search_paths=None) -> None:
+        dest = os.path.dirname(self.library_file)
+        for dep in filter(lambda x: not self.is_system_file(x),
+                          self.get_deps()):
+
+            if os.path.exists(os.path.join(dest, dep)):
+                continue
+            if search_paths is None:
+                if platform.system() == "Windows":
+                    search_paths = self.context.compiler.library_dirs + \
+                                   os.environ['path'].split(";")
+                else:
+                    search_paths = self.context.compiler.library_dirs + \
+                                   os.environ['PATH'].split(":")
+
+            dll = self.context.find_deps(dep, search_paths)
+            if dll is None:
+                raise FileNotFoundError(f"Unable to locate {dep} for "
+                                        f"{self.library_file}")
+            if not self.is_system_file(dll):
+                type(self)(dll, self.context).resolve(search_paths)
+
+
+class NullHandlerStrategy(AbsSoHandler):
+
+    def get_deps(self) -> List[str]:
+        return []
+
+
+class MacholibStrategy(AbsSoHandler):
+    _system_files = []
+
+    @classmethod
+    def get_system_files(cls):
+        if len(cls._system_files) == 0:
+            cls._system_files = os.listdir("/usr/lib")
+        return cls._system_files
+
+    def get_deps(self) -> List[str]:
+
+        libs = set()
+        for header in MachO.MachO(self.library_file).headers:
+            for _idx, _name, other in header.walkRelocatables():
+                libs.add(os.path.split(other)[-1])
+        return list(libs)
+
+    @classmethod
+    def is_system_file(cls, filename) -> bool:
+        if filename in [
+            "libsystem_malloc.dylib"
+        ]:
+            return True
+
+        if filename in cls.get_system_files():
+            return True
+        return False
+
+    def resolve(self, search_path=None) -> None:
+        if self.is_system_file(os.path.split(self.library_file)[1]):
+            return
+
+        d = MachOStandalone.MachOStandalone(
+            os.path.abspath(os.path.dirname(self.library_file)))
+
+        d.dest = os.path.abspath(os.path.dirname(self.library_file))
+        libraries = []
+        for dep in self.get_deps():
+            if self.is_system_file(dep):
+                continue
+            found_dep = self.context.find_deps(dep, search_path)
+            c_dep = d.copy_dylib(found_dep)
+            dep_file = d.mm.locate(c_dep)
+            if dep_file is None:
+                raise FileNotFoundError(f"Unable to locate {dep}, "
+                                        f"required by {self.library_file}")
+
+            self.context.announce(f"Fixing up {dep}")
+
+            libraries.append(dep_file)
+            type(self)(dep_file, self.context).resolve(search_path)
+        libraries.append(self.library_file)
+        d.run(platfiles=libraries, contents="@rpath/..")
+
+
+
+class AudidWheelsHandlerStrategy(AbsSoHandler):
+
+    def get_deps(self) -> List[str]:
+        return []
+
+def get_so_handler(shared_library: str, context,
+                   system_name: str = None) -> AbsSoHandler:
+
+    system_name = system_name or platform.system()
+    strategies = {
+        # "Darwin": NullHandlerStrategy,
+        "Darwin": MacholibStrategy,
+        "Linux": AudidWheelsHandlerStrategy,
+        "Windows": DllHandlerStrategy,
+    }
+    strat = strategies.get(
+        system_name, NullHandlerStrategy)
+    return strat(shared_library, context)
+
+class BuildConan(setuptools.Command):
+    user_options = [
+        ('conan-exec=', "c", 'conan executable')
+    ]
+
+    description = "Get the required dependencies from a Conan package manager"
+
+    def get_from_txt(self, conanbuildinfo_file):
+        definitions = []
+        include_paths = []
+        lib_paths = []
+        libs = []
+
+        with open(conanbuildinfo_file, "r") as f:
+            parser = ConanBuildInfoParser(f)
+            data = parser.parse()
+            definitions = data['defines']
+            include_paths = data['includedirs']
+            lib_paths = data['libdirs']
+            libs = data['libs']
+
+        return {
+            "definitions": definitions,
+            "include_paths": list(include_paths),
+            "lib_paths": list(lib_paths),
+            "libs": list(libs)
+        }
+
+    def initialize_options(self):
+        pass
+        self.conan_exec = None
+
+    def finalize_options(self):
+        pass
+        # if self.conan_exec is None:
+        #     self.conan_exec = shutil.which("conan")
+        #     if self.conan_exec is None:
+        #         self.conan_exec = \
+        #             shutil.which("conan", path=sysconfig.get_path('scripts'))
+        #
+        #         if self.conan_exec is None:
+        #             raise FileNotFoundError("missing conan_exec")
+
+    def getConanBuildInfo(self, root_dir):
+        for root, dirs, files in os.walk(root_dir):
+            for f in files:
+                if f == "conanbuildinfo.json":
+                    return os.path.join(root, f)
+        return None
+
+    def run(self):
+        build_ext_cmd = self.get_finalized_command("build_ext")
+        build_dir = build_ext_cmd.build_temp
+
+        build_dir_full_path = os.path.abspath(build_dir)
+        conan_cache = os.path.join(build_dir, "conan_cache")
+        self.mkpath(conan_cache)
+        self.mkpath(build_dir_full_path)
+        self.mkpath(os.path.join(build_dir_full_path, "lib"))
+
+        conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
+        conan_options = []
+        if platform.system() == "Windows":
+            conan_options.append("*:shared=True")
+        conan.install(
+            options=conan_options,
+            cwd=build_dir,
+            path=os.path.abspath(os.path.dirname(__file__)),
+            install_folder=build_dir_full_path
+        )
+
+        conanbuildinfotext = os.path.join(build_dir, "conanbuildinfo.txt")
+        assert os.path.exists(conanbuildinfotext)
+        text_md = self.get_from_txt(conanbuildinfotext)
+        build_ext_cmd.include_dirs = list(
+            set(text_md['include_paths']) | set(build_ext_cmd.include_dirs))
+
+        build_ext_cmd.library_dirs = list(
+            set(text_md['lib_paths']) | set(build_ext_cmd.library_dirs))
+
+        build_ext_cmd.libraries = list(
+            set(text_md['libs']) | set(build_ext_cmd.libraries))
+
+        conanbuildinfo_file = self.getConanBuildInfo(build_dir_full_path)
+        if conanbuildinfo_file is None:
+            raise FileNotFoundError("Unable to locate conanbuildinfo.json")
+
+        with open(conanbuildinfo_file) as f:
+            conan_build_info = json.loads(f.read())
+        for extension in build_ext_cmd.extensions:
+            for dep in conan_build_info['dependencies']:
+                extension.include_dirs += dep['include_paths']
+                extension.library_dirs += dep['lib_paths']
+                extension.libraries += dep['libs']
+                extension.define_macros += [(d,) for d in dep['defines']]
+
+    def get_import_paths_from_import_manifest(self, manifest_file) -> \
+            List[str]:
+
+        lib_dirs = set()
+        for lib in self.get_libraries_from_import_manifest(manifest_file):
+            lib_dirs.add(os.path.dirname(lib))
+        return list(lib_dirs)
+
+    def get_libraries_from_import_manifest(self, manifest_file) -> List[str]:
+        with open(manifest_file, "r") as f:
+            parser = ConanImportManifestParser(f)
+            return parser.parse()
+
+    def get_from_json(self, conanbuildinfo_file) -> \
+            Dict[str, List[Union[str, Tuple[str, Optional[str]]]]]:
+
+        if conanbuildinfo_file is None:
+            raise FileNotFoundError("Unable to locate conanbuildinfo.json")
+        self.announce(f"Reading from {conanbuildinfo_file}", 5)
+        with open(conanbuildinfo_file) as f:
+            conan_build_info = json.loads(f.read())
+
+        def reduce_dups(a, b, key):
+
+            if isinstance(a, set):
+                collection = a
+            else:
+                collection = set(a[key])
+            collection = collection.union(b[key])
+            return collection
+
+        libs = reduce(lambda a, b: reduce_dups(a, b, key="libs"),
+                      conan_build_info['dependencies'])
+        include_paths = reduce(
+            lambda a, b: reduce_dups(a, b, key="include_paths"),
+            conan_build_info['dependencies'])
+        self.announce(f"Adding [{','.join(include_paths)}] to include path", 4)
+        lib_paths = reduce(lambda a, b: reduce_dups(a, b, key="lib_paths"),
+                           conan_build_info['dependencies'])
+        self.announce(
+            f"Adding [{', '.join(lib_paths)}] to library search path", 4)
+
+        definitions = list()
+        for dep in conan_build_info['dependencies']:
+            definitions += [(d,) for d in dep['defines']]
+
+        return {
+            "definitions": definitions,
+            "include_paths": list(include_paths),
+            "lib_paths": list(lib_paths),
+            "libs": list(libs)
+        }
+
+
 
 open_jpeg_extension = setuptools.Extension(
     "uiucprescon.imagevalidate.openjp2wrap",
@@ -1221,11 +1672,13 @@ setup(
     tests_require=['pytest'],
     zip_safe=False,
     ext_modules=[open_jpeg_extension],
-    libraries=[openjpeg_library],
+    libraries=[],
+    # libraries=[openjpeg_library],
     cmdclass={
         "build_ext": BuildPybind11Extension,
         # "build_openjpeg": BuildCMakeClib,
         "build_clib": BuildCMakeClib,
+        "build_conan": BuildConan
         # "build_openjpeg": BuildOpenJpegClib,
         # "package_clib": PackageClib,
     }
