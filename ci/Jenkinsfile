@@ -564,7 +564,7 @@ pipeline {
             stage("Sphinx Documentation"){
                 steps {
                     sh(
-                        label: "Building docs on ${env.NODE_NAME}",
+                        label: "Building docs",
                         script: 'python -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees'
                     )
                 }
