@@ -791,6 +791,7 @@ pipeline {
         when{
             anyOf{
                 equals expected: true, actual: params.BUILD_PACKAGES
+                equals expected: true, actual: params.BUILD_MAC_PACKAGES
                 equals expected: true, actual: params.DEPLOY_DEVPI
                 equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
             }
