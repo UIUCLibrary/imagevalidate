@@ -832,58 +832,58 @@ pipeline {
                             }
                         }
                     }
-                    stage('Testing Packages on a Mac') {
-//                         when{
-//                             anyOf{
-//                                 equals expected: true, actual: params.TEST_PACKAGES
+//                     stage('Testing Packages on a Mac') {
+// //                         when{
+// //                             anyOf{
+// //                                 equals expected: true, actual: params.TEST_PACKAGES
+// //                             }
+// //                             beforeAgent true
+// //                         }
+//                         steps{
+//                             unstash "MacOS 10.14 py38 wheel"
+//                             sh(
+//                                 label:"Installing tox",
+//                                 script: """python3 -m venv venv
+//                                            venv/bin/python -m pip install pip --upgrade
+//                                            venv/bin/python -m pip install wheel
+//                                            venv/bin/python -m pip install --upgrade setuptools
+//                                            venv/bin/python -m pip install tox
+//                                            """
+//                                 )
+//                             unstash "sdist"
+//                             script{
+//                                 findFiles(glob: "dist/*.tar.gz,dist/*.zip,dist/*.whl").each{
+//                                     sh(
+//                                         label: "Testing ${it}",
+//                                         script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
+//                                     )
+//                                 }
 //                             }
-//                             beforeAgent true
 //                         }
-                        steps{
-                            unstash "MacOS 10.14 py38 wheel"
-                            sh(
-                                label:"Installing tox",
-                                script: """python3 -m venv venv
-                                           venv/bin/python -m pip install pip --upgrade
-                                           venv/bin/python -m pip install wheel
-                                           venv/bin/python -m pip install --upgrade setuptools
-                                           venv/bin/python -m pip install tox
-                                           """
-                                )
-                            unstash "sdist"
-                            script{
-                                findFiles(glob: "dist/*.tar.gz,dist/*.zip,dist/*.whl").each{
-                                    sh(
-                                        label: "Testing ${it}",
-                                        script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
-                                    )
-                                }
-                            }
-                        }
-                        post{
-                            failure{
-                                script{
-                                    findFiles(glob: "dist/*.whl").each{
-                                        sh(
-                                            label:"dumping ${it}",
-                                            script: "venv/bin/tox --installpkg=${it.path} -e dump"
-                                        )
-                                    }
-                                }
-                            }
-                            cleanup{
-                                cleanWs(
-                                    deleteDirs: true,
-                                    patterns: [
-                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                        [pattern: 'build/', type: 'INCLUDE'],
-                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                        [pattern: 'pykdu_compress.egg-info/', type: 'INCLUDE'],
-                                    ]
-                                )
-                            }
-                        }
-                    }
+//                         post{
+//                             failure{
+//                                 script{
+//                                     findFiles(glob: "dist/*.whl").each{
+//                                         sh(
+//                                             label:"dumping ${it}",
+//                                             script: "venv/bin/tox --installpkg=${it.path} -e dump"
+//                                         )
+//                                     }
+//                                 }
+//                             }
+//                             cleanup{
+//                                 cleanWs(
+//                                     deleteDirs: true,
+//                                     patterns: [
+//                                         [pattern: '**/__pycache__/', type: 'INCLUDE'],
+//                                         [pattern: 'build/', type: 'INCLUDE'],
+//                                         [pattern: '.tox/', type: 'INCLUDE'],
+//                                         [pattern: 'pykdu_compress.egg-info/', type: 'INCLUDE'],
+//                                     ]
+//                                 )
+//                             }
+//                         }
+//                     }
                 }
             }
             stage('Creating Source Package') {
