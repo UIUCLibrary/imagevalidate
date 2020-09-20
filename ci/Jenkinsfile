@@ -517,6 +517,8 @@ pipeline {
       booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
       booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
       booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
+//       TODO: turn false default
+      booleanParam(name: "BUILD_MAC_PACKAGES", defaultValue: true, description: "Test Python packages on Mac")
       booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
       booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only")
       booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation. Release Branch Only")
@@ -795,6 +797,94 @@ pipeline {
             beforeAgent true
         }
         stages{
+            stage("Mac Versions"){
+                agent {
+                    label 'mac && 10.14 && python3.8'
+                }
+                when{
+                    equals expected: true, actual: params.BUILD_MAC_PACKAGES
+                    beforeAgent true
+                }
+                stages{
+                    stage('Build wheel for Mac 10.14') {
+                        steps{
+                            sh(
+                                label: "Building wheel",
+                                script: 'python3 -m pip wheel --no-deps'
+                                )
+                        }
+                        post{
+                            success{
+                                stash includes: 'dist/*.whl', name: "MacOS 10.14 py38 wheel"
+                                archiveArtifacts artifacts: 'dist/*.whl'
+                            }
+                            cleanup{
+                                cleanWs(
+                                    deleteDirs: true,
+                                    patterns: [
+                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                        [pattern: 'pykdu_compress.egg-info/', type: 'INCLUDE'],
+                                        [pattern: 'build/', type: 'INCLUDE'],
+                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                    ]
+                                )
+                            }
+                        }
+                    }
+                    stage('Testing Packages on a Mac') {
+//                         when{
+//                             anyOf{
+//                                 equals expected: true, actual: params.TEST_PACKAGES
+//                             }
+//                             beforeAgent true
+//                         }
+                        steps{
+                            unstash "MacOS 10.14 py38 wheel"
+                            sh(
+                                label:"Installing tox",
+                                script: """python3 -m venv venv
+                                           venv/bin/python -m pip install pip --upgrade
+                                           venv/bin/python -m pip install wheel
+                                           venv/bin/python -m pip install --upgrade setuptools
+                                           venv/bin/python -m pip install tox
+                                           """
+                                )
+                            unstash "sdist"
+                            script{
+                                findFiles(glob: "dist/*.tar.gz,dist/*.zip,dist/*.whl").each{
+                                    sh(
+                                        label: "Testing ${it}",
+                                        script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
+                                    )
+                                }
+                            }
+                        }
+                        post{
+                            failure{
+                                script{
+                                    findFiles(glob: "dist/*.whl").each{
+                                        sh(
+                                            label:"dumping ${it}",
+                                            script: "venv/bin/tox --installpkg=${it.path} -e dump"
+                                        )
+                                    }
+                                }
+                            }
+                            cleanup{
+                                cleanWs(
+                                    deleteDirs: true,
+                                    patterns: [
+                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                        [pattern: 'build/', type: 'INCLUDE'],
+                                        [pattern: '.tox/', type: 'INCLUDE'],
+                                        [pattern: 'pykdu_compress.egg-info/', type: 'INCLUDE'],
+                                    ]
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             stage('Creating Source Package') {
                 agent {
                     dockerfile {
