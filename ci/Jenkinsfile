@@ -1151,7 +1151,7 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Testing DevPi wheel Package"){
+                        stage("Testing DevPi sdist Package"){
                             agent {
                               dockerfile {
                                 additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.additionalBuildArgs}"
