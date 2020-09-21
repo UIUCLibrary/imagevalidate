@@ -888,7 +888,6 @@ pipeline {
                                                    venv/bin/python -m pip install tox
                                                    """
                                         )
-                                    unstash "sdist"
                                     script{
                                         findFiles(glob: "dist/*.whl").each{
                                             sh(
@@ -927,7 +926,6 @@ pipeline {
                                     label 'mac && 10.14 && python3.8'
                                 }
                                 steps{
-                                    unstash "MacOS 10.14 py38 wheel"
                                     sh(
                                         label:"Installing tox",
                                         script: """python3 -m venv venv
