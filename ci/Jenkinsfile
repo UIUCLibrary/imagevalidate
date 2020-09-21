@@ -1265,7 +1265,7 @@ pipeline {
                                    devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
                                    devpi push --index DS_Jenkins/${env.devpiStagingIndex} ${props.Name}==${props.Version} production/release --clientdir ./devpi
                                    """
-                    }
+                    )
                 }
             }
         }
