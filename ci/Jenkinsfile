@@ -328,18 +328,18 @@ def run_dumpbin(glob){
     }
 }
 
-def test_cpp_code(){
+def test_cpp_code(buildPath){
     stage("Build CPP"){
-        sh(label: "Testing CPP code",
+        sh(label: "Testing CPP Code",
            script: """conan install . -if build -o "*:shared=True"
-                      cmake -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true
-                      cmake --build build
+                      cmake -B ${buildPath} -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage"
+                      cmake --build ${buildPath} -j \$(grep -c ^processor /proc/cpuinfo)
                       """
         )
     }
-    stage("Ctest"){
-        sh(label: "Running ctest",
-           script: 'cd build && ctest'
+    stage("CTest"){
+        sh(label: "Running CTest",
+           script: "cd ${buildPath} && ctest"
         )
     }
 }
@@ -668,7 +668,19 @@ pipeline {
                     }
                 }
                 steps{
-                    test_cpp_code()
+                    test_cpp_code("build")
+                }
+                post{
+                    always{
+                        sh "mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml build"
+                        publishCoverage(
+                            adapters: [
+                                coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+                            ],
+                            sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                            tag: "AllCoverage"
+                        )
+                    }
                 }
             }
             stage('Testing Python') {
@@ -780,7 +792,7 @@ pipeline {
                             coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
                         ],
                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                        calculateDiffForChangeRequests: true
+                        tag: "AllCoverage"
                     )
                 }
                 cleanup{
