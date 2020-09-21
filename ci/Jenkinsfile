@@ -803,6 +803,35 @@ pipeline {
             beforeAgent true
         }
         stages{
+            stage('Creating Source Package') {
+                agent {
+                    dockerfile {
+                        filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
+                        label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
+                        additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
+                    }
+                }
+                steps {
+                    sh "python -m pep517.build --source ."
+                }
+                post{
+                    always{
+                        stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
+                    }
+                    success{
+                        archiveArtifacts artifacts: "dist/*.zip,dist/*.tar.gz", fingerprint: true
+                    }
+                    cleanup{
+                        cleanWs(
+                            deleteDirs: true,
+                            patterns: [
+                                [pattern: 'dist/', type: 'INCLUDE'],
+                                [pattern: 'build/', type: 'INCLUDE'],
+                            ]
+                        )
+                    }
+                }
+            }
             stage("Mac Versions"){
                 agent {
                     label 'mac && 10.14 && python3.8'
@@ -883,40 +912,11 @@ pipeline {
                                         [pattern: '**/__pycache__/', type: 'INCLUDE'],
                                         [pattern: 'build/', type: 'INCLUDE'],
                                         [pattern: '.tox/', type: 'INCLUDE'],
-                                        [pattern: 'pykdu_compress.egg-info/', type: 'INCLUDE'],
+                                        [pattern: '*.egg-info/', type: 'INCLUDE'],
                                     ]
                                 )
                             }
                         }
-                    }
-                }
-            }
-            stage('Creating Source Package') {
-                agent {
-                    dockerfile {
-                        filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
-                        label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
-                        additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
-                    }
-                }
-                steps {
-                    sh "python -m pep517.build --source ."
-                }
-                post{
-                    always{
-                        stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
-                    }
-                    success{
-                        archiveArtifacts artifacts: "dist/*.zip,dist/*.tar.gz", fingerprint: true
-                    }
-                    cleanup{
-                        cleanWs(
-                            deleteDirs: true,
-                            patterns: [
-                                [pattern: 'dist/', type: 'INCLUDE'],
-                                [pattern: 'build/', type: 'INCLUDE'],
-                            ]
-                        )
                     }
                 }
             }
