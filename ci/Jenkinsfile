@@ -873,7 +873,7 @@ pipeline {
 //                             }
 //                             beforeAgent true
 //                         }
-                        stages{
+                        parallel{
                             stage("Testing wheel and sdist Packages on mac"){
                                 steps{
                                     unstash "MacOS 10.14 py38 wheel"
