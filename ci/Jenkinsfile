@@ -816,7 +816,7 @@ pipeline {
                         steps{
                             sh(
                                 label: "Building wheel",
-                                script: 'python3 -m pip wheel . --no-deps'
+                                script: 'python3 -m pip wheel . --no-deps -v'
                                 )
                         }
                         post{
