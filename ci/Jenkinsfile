@@ -667,13 +667,13 @@ pipeline {
                             )
                         }
                     }
-                    stage("Ctest"){
-                        steps{
-                            sh(label: "Running ctest",
-                               script: 'cd build && ctest'
-                            )
-                        }
-                    }
+//                     stage("Ctest"){
+//                         steps{
+//                             sh(label: "Running ctest",
+//                                script: 'cd build && ctest'
+//                             )
+//                         }
+//                     }
                 }
 
             }
