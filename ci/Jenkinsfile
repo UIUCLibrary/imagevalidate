@@ -953,7 +953,6 @@ pipeline {
                                             deleteDirs: true,
                                             patterns: [
                                                 [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                [pattern: 'build/', type: 'INCLUDE'],
                                                 [pattern: '.tox/', type: 'INCLUDE'],
                                                 [pattern: '*.egg-info/', type: 'INCLUDE'],
                                             ]
@@ -992,7 +991,6 @@ pipeline {
                                             deleteDirs: true,
                                             patterns: [
                                                 [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                [pattern: 'build/', type: 'INCLUDE'],
                                                 [pattern: '.tox/', type: 'INCLUDE'],
                                                 [pattern: '*.egg-info/', type: 'INCLUDE'],
                                             ]
