@@ -782,7 +782,6 @@ pipeline {
                     sh(label: "combining coverage data",
                        script: '''coverage combine
                                   coverage xml -o ./reports/coverage-python.xml
-                                  coverage html -d ./reports/coverage
                                   gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
                        '''
                    )
