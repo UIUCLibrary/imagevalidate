@@ -833,15 +833,15 @@ pipeline {
                 }
             }
             stage("Mac Versions"){
-                agent {
-                    label 'mac && 10.14 && python3.8'
-                }
                 when{
                     equals expected: true, actual: params.BUILD_MAC_PACKAGES
                     beforeAgent true
                 }
                 stages{
                     stage('Build wheel for Mac 10.14') {
+                        agent {
+                            label 'mac && 10.14 && python3.8'
+                        }
                         steps{
                             sh(
                                 label: "Building wheel",
@@ -875,6 +875,9 @@ pipeline {
 //                         }
                         parallel{
                             stage("Testing wheel Packages on mac"){
+                                agent {
+                                    label 'mac && 10.14 && python3.8'
+                                }
                                 steps{
                                     unstash "MacOS 10.14 py38 wheel"
                                     sh(
@@ -921,6 +924,9 @@ pipeline {
                                 }
                             }
                             stage("Testing sdist Packages on mac"){
+                                 agent {
+                                    label 'mac && 10.14 && python3.8'
+                                }
                                 steps{
                                     unstash "MacOS 10.14 py38 wheel"
                                     sh(
