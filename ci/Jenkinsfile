@@ -381,6 +381,10 @@ def devpiRunTest2(devpiClient, pkgPropertiesFile, devpiIndex, devpiSelector, dev
     }
 }
 
+def test_mac_package(){
+
+}
+
 def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
     script {
                 try {
@@ -938,16 +942,6 @@ pipeline {
                                     }
                                 }
                                 post{
-                                    failure{
-                                        script{
-                                            findFiles(glob: "dist/*.whl").each{
-                                                sh(
-                                                    label:"dumping ${it}",
-                                                    script: "venv/bin/tox --installpkg=${it.path} -e dump"
-                                                )
-                                            }
-                                        }
-                                    }
                                     cleanup{
                                         cleanWs(
                                             deleteDirs: true,
