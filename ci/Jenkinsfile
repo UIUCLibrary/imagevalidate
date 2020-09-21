@@ -673,6 +673,11 @@ pipeline {
                 post{
                     always{
                         sh "mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/cpp_coverage.xml build"
+                        publishCoverage(
+                            adapters: [coberturaAdapter('reports/cpp_coverage.xml')],
+                            sourceFileResolver: sourceFiles('STORE_LAST_BUILD'),
+                            tag: "AllCoverage"
+                        )
                     }
                 }
             }
@@ -785,6 +790,7 @@ pipeline {
                             coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
                         ],
                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                        tag: "AllCoverage",
                         calculateDiffForChangeRequests: true
                     )
                 }
