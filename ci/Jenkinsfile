@@ -816,7 +816,7 @@ pipeline {
                         steps{
                             sh(
                                 label: "Building wheel",
-                                script: 'python3 -m pip wheel --no-deps'
+                                script: 'python3 -m pip wheel . --no-deps'
                                 )
                         }
                         post{
@@ -1120,7 +1120,10 @@ pipeline {
                         }
                         axis {
                             name 'PYTHON_VERSION'
-                            values '3.7', '3.8'
+                            values(
+                                '3.7',
+                                '3.8'
+                            )
                         }
 //                         axis {
 //                             name 'FORMAT'
