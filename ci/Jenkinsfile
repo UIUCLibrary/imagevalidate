@@ -1170,6 +1170,11 @@ pipeline {
             }
             stage("Test DevPi Package") {
                 stages{
+                    stage("Test DevPi Packages for Mac"){
+                        steps{
+                            echo "Testing"
+                        }
+                    }
                     stage("Test DevPi Packages for Windows and Linux"){
                         matrix {
                             axes {
