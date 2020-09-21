@@ -328,13 +328,13 @@ def run_dumpbin(glob){
     }
 }
 
-def test_cpp_code(){
+def test_cpp_code(buildPath){
     stage("Build CPP"){
         sh(label: "Testing CPP Code",
-           script: '''conan install . -if build -o "*:shared=True"
-                      cmake -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage"
-                      cmake --build build -j $(grep -c ^processor /proc/cpuinfo)
-                      '''
+           script: """conan install . -if build -o "*:shared=True"
+                      cmake -B ${buildPath} -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage"
+                      cmake --build ${buildPath} -j \$(grep -c ^processor /proc/cpuinfo)
+                      """
         )
     }
     stage("Ctest"){
@@ -668,7 +668,7 @@ pipeline {
                     }
                 }
                 steps{
-                    test_cpp_code()
+                    test_cpp_code("build")
                 }
                 post{
                     always{
