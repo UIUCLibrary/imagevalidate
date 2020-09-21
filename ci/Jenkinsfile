@@ -328,6 +328,22 @@ def run_dumpbin(glob){
     }
 }
 
+def test_cpp_code(){
+    stage("Build CPP"){
+        sh(label: "Testing CPP code",
+           script: """conan install . -if build -o "*:shared=True"
+                      cmake -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true
+                      cmake --build build
+                      """
+        )
+    }
+    stage("Ctest"){
+        sh(label: "Running ctest",
+           script: 'cd build && ctest'
+        )
+    }
+}
+
 // def devpiRunTest(pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
 //     script{
 //         def props = readProperties interpolate: true, file: pkgPropertiesFile
@@ -656,17 +672,20 @@ pipeline {
                         label "linux && docker"
                     }
                 }
-                stages{
-                    stage("Build CPP"){
-                        steps{
-                            sh(label: "Testing CPP code",
-                               script: """conan install . -if build -o "*:shared=True"
-                                          cmake -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true
-                                          cmake --build build
-                                          """
-                            )
-                        }
-                    }
+                steps{
+                    test_cpp_code()
+                }
+//                 stages{
+//                     stage("Build CPP"){
+//                         steps{
+//                             sh(label: "Testing CPP code",
+//                                script: """conan install . -if build -o "*:shared=True"
+//                                           cmake -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true
+//                                           cmake --build build
+//                                           """
+//                             )
+//                         }
+//                     }
 //                     stage("Ctest"){
 //                         steps{
 //                             sh(label: "Running ctest",
@@ -674,7 +693,7 @@ pipeline {
 //                             )
 //                         }
 //                     }
-                }
+//                 }
 
             }
             stage('Testing Python') {
