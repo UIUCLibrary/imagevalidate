@@ -1050,9 +1050,9 @@ pipeline {
                             post{
                                 always{
                                     script{
-                                        if (!isUnix()){
-                                            run_dumpbin("build/lib/**/*.pyd")
-                                        }
+//                                         if (!isUnix()){
+//                                             run_dumpbin("build/lib/**/*.pyd")
+//                                         }
                                         if(PLATFORM == "linux"){
                                             stash includes: 'dist/*manylinux*.whl', name: "whl ${PLATFORM} ${PYTHON_VERSION}"
                                         } else{
