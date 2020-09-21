@@ -873,48 +873,52 @@ pipeline {
 //                             }
 //                             beforeAgent true
 //                         }
-                        steps{
-                            unstash "MacOS 10.14 py38 wheel"
-                            sh(
-                                label:"Installing tox",
-                                script: """python3 -m venv venv
-                                           venv/bin/python -m pip install pip --upgrade
-                                           venv/bin/python -m pip install wheel
-                                           venv/bin/python -m pip install --upgrade setuptools
-                                           venv/bin/python -m pip install tox
-                                           """
-                                )
-                            unstash "sdist"
-                            script{
-                                findFiles(glob: "dist/*.tar.gz,dist/*.zip,dist/*.whl").each{
+                        stages{
+                            stage("Testing wheel and sdist Packages on mac"){
+                                steps{
+                                    unstash "MacOS 10.14 py38 wheel"
                                     sh(
-                                        label: "Testing ${it}",
-                                        script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
-                                    )
+                                        label:"Installing tox",
+                                        script: """python3 -m venv venv
+                                                   venv/bin/python -m pip install pip --upgrade
+                                                   venv/bin/python -m pip install wheel
+                                                   venv/bin/python -m pip install --upgrade setuptools
+                                                   venv/bin/python -m pip install tox
+                                                   """
+                                        )
+                                    unstash "sdist"
+                                    script{
+                                        findFiles(glob: "dist/*.tar.gz,dist/*.zip,dist/*.whl").each{
+                                            sh(
+                                                label: "Testing ${it}",
+                                                script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
+                                            )
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        post{
-                            failure{
-                                script{
-                                    findFiles(glob: "dist/*.whl").each{
-                                        sh(
-                                            label:"dumping ${it}",
-                                            script: "venv/bin/tox --installpkg=${it.path} -e dump"
+                                post{
+                                    failure{
+                                        script{
+                                            findFiles(glob: "dist/*.whl").each{
+                                                sh(
+                                                    label:"dumping ${it}",
+                                                    script: "venv/bin/tox --installpkg=${it.path} -e dump"
+                                                )
+                                            }
+                                        }
+                                    }
+                                    cleanup{
+                                        cleanWs(
+                                            deleteDirs: true,
+                                            patterns: [
+                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                [pattern: 'build/', type: 'INCLUDE'],
+                                                [pattern: '.tox/', type: 'INCLUDE'],
+                                                [pattern: '*.egg-info/', type: 'INCLUDE'],
+                                            ]
                                         )
                                     }
                                 }
-                            }
-                            cleanup{
-                                cleanWs(
-                                    deleteDirs: true,
-                                    patterns: [
-                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                        [pattern: 'build/', type: 'INCLUDE'],
-                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                        [pattern: '*.egg-info/', type: 'INCLUDE'],
-                                    ]
-                                )
                             }
                         }
                     }
