@@ -672,7 +672,7 @@ pipeline {
                 }
                 post{
                     always{
-                        sh "mkdir -p reports && gcovr --filter src --print-summary  --xml -o reports/cpp_coverage.xml build"
+                        sh "mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/cpp_coverage.xml build"
                     }
                 }
             }
