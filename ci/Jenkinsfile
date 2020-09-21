@@ -908,7 +908,6 @@ pipeline {
                                     patterns: [
                                         [pattern: '**/__pycache__/', type: 'INCLUDE'],
                                         [pattern: 'pykdu_compress.egg-info/', type: 'INCLUDE'],
-                                        [pattern: 'build/', type: 'INCLUDE'],
                                         [pattern: 'dist/', type: 'INCLUDE'],
                                     ]
                                 )
