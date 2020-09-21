@@ -670,6 +670,11 @@ pipeline {
                 steps{
                     test_cpp_code()
                 }
+                post{
+                    always{
+                        sh "mkdir -p reports && gcovr --filter src --print-summary  --xml -o reports/cpp_coverage.xml build"
+                    }
+                }
             }
             stage('Testing Python') {
                 agent {
