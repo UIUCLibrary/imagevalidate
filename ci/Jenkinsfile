@@ -381,8 +381,13 @@ def devpiRunTest2(devpiClient, pkgPropertiesFile, devpiIndex, devpiSelector, dev
     }
 }
 
-def test_mac_package(){
-
+def test_mac_package(toxPath, pkgRegex){
+    findFiles(glob: pkgRegex).each{
+        sh(
+            label: "Testing ${it}",
+            script: "${toxPath} --installpkg=${it.path} -e py -vvv --recreate"
+        )
+    }
 }
 
 def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
@@ -932,14 +937,15 @@ pipeline {
                                                    venv/bin/python -m pip install tox
                                                    """
                                         )
-                                    script{
-                                        findFiles(glob: "dist/*.whl").each{
-                                            sh(
-                                                label: "Testing ${it}",
-                                                script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
-                                            )
-                                        }
-                                    }
+                                    test_mac_package("venv/bin/tox", "dist/*.whl")
+//                                     script{
+//                                         findFiles(glob: "dist/*.whl").each{
+//                                             sh(
+//                                                 label: "Testing ${it}",
+//                                                 script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
+//                                             )
+//                                         }
+//                                     }
                                 }
                                 post{
                                     cleanup{
@@ -970,14 +976,15 @@ pipeline {
                                                    """
                                         )
                                     unstash "sdist"
-                                    script{
-                                        findFiles(glob: "dist/*.tar.gz,dist/*.zip").each{
-                                            sh(
-                                                label: "Testing ${it}",
-                                                script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
-                                            )
-                                        }
-                                    }
+                                    test_mac_package("venv/bin/tox", "dist/*.tar.gz,dist/*.zip")
+//                                     script{
+//                                         findFiles(glob: "dist/*.tar.gz,dist/*.zip").each{
+//                                             sh(
+//                                                 label: "Testing ${it}",
+//                                                 script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
+//                                             )
+//                                         }
+//                                     }
                                 }
                                 post{
                                     cleanup{
