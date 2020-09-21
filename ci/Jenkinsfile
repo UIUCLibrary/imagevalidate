@@ -1201,7 +1201,6 @@ pipeline {
                     stage("Test DevPi packages mac") {
                         when{
                             equals expected: true, actual: params.BUILD_MAC_PACKAGES
-                            beforeAgent true
                         }
                         parallel{
                             stage("Wheel"){
