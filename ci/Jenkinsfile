@@ -603,8 +603,7 @@ pipeline {
                 }
                 post{
                    success{
-                       stash includes: "uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd,uiucprescon/imagevalidate/*.so", name: 'COMPILED_BINARIES'
-                       stash includes: "build/**", name: 'LINUX_BUILD_DIRECTORY'
+                       stash includes: "build/**,uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd,uiucprescon/imagevalidate/*.so", name: 'LINUX_BUILD_FILES'
                    }
                    failure{
                         cleanWs(
@@ -702,8 +701,7 @@ pipeline {
                         }
                         stage("Run PyTest Unit Tests"){
                             steps{
-                                unstash "COMPILED_BINARIES"
-                                unstash "LINUX_BUILD_DIRECTORY"
+                                unstash "LINUX_BUILD_FILES"
                                 catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                                     sh(
                                         label: "Running Pytest",
@@ -792,10 +790,12 @@ pipeline {
                     )
                 }
                 cleanup{
-                    cleanWs(patterns: [
-                    [pattern: 'logs/flake8.log', type: 'INCLUDE'],
-                    [pattern: 'reports/coverage*.xml"', type: 'INCLUDE'],
-                    ])
+                    cleanWs(
+                        patterns: [
+                            [pattern: 'logs/flake8.log', type: 'INCLUDE'],
+                            [pattern: 'reports/coverage*.xml"', type: 'INCLUDE'],
+                        ]
+                    )
                 }
               }
             }
