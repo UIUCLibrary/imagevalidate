@@ -675,26 +675,6 @@ pipeline {
                 steps{
                     test_cpp_code()
                 }
-//                 stages{
-//                     stage("Build CPP"){
-//                         steps{
-//                             sh(label: "Testing CPP code",
-//                                script: """conan install . -if build -o "*:shared=True"
-//                                           cmake -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true
-//                                           cmake --build build
-//                                           """
-//                             )
-//                         }
-//                     }
-//                     stage("Ctest"){
-//                         steps{
-//                             sh(label: "Running ctest",
-//                                script: 'cd build && ctest'
-//                             )
-//                         }
-//                     }
-//                 }
-
             }
             stage('Testing Python') {
                 agent {
@@ -994,14 +974,6 @@ pipeline {
                                         )
                                     unstash "sdist"
                                     test_mac_package("venv/bin/tox", "dist/*.tar.gz,dist/*.zip")
-//                                     script{
-//                                         findFiles(glob: "dist/*.tar.gz,dist/*.zip").each{
-//                                             sh(
-//                                                 label: "Testing ${it}",
-//                                                 script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
-//                                             )
-//                                         }
-//                                     }
                                 }
                                 post{
                                     cleanup{
@@ -1069,9 +1041,6 @@ pipeline {
                             post{
                                 always{
                                     script{
-//                                         if (!isUnix()){
-//                                             run_dumpbin("build/lib/**/*.pyd")
-//                                         }
                                         if(PLATFORM == "linux"){
                                             stash includes: 'dist/*manylinux*.whl', name: "whl ${PLATFORM} ${PYTHON_VERSION}"
                                         } else{
@@ -1159,7 +1128,6 @@ pipeline {
             }
         }
     }
-
     stage("Deploy to Devpi"){
         when {
             allOf{
