@@ -874,7 +874,7 @@ pipeline {
 //                             beforeAgent true
 //                         }
                         parallel{
-                            stage("Testing wheel and sdist Packages on mac"){
+                            stage("Testing wheel Packages on mac"){
                                 steps{
                                     unstash "MacOS 10.14 py38 wheel"
                                     sh(
@@ -888,7 +888,7 @@ pipeline {
                                         )
                                     unstash "sdist"
                                     script{
-                                        findFiles(glob: "dist/*.tar.gz,dist/*.zip,dist/*.whl").each{
+                                        findFiles(glob: "dist/*.whl").each{
                                             sh(
                                                 label: "Testing ${it}",
                                                 script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
@@ -907,6 +907,42 @@ pipeline {
                                             }
                                         }
                                     }
+                                    cleanup{
+                                        cleanWs(
+                                            deleteDirs: true,
+                                            patterns: [
+                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                [pattern: 'build/', type: 'INCLUDE'],
+                                                [pattern: '.tox/', type: 'INCLUDE'],
+                                                [pattern: '*.egg-info/', type: 'INCLUDE'],
+                                            ]
+                                        )
+                                    }
+                                }
+                            }
+                            stage("Testing sdist Packages on mac"){
+                                steps{
+                                    unstash "MacOS 10.14 py38 wheel"
+                                    sh(
+                                        label:"Installing tox",
+                                        script: """python3 -m venv venv
+                                                   venv/bin/python -m pip install pip --upgrade
+                                                   venv/bin/python -m pip install wheel
+                                                   venv/bin/python -m pip install --upgrade setuptools
+                                                   venv/bin/python -m pip install tox
+                                                   """
+                                        )
+                                    unstash "sdist"
+                                    script{
+                                        findFiles(glob: "dist/*.tar.gz,dist/*.zip").each{
+                                            sh(
+                                                label: "Testing ${it}",
+                                                script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
+                                            )
+                                        }
+                                    }
+                                }
+                                post{
                                     cleanup{
                                         cleanWs(
                                             deleteDirs: true,
