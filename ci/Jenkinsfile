@@ -337,9 +337,9 @@ def test_cpp_code(buildPath){
                       """
         )
     }
-    stage("Ctest"){
-        sh(label: "Running ctest",
-           script: 'cd build && ctest'
+    stage("CTest"){
+        sh(label: "Running CTest",
+           script: "cd ${buildPath} && ctest"
         )
     }
 }
