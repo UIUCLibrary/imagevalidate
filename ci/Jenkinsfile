@@ -1010,7 +1010,6 @@ pipeline {
                         equals expected: true, actual: params.DEPLOY_DEVPI
                         equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
                     }
-                    beforeAgent true
                 }
                 matrix{
                     agent none
