@@ -666,7 +666,7 @@ pipeline {
                 }
                 post{
                     always{
-                        sh "mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml build"
+                        sh "mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml"
                         publishCoverage(
                             adapters: [
                                 coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
