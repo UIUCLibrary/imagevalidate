@@ -600,9 +600,6 @@ pipeline {
         }
         stages{
             stage("Building Python Package"){
-//                 environment{
-//                     CFLAGS="--coverage"
-//                 }
                 steps {
                     sh(
                         label: "Building",
