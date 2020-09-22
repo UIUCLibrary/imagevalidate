@@ -339,7 +339,7 @@ def test_cpp_code(buildPath){
     }
     stage("CTest"){
         sh(label: "Running CTest",
-           script: "cd ${buildPath} && ctest"
+           script: "cd ${buildPath} && ctest --output-on-failure --no-compress-output -T Test"
         )
     }
 }
