@@ -609,15 +609,6 @@ pipeline {
                         success{
                             stash includes: "build/**,uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd,uiucprescon/imagevalidate/*.so", name: 'LINUX_BUILD_FILES'
                         }
-                        failure{
-                            cleanWs(
-                                deleteDirs: true,
-                                patterns: [
-                                    [pattern: 'build/', type: 'INCLUDE'],
-                                    [pattern: ".eggs/", type: 'INCLUDE']
-                                ]
-                            )
-                        }
                     }
                 }
                 stage("Sphinx Documentation"){
@@ -636,14 +627,20 @@ pipeline {
                                 stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
                             }
                         }
-                        cleanup{
-                            cleanWs(patterns: [
-                                    [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
-                                    [pattern: "dist/*.doc.zip", type: 'INCLUDE']
-                                ]
-                            )
-                        }
                    }
+               }
+           }
+           post{
+               cleanup{
+                   cleanWs(
+                       deleteDirs: true,
+                       patterns: [
+                           [pattern: 'logs/', type: 'INCLUDE'],
+                           [pattern: 'build/', type: 'INCLUDE'],
+                           [pattern: 'dist', type: 'INCLUDE'],
+                           [pattern: ".eggs/", type: 'INCLUDE']
+                       ]
+                   )
                }
            }
         }
@@ -767,8 +764,8 @@ pipeline {
                         cleanup{
                             cleanWs(
                                 patterns: [
-                                    [pattern: 'logs/flake8.log', type: 'INCLUDE'],
-                                    [pattern: 'reports/coverage*.xml"', type: 'INCLUDE'],
+                                    [pattern: 'logs/', type: 'INCLUDE'],
+                                    [pattern: 'reports/xml"', type: 'INCLUDE'],
                                 ]
                             )
                         }
