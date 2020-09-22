@@ -1,4 +1,4 @@
-@Library(["devpi", "PythonHelpers"]) _
+// @Library(["devpi", "PythonHelpers"]) _
 
 def CONFIGURATIONS = [
     "3.6": [
