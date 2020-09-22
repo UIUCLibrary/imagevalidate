@@ -672,7 +672,7 @@ pipeline {
                                 coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
                             ],
                             sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                            tag: "AllCoverage"
+                            tag: "a"
                         )
                     }
                 }
@@ -785,7 +785,7 @@ pipeline {
                             coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
                         ],
                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                        tag: "AllCoverage"
+                        tag: "a"
                     )
                 }
                 cleanup{
