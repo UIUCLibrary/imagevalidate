@@ -794,7 +794,6 @@ pipeline {
                                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                                 tag: "a"
                            )
-                           sh "ls -laR build/"
                            xunit(
                                testTimeMargin: '3000',
                                thresholdMode: 1,
@@ -812,6 +811,14 @@ pipeline {
                                    )
                                ]
                            )
+                        }
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: 'build/', type: 'INCLUDE'],
+                                ]
+                            )
                         }
                     }
                 }
