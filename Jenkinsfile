@@ -532,7 +532,7 @@ def test_pkg(glob, timeout_time){
 def startup(){
     node('linux && docker') {
         timeout(2){
-            ws{
+//             ws{
                 checkout scm
                 try{
                     docker.image('python:3.8').inside {
@@ -540,6 +540,8 @@ def startup(){
                             sh(
                                label: "Running setup.py with dist_info",
                                script: """python --version
+                                          pwd
+                                          ls
                                           python setup.py dist_info
                                        """
                             )
@@ -552,7 +554,7 @@ def startup(){
                 }
             }
         }
-    }
+//     }
 }
 
 def get_props(){
