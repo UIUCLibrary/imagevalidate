@@ -332,7 +332,7 @@ def test_cpp_code(buildPath){
     stage("Build CPP"){
         sh(label: "Testing CPP Code",
            script: """conan install . -if build -o "*:shared=True"
-                      cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage"
+                      cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
                       cmake --build ${buildPath} -j \$(grep -c ^processor /proc/cpuinfo)
                       """
         )
