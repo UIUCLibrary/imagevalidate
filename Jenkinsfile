@@ -531,30 +531,33 @@ def test_pkg(glob, timeout_time){
 }
 def startup(){
     node('linux && docker') {
-        timeout(2){
-//             ws{
-                checkout scm
-                try{
-                    docker.image('python:3.8').inside {
-                        stage("Getting Distribution Info"){
-                            sh(
-                               label: "Running setup.py with dist_info",
-                               script: """python --version
-                                          pwd
-                                          ls
-                                          python setup.py dist_info
-                                       """
-                            )
-                            stash includes: "uiucprescon.imagevalidate.dist-info/**", name: 'DIST-INFO'
-                            archiveArtifacts artifacts: "uiucprescon.imagevalidate.dist-info/**"
-                        }
+        try{
+            checkout scm
+            docker.image('python:3.8').inside {
+                timeout(2){
+                    stage("Getting Distribution Info"){
+                        sh(
+                           label: "Running setup.py with dist_info",
+                           script: """python --version
+                                      python setup.py dist_info
+                                      ls
+                                   """
+                        )
+                        stash includes: "uiucprescon.imagevalidate.dist-info/**", name: 'DIST-INFO'
+                        archiveArtifacts artifacts: "uiucprescon.imagevalidate.dist-info/**"
                     }
-                } finally{
-                    deleteDir()
                 }
             }
+        } finally{
+            cleanWs(
+               deleteDirs: true,
+               patterns: [
+                  [pattern: 'uiucprescon.imagevalidate.dist-info/', type: 'INCLUDE'],
+              ]
+
+           )
         }
-//     }
+    }
 }
 
 def get_props(){
@@ -639,7 +642,7 @@ pipeline {
                        patterns: [
                            [pattern: 'logs/', type: 'INCLUDE'],
                            [pattern: 'build/', type: 'INCLUDE'],
-                           [pattern: 'dist', type: 'INCLUDE'],
+                           [pattern: 'dist/', type: 'INCLUDE'],
                            [pattern: ".eggs/", type: 'INCLUDE']
                        ]
                    )
