@@ -687,8 +687,8 @@ pipeline {
                                     }
                                     post {
                                         always {
-//                                             junit "reports/pytest.xml"
-                                            xunit([JUnit(deleteOutputFiles: true, failIfNotNew: true, pattern: 'reports/pytest.xml', skipNoTestFiles: false, stopProcessingIfError: true)])
+                                            junit "reports/pytest.xml"
+//                                             xunit([JUnit(deleteOutputFiles: true, failIfNotNew: true, pattern: 'reports/pytest.xml', skipNoTestFiles: false, stopProcessingIfError: true)])
                                             stash includes: "reports/pytest.xml", name: "PYTEST_REPORT"
                                         }
                                     }
