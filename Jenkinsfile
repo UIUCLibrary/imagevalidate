@@ -709,7 +709,6 @@ pipeline {
                                             post {
                                                 always {
                                                     junit "reports/pytest.xml"
-        //                                             xunit([JUnit(deleteOutputFiles: true, failIfNotNew: true, pattern: 'reports/pytest.xml', skipNoTestFiles: false, stopProcessingIfError: true)])
                                                     stash includes: "reports/pytest.xml", name: "PYTEST_REPORT"
                                                 }
                                             }
@@ -776,13 +775,6 @@ pipeline {
                                                   '''
                                     )
                                     stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
-        //                             publishCoverage(
-        //                                 adapters: [
-        //                                         coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
-        //                                     ],
-        //                                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-        //                                 tag: "a"
-        //                             )
                                 }
                                 cleanup{
                                     cleanWs(
