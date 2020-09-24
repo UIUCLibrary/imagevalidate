@@ -10,7 +10,7 @@ if(NOT CONAN_OPENJPEG_ROOT)
 endif()
 
 FetchContent_Declare(libpybind11
-        URL https://github.com/pybind/https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz/archive/v2.5.0.tar.gz
+        URL https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz
         URL_HASH SHA1=0acaeb967f09dbef53a1e2a4366780548597beba
         )
 
