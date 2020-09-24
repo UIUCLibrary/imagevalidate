@@ -760,7 +760,7 @@ pipeline {
                                             }
                                             post {
                                                 always {
-//                                                     recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                                                    recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
                                                     stash includes: "logs/flake8.log", name: "FLAKE8_REPORT"
                                                 }
                                             }
@@ -804,13 +804,6 @@ pipeline {
                                     recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
                                     sh "mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml"
                                     stash(includes: "reports/coverage_cpp.xml", name: "CPP_COVERAGE_REPORT")
-        //                             publishCoverage(
-        //                                 adapters: [
-        //                                         coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
-        //                                     ],
-        //                                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-        //                                 tag: "a"
-        //                            )
                                    xunit(
                                        testTimeMargin: '3000',
                                        thresholdMode: 1,
