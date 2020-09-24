@@ -435,16 +435,16 @@ def get_package_version(stashName, metadataFile){
 def devpiPushToIndex(pkgName, pkgVersion, sourceIndex, destinationIndex, devpiUsername, devpiPassword){
     if (!env.TAG_NAME?.trim()){
         docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-        withEnv(["DEVPI_USR=${devpiUsername}", "DEVPI_PSW=${devpiPassword}"]) {
-            sh(
-                label: "Moving DevPi package from staging index to index",
-                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                           devpi login ${DEVPI_USR} --password $DEVPI_PSW --clientdir ./devpi
-                           devpi use ${sourceIndex} --clientdir ./devpi
-                           devpi push ${pkgName}==${pkgVersion} ${destinationIndex} --clientdir ./devpi
-                           """
-            )
-        }
+            withEnv(["DEVPI_USR=${devpiUsername}", "DEVPI_PSW=${devpiPassword}"]) {
+                sh(
+                    label: "Moving DevPi package from staging index to index",
+                    script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                               devpi login ${DEVPI_USR} --password $DEVPI_PSW --clientdir ./devpi
+                               devpi use ${sourceIndex} --clientdir ./devpi
+                               devpi push ${pkgName}==${pkgVersion} ${destinationIndex} --clientdir ./devpi
+                               """
+                )
+            }
         }
    }
 }
@@ -1408,7 +1408,7 @@ pipeline {
             post{
                 success{
                     node('linux && docker') {
-                        devpiPushToIndex(props.Name, props.Version, "/DS_Jenkins/${env.devpiStagingIndex}", "/DS_Jenkins/${env.BRANCH_NAME}")
+                        devpiPushToIndex(props.Name, props.Version, "/DS_Jenkins/${env.devpiStagingIndex}", "/DS_Jenkins/${env.BRANCH_NAME}", env.DEVPI_USR, env.DEVPI_PSW)
                     }
                 }
                 cleanup{
