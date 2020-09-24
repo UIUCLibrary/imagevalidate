@@ -11,7 +11,7 @@ endif()
 
 FetchContent_Declare(libpybind11
         URL https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz
-        URL_HASH SHA1=0acaeb967f09dbef53a1e2a4366780548597beba
+        URL_HASH SHA1=8caf0bde85813f9eac55e516d4afcb925806aa5e
         )
 
 FetchContent_GetProperties(libpybind11)
