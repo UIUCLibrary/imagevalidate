@@ -557,7 +557,6 @@ def startup(){
                            label: "Running setup.py with dist_info",
                            script: """python --version
                                       python setup.py dist_info
-                                      ls
                                    """
                         )
                         stash includes: "uiucprescon.imagevalidate.dist-info/**", name: 'DIST-INFO'
