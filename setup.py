@@ -30,7 +30,6 @@ try:
 except ModuleNotFoundError:
     print("Conan not installed", file=sys.stderr)
 
-CMAKE = shutil.which("cmake")
 PACKAGE_NAME = "uiucprescon.imagevalidate"
 PYBIND11_URL = "https://github.com/pybind/pybind11/archive/v2.2.4.tar.gz"
 
@@ -617,8 +616,6 @@ class BuildCMakeClib(build_clib):
                 *PACKAGE_NAME.split(".")  # For namespace and subpackages
             )
         )
-        # if not self.compiler.initialized:
-        #     self.compiler.initialize()
         if self.compiler.compiler_type == "msvc":
             if not self.compiler.initialized:
                 self.compiler.initialize()
@@ -657,9 +654,6 @@ class BuildCMakeClib(build_clib):
             if build_cmd.parallel is not None:
                 build_command += ["--parallel", str(build_cmd.parallel)]
 
-            # if not self.compiler.initialized:
-            #     self.compiler.initialize()
-
             self.compiler.spawn(build_command)
 
             install_command = [
@@ -673,7 +667,6 @@ class BuildCMakeClib(build_clib):
             self.spawn(install_command)
 
     def build_library(self, lib, build_path, runtime_output_path):
-        # super(BuildCMakeClib, self).build_library()
 
         if not os.path.exists(os.path.join(build_path, "CMakeCache.txt")):
             install_prefix = os.path.abspath(lib["install prefix"])
@@ -740,214 +733,6 @@ class BuildOpenJpegClib(build_clib):
         self.extra_cmake_options = []
 
 
-# class BuildPybind11Ext(build_ext):
-#     DEPS_REGEX = \
-#         r'(?<=(Image has the following dependencies:(\n){2}))((?<=\s).*\.dll\n)*'
-#
-#     def find_pybind11_include(self):
-#         for root, dirs, files in os.walk(self.pybind11_source_path):
-#             for dirname in dirs:
-#                 if dirname == "include":
-#                     return os.path.join(root, dirname)
-#
-#     def initialize_options(self):
-#         super().initialize_options()
-#         self.pybind11_source_path = None
-#         self.pybind11_include_path = None
-#
-#     def find_openjpeg_lib_path(self):
-#         matching_names = [
-#             "libopenjp2.a",
-#             "openjp2.lib",
-#         ]
-#         clib_cmd = self.get_finalized_command("build_clib")
-#         for root, dirs, files in os.walk(clib_cmd.build_clib):
-#             for f in files:
-#                 if f in matching_names:
-#                     return root
-#         return None
-#
-#     def find_openjpeg_header_path(self):
-#         clib_cmd = self.get_finalized_command("build_clib")
-#         for root, dirs, files in os.walk(os.path.join(clib_cmd.build_clib, "include")):
-#             for f in files:
-#                 if f == "openjpeg.h":
-#                     return root
-#         return None
-#
-#     def build_extension(self, ext):
-#         missing = self.find_missing_libraries(ext)
-#         build_clib_cmd = self.get_finalized_command("build_clib")
-#
-#
-#         if len(missing) > 0:
-#             self.announce(f"missing required deps [{', '.join(missing)}]. "
-#                           f"Trying to build them", 5)
-#             self.run_command("build_clib")
-#
-#             ext.include_dirs.append(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
-#         opj2_include_dir = self.find_openjpeg_header_path()
-#         if opj2_include_dir is not None:
-#             ext.include_dirs.insert(0, opj2_include_dir)
-#         opj2_lib_dir = self.find_openjpeg_lib_path()
-#         if opj2_lib_dir is not None:
-#             ext.library_dirs.insert(0, opj2_lib_dir)
-#
-#         if self.compiler.compiler_type == "unix":
-#             ext.extra_compile_args.append("-std=c++14")
-#         else:
-#             ext.extra_compile_args.append("/std:c++14")
-#         new_libs = []
-#         for lib in ext.libraries:
-#             if self.compiler.compiler_type != "unix":
-#                 if self.debug is None:
-#                     build_configuration = "Release"
-#                 else:
-#                     build_configuration = "Debug"
-#             else:
-#                 build_configuration = None
-#             t = build_clib_cmd.find_target(lib, build_configuration)
-#             if t is not None:
-#                 deps = build_clib_cmd.find_dep_libs_from_cmake(t, remove_prefix=self.compiler.compiler_type == "unix")
-#                 if deps is not None:
-#                     if lib in deps:
-#                         deps.remove(lib)
-#                     new_libs += deps
-#
-#         ext.libraries += new_libs
-#         super().build_extension(ext)
-#
-#     def find_missing_libraries(self, ext):
-#         missing_libs = []
-#         for lib in ext.libraries:
-#             if self.compiler.find_library_file(self.library_dirs, lib) is None:
-#                 missing_libs.append(lib)
-#         return missing_libs
-#
-#     def find_deps(self, lib):
-#
-#         for path in os.environ['path'].split(";"):
-#             for f in os.scandir(path):
-#                 if f.name.lower() == lib.lower():
-#                     return f.path
-#     def run(self):
-#         self.get_pybind11()
-#         self.pybind11_include_path = self.find_pybind11_include()
-#         self.include_dirs.append(os.path.abspath(self.pybind11_include_path))
-#
-#         clib_cmd = self.get_finalized_command("build_clib")
-#
-#
-#         # for lib_name, library in clib_cmd.libraries:
-#         #     install_prefix = library['install prefix']
-#         #
-#         #     lib_include = os.path.join(install_prefix, "include")
-#         #     lib_libdir = os.path.join(install_prefix, "lib")
-#         #
-#         #     if lib_include not in self.include_dirs and os.path.exists(lib_include):
-#         #         self.include_dirs.append(lib_include)
-#         #
-#         #     if lib_libdir not in self.library_dirs and os.path.exists(lib_libdir):
-#         #         self.library_dirs.append(lib_libdir)
-#
-#
-#         super().run()
-#         for e in self.extensions:
-#             dll_file = \
-#                 os.path.abspath(os.path.join(self.build_lib, self.get_ext_filename(e.name)))
-#             assert os.path.exists(dll_file), "Unable to located {}".format(dll_file)
-#             assert os.path.exists(self.build_temp), "Unable to located {}".format(self.build_temp)
-#             output_file = os.path.abspath(os.path.join(self.build_temp, f'{e.name}.dependents'))
-#             if self.compiler.compiler_type != "unix":
-#                 if not self.compiler.initialized:
-#                     self.compiler.initialize()
-#                 self.compiler.spawn(
-#                     [
-#                         'dumpbin',
-#                         '/dependents',
-#                         dll_file,
-#                         f'/out:{output_file}'
-#                     ]
-#                 )
-#                 deps = self.parse_dumpbin_deps(dump_file=output_file)
-#                 deps = self.remove_system_dlls(deps)
-#                 dest = os.path.dirname(dll_file)
-#                 for dep in deps:
-#                     dll = self.find_deps(dep)
-#                     if dll is not None:
-#                         shutil.copy(dll, dest)
-#                     else:
-#                         self.announce("Unable to locate deps for {}".format(dep), level=2)
-#
-#         # for ext in self.extensions:
-#         #     if self.compiler.compiler_type == "unix":
-#         #         ext.extra_compile_args.append("-std=c++14")
-#         #     else:
-#         #         ext.extra_compile_args.append("/std:c++14")
-#             # self.compiler.
-#         # if self.inplace:
-#         #     self.run_command("package_clib")
-#     @staticmethod
-#     def remove_system_dlls(dlls):
-#         non_system_dlls = []
-#         for dll in dlls:
-#             if dll.startswith("api-ms-win-crt"):
-#                 continue
-#
-#             if dll.startswith("python"):
-#                 continue
-#
-#             if dll == "KERNEL32.dll":
-#                 continue
-#             non_system_dlls.append(dll)
-#         return non_system_dlls
-#
-#     @classmethod
-#     def parse_dumpbin_deps(cls, dump_file) -> List[str]:
-#
-#         dlls = []
-#         dep_regex = re.compile(cls.DEPS_REGEX)
-#
-#         with open(dump_file) as f:
-#             d = dep_regex.search(f.read())
-#             for x in d.group(0).split("\n"):
-#                 if x.strip() == "":
-#                     continue
-#                 dll = x.strip()
-#                 dlls.append(dll)
-#         return dlls
-#
-#     def finalize_options(self):
-#         super().finalize_options()
-#         clib_command = self.get_finalized_command("build_clib")
-#         self.archive_dest = clib_command.source_archive_path
-#
-#         self.pybind11_source_path = \
-#             os.path.join(clib_command.source_path_root,
-#                          "pybind11"
-#                          )
-#
-#     def get_pybind11(self):
-#
-#         self.mkpath(self.archive_dest)
-#         pybind11_archive_dest = os.path.join(self.archive_dest,
-#                                              "pybind11.tar.gz")
-#
-#         if not os.path.exists(pybind11_archive_dest):
-#             self.announce("Downloading pybind11", level=4)
-#             request.urlretrieve(PYBIND11_URL, filename=pybind11_archive_dest)
-#
-#         self.mkpath(self.pybind11_source_path)
-#
-#         with tarfile.open(pybind11_archive_dest, "r") as pb_archive:
-#             self.announce("Extracting pybind11 source")
-#             for f in pb_archive:
-#                 dest = os.path.join(self.pybind11_source_path, f.name)
-#                 if os.path.exists(dest):
-#                     continue
-#                 pb_archive.extract(f, self.pybind11_source_path)
-#                 self.announce("Extracted {}".format(f.name), level=3)
-
 PYBIND11_DEFAULT_URL = \
     "https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz"
 class BuildPybind11Extension(build_ext):
@@ -1001,7 +786,6 @@ class BuildPybind11Extension(build_ext):
             "libopenjp2.a",
             "openjp2.lib",
         ]
-        # clib_cmd = self.get_finalized_command("build_clib")
         for root, dirs, files in os.walk(starting_path):
             for f in files:
                 if f in matching_names:
@@ -1009,7 +793,6 @@ class BuildPybind11Extension(build_ext):
         return None
 
     def find_openjpeg_header_path(self, starting_path):
-        # clib_cmd = self.get_finalized_command("build_clib")
         for root, dirs, files in os.walk(starting_path):
             for f in files:
                 if f == "openjpeg.h":
@@ -1017,21 +800,10 @@ class BuildPybind11Extension(build_ext):
         return None
 
     def run(self):
-        # self.include_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "include")))
-        # self.library_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "lib")))
         pybind11_include_path = self.get_pybind11_include_path()
         if pybind11_include_path is not None:
             self.include_dirs.insert(0, pybind11_include_path)
         self.run_command("build_conan")
-        # build_conan_cmd = self.get_finalized_command("build_conan")
-        # print("he")
-        # build_clib_cmd = self.get_finalized_command("build_clib")
-        # openjpeg_include_path = self.find_openjpeg_header_path(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
-        # if openjpeg_include_path is not None:
-        #     self.include_dirs.insert(0, openjpeg_include_path)
-
-        #     m = self.find_missing_libraries(e)
-        #     pass
         super().run()
 
         for e in self.extensions:
@@ -1039,38 +811,6 @@ class BuildPybind11Extension(build_ext):
                 os.path.join(self.build_lib, self.get_ext_filename(e.name))
             search_dirs = self.get_library_paths()
             self.resolve_shared_library(dll_name, search_dirs)
-            # dll_name = \
-            #     os.path.join(self.build_lib, self.get_ext_filename(e.name))
-            #
-            # output_file = os.path.join(self.build_temp, f'{os.path.splitext(e.name)[0].replace(".", "-")}.dependents')
-            # if self.compiler.compiler_type != "unix":
-            #     if not self.compiler.initialized:
-            #         self.compiler.initialize()
-            #     dll_file = \
-            #         os.path.abspath(os.path.join(self.build_lib, self.get_ext_filename(e.name)))
-            #
-            #     assert os.path.exists(dll_file), "Unable to located {}".format(dll_file)
-            #     assert os.path.exists(self.build_temp), "Unable to located {}".format(self.build_temp)
-            #     self.compiler.spawn(
-            #         [
-            #             'dumpbin',
-            #             '/DEPENDENTS',
-            #             f'/OUT:{output_file}',
-            #             dll_name,
-            #         ]
-            #     )
-            #     deps = self.parse_dumpbin_deps(dump_file=output_file)
-            #     deps = self.remove_system_dlls(deps)
-            #     dest = os.path.dirname(dll_name)
-            #     self.announce("Copying dependencies to {}".format(dest))
-            #     for dep in deps:
-            #         dll = self.find_deps(dep)
-            #         if dll is not None:
-            #             self.copy_file(dll, dest)
-            #             if self.inplace:
-            #                 self.copy_file(dll, os.path.dirname(self.get_ext_filename(e.name)))
-            #         else:
-            #             print("Unable to locate deps for {}".format(dep), file=sys.stderr)
 
     def resolve_shared_library(self, dll_name, search_paths=None):
         dll_dumper = get_so_handler(dll_name, self)
@@ -1113,19 +853,7 @@ class BuildPybind11Extension(build_ext):
                 if f.name.lower() == lib.lower():
                     return f.path
 
-    # def find_deps(self, lib):
-    #     build_clib_cmd = self.get_finalized_command("build_clib")
-    #     paths = os.environ['path'].split(";")
-    #     paths.insert(0, os.path.join(build_clib_cmd.build_clib, "bin"))
-    #
-    #     for path in paths:
-    #         if not os.path.exists(path):
-    #             continue
-    #         for f in os.scandir(path):
-    #             if f.name.lower() == lib.lower():
-    #                 return f.path
-    #
-    #     return None
+
     def find_header_file_path(self, include_dirs: List[str], headers:List[str]) -> Optional[str]:
         for include_dir in include_dirs:
             for h in headers:
@@ -1159,8 +887,6 @@ class BuildPybind11Extension(build_ext):
             ext.extra_compile_args.append("-std=c++11")
         else:
             ext.extra_compile_args.append("/std:c++14")
-
-            # ext.libraries.append("shell32")
 
         if len(missing) > 0:
             self.announce(f"missing required deps [{', '.join(missing)}]. "
@@ -1477,7 +1203,6 @@ def get_so_handler(shared_library: str, context,
 
     system_name = system_name or platform.system()
     strategies = {
-        # "Darwin": NullHandlerStrategy,
         "Darwin": MacholibStrategy,
         "Linux": AudidWheelsHandlerStrategy,
         "Windows": DllHandlerStrategy,
@@ -1520,14 +1245,6 @@ class BuildConan(setuptools.Command):
 
     def finalize_options(self):
         pass
-        # if self.conan_exec is None:
-        #     self.conan_exec = shutil.which("conan")
-        #     if self.conan_exec is None:
-        #         self.conan_exec = \
-        #             shutil.which("conan", path=sysconfig.get_path('scripts'))
-        #
-        #         if self.conan_exec is None:
-        #             raise FileNotFoundError("missing conan_exec")
 
     def getConanBuildInfo(self, root_dir):
         for root, dirs, files in os.walk(root_dir):
@@ -1560,14 +1277,21 @@ class BuildConan(setuptools.Command):
         conanbuildinfotext = os.path.join(build_dir, "conanbuildinfo.txt")
         assert os.path.exists(conanbuildinfotext)
         text_md = self.get_from_txt(conanbuildinfotext)
-        build_ext_cmd.include_dirs = list(
-            set(text_md['include_paths']) | set(build_ext_cmd.include_dirs))
+        for path in text_md['include_paths']:
+            if path not in build_ext_cmd.include_dirs:
+                build_ext_cmd.include_dirs.insert(0, path)
 
-        build_ext_cmd.library_dirs = list(
-            set(text_md['lib_paths']) | set(build_ext_cmd.library_dirs))
+        for path in text_md['lib_paths']:
+            if path not in build_ext_cmd.library_dirs:
+                build_ext_cmd.library_dirs.insert(0, path)
 
-        build_ext_cmd.libraries = list(
-            set(text_md['libs']) | set(build_ext_cmd.libraries))
+        extension_deps = set()
+        for library_deps in [l.libraries for l in  build_ext_cmd.ext_map.values()]:
+            extension_deps = extension_deps.union(library_deps)
+
+        for lib in text_md['libs']:
+            if lib not in build_ext_cmd.libraries and lib not in extension_deps:
+                build_ext_cmd.libraries.insert(0, lib)
 
         conanbuildinfo_file = self.getConanBuildInfo(build_dir_full_path)
         if conanbuildinfo_file is None:
@@ -1577,9 +1301,6 @@ class BuildConan(setuptools.Command):
             conan_build_info = json.loads(f.read())
         for extension in build_ext_cmd.extensions:
             for dep in conan_build_info['dependencies']:
-                extension.include_dirs += dep['include_paths']
-                extension.library_dirs += dep['lib_paths']
-                extension.libraries += dep['libs']
                 extension.define_macros += [(d,) for d in dep['defines']]
 
     def get_import_paths_from_import_manifest(self, manifest_file) -> \
@@ -1676,11 +1397,8 @@ setup(
     # libraries=[openjpeg_library],
     cmdclass={
         "build_ext": BuildPybind11Extension,
-        # "build_openjpeg": BuildCMakeClib,
         "build_clib": BuildCMakeClib,
         "build_conan": BuildConan
-        # "build_openjpeg": BuildOpenJpegClib,
-        # "package_clib": PackageClib,
     }
 )
 
