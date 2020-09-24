@@ -609,7 +609,6 @@ pipeline {
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only")
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation. Release Branch Only")
-        string(name: 'DEPLOY_DOCS_URL_SUBFOLDER', defaultValue: "imagevalidate", description: 'The directory that the docs should be saved under')
     }
     stages {
         stage("Building"){
@@ -724,11 +723,6 @@ pipeline {
                                                                   mv build/docs/output.txt reports/doctest.txt
                                                                   '''
                                                        )
-                                               }
-                                           }
-                                           post{
-                                               always {
-                                                   archiveArtifacts artifacts: "reports/doctest.txt"
                                                }
                                            }
                                         }
@@ -873,10 +867,6 @@ pipeline {
                     }
                     post {
                         always{
-                            archiveArtifacts(
-                                allowEmptyArchive: true,
-                                artifacts: ".scannerwork/report-task.txt"
-                            )
                             script{
                                 if(fileExists('reports/sonar-report.json')){
                                     stash includes: "reports/sonar-report.json", name: 'SONAR_REPORT'
@@ -1176,7 +1166,6 @@ pipeline {
                         tag "*"
                     }
                 }
-                beforeAgent true
             }
             agent none
             environment{
@@ -1438,10 +1427,16 @@ pipeline {
                             branch "master"
                         }
                         beforeAgent true
+                        beforeInput true
+                    }
+                    input {
+                        message 'Update project documentation'
+                        parameters {
+                            string(name: 'DEPLOY_DOCS_URL_SUBFOLDER', defaultValue: "imagevalidate", description: 'The directory that the docs should be saved under')
+                        }
                     }
                     steps {
                         dir("build/docs/html/"){
-                            input 'Update project documentation?'
                             sshPublisher(
                                 publishers: [
                                     sshPublisherDesc(
