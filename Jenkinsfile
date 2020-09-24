@@ -330,12 +330,14 @@ def run_dumpbin(glob){
 
 def test_cpp_code(buildPath){
     stage("Build CPP"){
-        sh(label: "Testing CPP Code",
-           script: """conan install . -if build -o "*:shared=True"
-                      cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
-                      cmake --build ${buildPath} -j \$(grep -c ^processor /proc/cpuinfo)
-                      """
-        )
+        tee("logs/cmake-build.log"){
+            sh(label: "Testing CPP Code",
+               script: """conan install . -if build -o "*:shared=True"
+                          cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
+                          cmake --build ${buildPath} -j \$(grep -c ^processor /proc/cpuinfo)
+                          """
+            )
+        }
     }
     stage("CTest"){
         sh(label: "Running CTest",
@@ -799,6 +801,7 @@ pipeline {
                             }
                             post{
                                 always{
+                                    recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
                                     sh "mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml"
                                     stash(includes: "reports/coverage_cpp.xml", name: "CPP_COVERAGE_REPORT")
         //                             publishCoverage(
