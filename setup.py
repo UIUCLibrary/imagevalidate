@@ -1285,16 +1285,13 @@ class BuildConan(setuptools.Command):
             if path not in build_ext_cmd.library_dirs:
                 build_ext_cmd.library_dirs.insert(0, path)
 
-        library_deps = set()
+        extension_deps = set()
         for library_deps in [l.libraries for l in  build_ext_cmd.ext_map.values()]:
-            library_deps = library_deps.union(library_deps)
+            extension_deps = extension_deps.union(library_deps)
 
         for lib in text_md['libs']:
-            if lib not in build_ext_cmd.libraries and lib not in library_deps:
+            if lib not in build_ext_cmd.libraries and lib not in extension_deps:
                 build_ext_cmd.libraries.insert(0, lib)
-
-        # build_ext_cmd.libraries = list(
-        #     set(text_md['libs']) | set(build_ext_cmd.libraries))
 
         conanbuildinfo_file = self.getConanBuildInfo(build_dir_full_path)
         if conanbuildinfo_file is None:
