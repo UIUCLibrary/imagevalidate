@@ -1285,8 +1285,12 @@ class BuildConan(setuptools.Command):
             if path not in build_ext_cmd.library_dirs:
                 build_ext_cmd.library_dirs.insert(0, path)
 
+        library_deps = set()
+        for library_deps in [l.libraries for l in  build_ext_cmd.ext_map.values()]:
+            library_deps = library_deps.union(library_deps)
+
         for lib in text_md['libs']:
-            if lib not in build_ext_cmd.libraries:
+            if lib not in build_ext_cmd.libraries and lib not in library_deps:
                 build_ext_cmd.libraries.insert(0, lib)
 
         # build_ext_cmd.libraries = list(
