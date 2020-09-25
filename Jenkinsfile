@@ -439,7 +439,7 @@ def devpiPushToIndex(pkgName, pkgVersion, sourceIndex, destinationIndex, devpiUs
                 sh(
                     label: "Moving DevPi package from staging index to index",
                     script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                               devpi login ${DEVPI_USR} --password $DEVPI_PSW --clientdir ./devpi
+                               devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
                                devpi use ${sourceIndex} --clientdir ./devpi
                                devpi push ${pkgName}==${pkgVersion} ${destinationIndex} --clientdir ./devpi
                                """
