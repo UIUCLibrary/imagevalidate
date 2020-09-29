@@ -25,13 +25,13 @@ from setuptools.command.build_clib import build_clib
 from setuptools import Command
 from ctypes.util import find_library
 
-try:
-    from conans.client import conan_api
-except ModuleNotFoundError:
-    print("Conan not installed", file=sys.stderr)
+# try:
+#
+# except ModuleNotFoundError:
+#     print("Conan not installed", file=sys.stderr)
 
 PACKAGE_NAME = "uiucprescon.imagevalidate"
-PYBIND11_URL = "https://github.com/pybind/pybind11/archive/v2.2.4.tar.gz"
+# PYBIND11_URL = "https://github.com/pybind/x/pybind11/archive/v2.2.4.tar.gz"
 
 
 class CMakeException(RuntimeError):
@@ -760,10 +760,8 @@ class BuildPybind11Extension(build_ext):
 
     def initialize_options(self):
         super().initialize_options()
-        self.pybind11_url = None
 
     def finalize_options(self):
-        self.pybind11_url = self.pybind11_url or PYBIND11_DEFAULT_URL
         super().finalize_options()
 
     @staticmethod
@@ -800,10 +798,10 @@ class BuildPybind11Extension(build_ext):
         return None
 
     def run(self):
-        pybind11_include_path = self.get_pybind11_include_path()
-        if pybind11_include_path is not None:
-            self.include_dirs.insert(0, pybind11_include_path)
         self.run_command("build_conan")
+
+        import pybind11
+        self.include_dirs.insert(0, pybind11.get_include())
         super().run()
 
         for e in self.extensions:
@@ -909,35 +907,35 @@ class BuildPybind11Extension(build_ext):
             paths = os.environ['PATH'].split(":")
         return [path for path in paths if os.path.exists(path)]
 
-    def get_pybind11_include_path(self):
-        pybind11_archive_filename = os.path.split(self.pybind11_url)[1]
-
-        pybind11_archive_downloaded = os.path.join(self.build_temp,
-                                                   pybind11_archive_filename)
-
-        pybind11_source = os.path.join(self.build_temp, "pybind11")
-        if not os.path.exists(self.build_temp):
-            os.makedirs(self.build_temp)
-
-        if not os.path.exists(pybind11_source):
-            if not os.path.exists(pybind11_archive_downloaded):
-                self.announce("Downloading pybind11", level=5)
-                request.urlretrieve(
-                    self.pybind11_url, filename=pybind11_archive_downloaded)
-                self.announce("pybind11 Downloaded", level=5)
-            with tarfile.open(pybind11_archive_downloaded, "r") as tf:
-                for f in tf:
-                    if "pybind11.h" in f.name:
-                        self.announce("Extract pybind11.h to include path")
-
-                    tf.extract(f, pybind11_source)
-        for root, dirs, files in os.walk(pybind11_source):
-            for f in files:
-                if f == "pybind11.h":
-                    return os.path.abspath(os.path.relpath(
-                        os.path.join(root, ".."),
-                        os.path.dirname(__file__)
-                    ))
+    # def get_pybind11_include_path(self):
+    #     pybind11_archive_filename = os.path.split(self.pybind11_url)[1]
+    #
+    #     pybind11_archive_downloaded = os.path.join(self.build_temp,
+    #                                                pybind11_archive_filename)
+    #
+    #     pybind11_source = os.path.join(self.build_temp, "pybind11")
+    #     if not os.path.exists(self.build_temp):
+    #         os.makedirs(self.build_temp)
+    #
+    #     if not os.path.exists(pybind11_source):
+    #         if not os.path.exists(pybind11_archive_downloaded):
+    #             self.announce("Downloading pybind11", level=5)
+    #             request.urlretrieve(
+    #                 self.pybind11_url, filename=pybind11_archive_downloaded)
+    #             self.announce("pybind11 Downloaded", level=5)
+    #         with tarfile.open(pybind11_archive_downloaded, "r") as tf:
+    #             for f in tf:
+    #                 if "pybind11.h" in f.name:
+    #                     self.announce("Extract pybind11.h to include path")
+    #
+    #                 tf.extract(f, pybind11_source)
+    #     for root, dirs, files in os.walk(pybind11_source):
+    #         for f in files:
+    #             if f == "pybind11.h":
+    #                 return os.path.abspath(os.path.relpath(
+    #                     os.path.join(root, ".."),
+    #                     os.path.dirname(__file__)
+    #                 ))
 
 
 class AbsSoHandler(abc.ABC):
@@ -1263,6 +1261,7 @@ class BuildConan(setuptools.Command):
         self.mkpath(build_dir_full_path)
         self.mkpath(os.path.join(build_dir_full_path, "lib"))
 
+        from conans.client import conan_api
         conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
         conan_options = []
         if platform.system() == "Windows":
@@ -1270,6 +1269,7 @@ class BuildConan(setuptools.Command):
         conan.install(
             options=conan_options,
             cwd=build_dir,
+            build=['missing'],
             path=os.path.abspath(os.path.dirname(__file__)),
             install_folder=build_dir_full_path
         )
