@@ -624,13 +624,13 @@ def get_props(){
         node() {
             try{
                 unstash "DIST-INFO"
-                def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
+                def package_metadata = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
                 echo """Metadata:
 
-Name      ${props.Name}
-Version   ${props.Version}
+Name      ${package_metadata.Name}
+Version   ${package_metadata.Version}
 """
-                return props
+                return package_metadata
             } finally {
                 deleteDir()
             }
