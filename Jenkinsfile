@@ -733,18 +733,22 @@ pipeline {
                             when {
                                 equals expected: true, actual: params.TEST_RUN_TOX
                             }
-                            agent {
-                                dockerfile {
-                                    filename DEFAULT_DOCKER_FILENAME
-                                    label DEFAULT_DOCKER_LABEL
-                                    additionalBuildArgs DEFAULT_DOCKER_BUILD_ARGS
+                            parallel{
+                                stage("Linux"){
+                                    agent {
+                                        dockerfile {
+                                            filename DEFAULT_DOCKER_FILENAME
+                                            label DEFAULT_DOCKER_LABEL
+                                            additionalBuildArgs DEFAULT_DOCKER_BUILD_ARGS
+                                        }
+                                    }
+                                    steps {
+                                        sh (
+                                            label: "Run Tox",
+                                            script: 'tox --workdir .tox -vv  -e py'
+                                        )
+                                    }
                                 }
-                            }
-                            steps {
-                                sh (
-                                    label: "Run Tox",
-                                    script: 'tox --workdir .tox -vv  -e py'
-                                )
                             }
                         }
                         stage('Testing Python') {
