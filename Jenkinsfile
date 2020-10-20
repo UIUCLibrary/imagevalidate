@@ -589,6 +589,8 @@ def get_devpi_doc_archive_name(pkgName, pkgVersion){
 }
 
 def DEFAULT_DOCKER_FILENAME = "ci/docker/python/linux/build/Dockerfile"
+def DEFAULT_DOCKER_LABEL = "linux && docker"
+
 def startup(){
     node('linux && docker') {
         try{
@@ -661,7 +663,7 @@ pipeline {
             agent {
                 dockerfile {
                     filename DEFAULT_DOCKER_FILENAME
-                    label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
+                    label DEFAULT_DOCKER_LABEL
                     additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
                 }
             }
@@ -733,7 +735,7 @@ pipeline {
 //                             agent {
 //                                 dockerfile {
 //                                     filename DEFAULT_DOCKER_FILENAME
-//                                     label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
+//                                     label DEFAULT_DOCKER_LABEL
 //                                     additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
 //                                 }
 //                             }
@@ -748,7 +750,7 @@ pipeline {
                             agent {
                                 dockerfile {
                                     filename DEFAULT_DOCKER_FILENAME
-                                    label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
+                                    label DEFAULT_DOCKER_LABEL
                                     additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
                                 }
                             }
@@ -953,7 +955,7 @@ pipeline {
                     agent {
                         dockerfile {
                             filename DEFAULT_DOCKER_FILENAME
-                            label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
+                            label DEFAULT_DOCKER_LABEL
                             additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
                         }
                     }
