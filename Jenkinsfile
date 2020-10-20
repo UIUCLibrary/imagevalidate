@@ -625,6 +625,7 @@ def get_props(){
             try{
                 unstash "DIST-INFO"
                 def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
+                echo "Name = ${props.Name}, version = ${props.Version}"
                 return props
             } finally {
                 deleteDir()
@@ -693,10 +694,10 @@ pipeline {
                                     reportTitles: ''
                                 ]
                             )
-//                             script{
-//                                 def DOCS_ARCHIVE_FILE_NAME = get_devpi_doc_archive_name(props.Name, props.Version)
-//                                 zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOCS_ARCHIVE_FILE_NAME}"
-//                             }
+                            script{
+                                def DOCS_ARCHIVE_FILE_NAME = get_devpi_doc_archive_name(props.Name, props.Version)
+                                zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOCS_ARCHIVE_FILE_NAME}"
+                            }
                             stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
                         }
                    }
