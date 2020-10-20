@@ -729,24 +729,24 @@ pipeline {
                 stage("Testing"){
                     stages{
 //                     TODO UNCOMMENT THIS CODE!!
-//                         stage("Tox") {
-//                             when {
-//                                 equals expected: true, actual: params.TEST_RUN_TOX
-//                             }
-//                             agent {
-//                                 dockerfile {
-//                                     filename DEFAULT_DOCKER_FILENAME
-//                                     label DEFAULT_DOCKER_LABEL
-//                                     additionalBuildArgs DEFAULT_DOCKER_BUILD_ARGS
-//                                 }
-//                             }
-//                             steps {
-//                                 sh (
-//                                     label: "Run Tox",
-//                                     script: 'tox --workdir .tox -vv  -e py'
-//                                 )
-//                             }
-//                         }
+                        stage("Tox") {
+                            when {
+                                equals expected: true, actual: params.TEST_RUN_TOX
+                            }
+                            agent {
+                                dockerfile {
+                                    filename DEFAULT_DOCKER_FILENAME
+                                    label DEFAULT_DOCKER_LABEL
+                                    additionalBuildArgs DEFAULT_DOCKER_BUILD_ARGS
+                                }
+                            }
+                            steps {
+                                sh (
+                                    label: "Run Tox",
+                                    script: 'tox --workdir .tox -vv  -e py'
+                                )
+                            }
+                        }
                         stage('Testing Python') {
                             agent {
                                 dockerfile {
