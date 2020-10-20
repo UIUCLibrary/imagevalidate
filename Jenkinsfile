@@ -588,7 +588,7 @@ def get_devpi_doc_archive_name(pkgName, pkgVersion){
     return "${pkgName}-${pkgVersion}.doc.zip"
 }
 
-
+def DEFAULT_DOCKER_FILENAME = "ci/docker/python/linux/build/Dockerfile"
 def startup(){
     node('linux && docker') {
         try{
@@ -747,7 +747,7 @@ pipeline {
                         stage('Testing Python') {
                             agent {
                                 dockerfile {
-                                    filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
+                                    filename DEFAULT_DOCKER_FILENAME
                                     label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
                                     additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
                                 }
@@ -952,7 +952,7 @@ pipeline {
                 stage('Creating Source Package') {
                     agent {
                         dockerfile {
-                            filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
+                            filename DEFAULT_DOCKER_FILENAME
                             label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
                             additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
                         }
