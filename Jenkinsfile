@@ -371,6 +371,33 @@ def test_cpp_code(buildPath){
 //     }
 // }
 
+def devpiRunTest3(devpiClient, pkgName, pkgVersion, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
+    script{
+        if(!fileExists(pkgPropertiesFile)){
+            error "${pkgPropertiesFile} does not exist"
+        }
+        def props = readProperties interpolate: false, file: pkgPropertiesFile
+        if (isUnix()){
+            sh(
+                label: "Running test",
+                script: """${devpiClient} use https://devpi.library.illinois.edu --clientdir certs/
+                           ${devpiClient} login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
+                           ${devpiClient} use ${devpiIndex} --clientdir certs/
+                           ${devpiClient} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
+                """
+            )
+        } else {
+            bat(
+                label: "Running tests on Devpi",
+                script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
+                           devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+                           devpi use ${devpiIndex} --clientdir certs\\
+                           devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
+                           """
+            )
+        }
+    }
+}
 def devpiRunTest2(devpiClient, pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
     script{
         if(!fileExists(pkgPropertiesFile)){
@@ -1242,10 +1269,11 @@ pipeline {
                                                            venv/bin/devpi --version
                                                 '''
                                             )
-                                            unstash "DIST-INFO"
-                                            devpiRunTest2(
+//                                             unstash "DIST-INFO"
+                                            devpiRunTest3
                                                 "venv/bin/devpi",
-                                                "uiucprescon.imagevalidate.dist-info/METADATA",
+                                                props.Name,
+                                                props.Version
                                                 env.devpiStagingIndex,
                                                 "38-macosx_10_14_x86_64*.*whl",
                                                 DEVPI_USR,
@@ -1280,10 +1308,11 @@ pipeline {
                                                            venv/bin/devpi --version
                                                 '''
                                             )
-                                            unstash "DIST-INFO"
-                                            devpiRunTest2(
+//                                             unstash "DIST-INFO"
+                                            devpiRunTest3(
                                                 "venv/bin/devpi",
-                                                "uiucprescon.imagevalidate.dist-info/METADATA",
+                                                props.Name,
+                                                props.Version,
                                                 env.devpiStagingIndex,
                                                 "tar.gz",
                                                 DEVPI_USR,
@@ -1336,9 +1365,10 @@ pipeline {
                                         }
                                         steps{
                                             timeout(10){
-                                                unstash "DIST-INFO"
-                                                devpiRunTest2("devpi",
-                                                    "uiucprescon.imagevalidate.dist-info/METADATA",
+//                                                 unstash "DIST-INFO"
+                                                devpiRunTest3("devpi",
+                                                    props.Name,
+                                                    props.Version,
                                                     env.devpiStagingIndex,
                                                     CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector['whl'],
                                                     DEVPI_USR,
@@ -1358,9 +1388,9 @@ pipeline {
                                         }
                                         steps{
                                             timeout(10){
-                                                unstash "DIST-INFO"
-                                                devpiRunTest2("devpi",
-                                                    "uiucprescon.imagevalidate.dist-info/METADATA",
+                                                devpiRunTest3("devpi",
+                                                    props.Name,
+                                                    props.Version,
                                                     env.devpiStagingIndex,
                                                     "tar.gz",
                                                     DEVPI_USR,
