@@ -519,6 +519,14 @@ def build_wheel(){
     }
 }
 
+def fixup_wheel(wheelRegex, platform){
+    script{
+        if(platform == "linux"){
+            sh "auditwheel repair ${wheelRegex} -w ./dist"
+        }
+    }
+}
+
 def getDevPiStagingIndex(){
 
     if (env.TAG_NAME?.trim()){
@@ -649,12 +657,8 @@ pipeline {
                     post{
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-//                             script{
-//                                 def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
-//                             zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
                             zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${get_devpi_doc_archive_name(props.Name, props.Version)}"
                             stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
-//                             }
                         }
                    }
                }
@@ -1074,11 +1078,8 @@ pipeline {
                                 steps{
                                     timeout(15){
                                         build_wheel()
-                                        script{
-                                            if(PLATFORM == "linux"){
-                                                sh "auditwheel repair ./dist/*.whl -w ./dist"
-                                            }
-                                        }
+                                        fixup_wheel("./dist/*.whl", PLATFORM)
+
                                     }
                                 }
                                 post{
