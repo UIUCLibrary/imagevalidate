@@ -737,9 +737,9 @@ pipeline {
                                 stage("Linux"){
                                     agent {
                                         dockerfile {
-                                            filename DEFAULT_DOCKER_FILENAME
-                                            label DEFAULT_DOCKER_LABEL
-                                            additionalBuildArgs DEFAULT_DOCKER_BUILD_ARGS
+                                            filename 'ci/docker/python/linux/tox/Dockerfile'
+                                            label 'linux && docker'
+                                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                                         }
                                     }
                                     steps {
