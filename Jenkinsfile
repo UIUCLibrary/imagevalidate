@@ -1270,10 +1270,10 @@ pipeline {
                                                 '''
                                             )
 //                                             unstash "DIST-INFO"
-                                            devpiRunTest3
+                                            devpiRunTest3(
                                                 "venv/bin/devpi",
                                                 props.Name,
-                                                props.Version
+                                                props.Version,
                                                 env.devpiStagingIndex,
                                                 "38-macosx_10_14_x86_64*.*whl",
                                                 DEVPI_USR,
