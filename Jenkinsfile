@@ -660,7 +660,7 @@ pipeline {
         stage("Building"){
             agent {
                 dockerfile {
-                    filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
+                    filename DEFAULT_DOCKER_FILENAME
                     label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
                     additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
                 }
@@ -732,7 +732,7 @@ pipeline {
 //                             }
 //                             agent {
 //                                 dockerfile {
-//                                     filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
+//                                     filename DEFAULT_DOCKER_FILENAME
 //                                     label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
 //                                     additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
 //                                 }
