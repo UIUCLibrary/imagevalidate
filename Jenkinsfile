@@ -625,7 +625,9 @@ def get_props(){
             try{
                 unstash "DIST-INFO"
                 def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
-                echo "Name = ${props.Name}, version = ${props.Version}"
+                echo """Name      ${props.Name}
+                        Version   ${props.Version}
+                        """
                 return props
             } finally {
                 deleteDir()
