@@ -683,8 +683,20 @@ pipeline {
                     }
                     post{
                         success{
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${get_devpi_doc_archive_name(props.Name, props.Version)}"
+                            publishHTML(
+                                [
+                                    allowMissing: false,
+                                    alwaysLinkToLastBuild: false,
+                                    keepAll: false, reportDir: 'build/docs/html',
+                                    reportFiles: 'index.html',
+                                    reportName: 'Documentation',
+                                    reportTitles: ''
+                                ]
+                            )
+                            script{
+                                def DOCS_ARCHIVE_FILE_NAME = get_devpi_doc_archive_name(props.Name, props.Version)
+                                zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOCS_ARCHIVE_FILE_NAME}"
+                            }
                             stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
                         }
                    }
