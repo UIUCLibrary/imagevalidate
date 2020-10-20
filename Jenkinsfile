@@ -684,24 +684,25 @@ pipeline {
             stages{
                 stage("Testing"){
                     stages{
-                        stage("Tox") {
-                            when {
-                                equals expected: true, actual: params.TEST_RUN_TOX
-                            }
-                            agent {
-                                dockerfile {
-                                    filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
-                                    label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
-                                    additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
-                                }
-                            }
-                            steps {
-                                sh (
-                                    label: "Run Tox",
-                                    script: 'tox --workdir .tox -vv  -e py'
-                                )
-                            }
-                        }
+//                     TODO UNCOMMENT THIS CODE!!
+//                         stage("Tox") {
+//                             when {
+//                                 equals expected: true, actual: params.TEST_RUN_TOX
+//                             }
+//                             agent {
+//                                 dockerfile {
+//                                     filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
+//                                     label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
+//                                     additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
+//                                 }
+//                             }
+//                             steps {
+//                                 sh (
+//                                     label: "Run Tox",
+//                                     script: 'tox --workdir .tox -vv  -e py'
+//                                 )
+//                             }
+//                         }
                         stage('Testing Python') {
                             agent {
                                 dockerfile {
