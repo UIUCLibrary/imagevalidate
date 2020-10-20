@@ -700,6 +700,7 @@ pipeline {
                             )
                             script{
                                 echo "Dummy"
+                                echo "props = ${props}"
                                 def DOCS_ARCHIVE_FILE_NAME = get_devpi_doc_archive_name(props.Name, props.Version)
                                 zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOCS_ARCHIVE_FILE_NAME}"
                             }
