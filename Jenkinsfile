@@ -585,7 +585,7 @@ def test_pkg(glob, timeout_time){
 }
 
 def get_devpi_doc_archive_name(pkgName, pkgVersion){
-    return "${props.Name}-${props.Version}.doc.zip"
+    return "${pkgName}-${pkgVersion}.doc.zip"
 }
 
 
@@ -698,12 +698,7 @@ pipeline {
                                     reportTitles: ''
                                 ]
                             )
-                            script{
-                                echo "Dummy"
-                                echo "props = ${props}"
-                                def DOCS_ARCHIVE_FILE_NAME = get_devpi_doc_archive_name(props.Name, props.Version)
-                                zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOCS_ARCHIVE_FILE_NAME}"
-                            }
+                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${get_devpi_doc_archive_name(props.Name, props.Version)}"
                             stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
                         }
                    }
