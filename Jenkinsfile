@@ -548,6 +548,12 @@ def test_pkg(glob, timeout_time){
         }
     }
 }
+
+def get_devpi_doc_archive_name(pkgName, pkgVersion){
+    return "${props.Name}-${props.Version}.doc.zip"
+}
+
+
 def startup(){
     node('linux && docker') {
         try{
@@ -643,11 +649,12 @@ pipeline {
                     post{
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            script{
-                                def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
-                                zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-                                stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
-                            }
+//                             script{
+//                                 def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
+//                             zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${get_devpi_doc_archive_name(props.Name, props.Version)}"
+                            stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
+//                             }
                         }
                    }
                }
