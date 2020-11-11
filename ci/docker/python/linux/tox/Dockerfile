@@ -1,10 +1,19 @@
-FROM ubuntu:20.04 as wheel_builder_py36
+FROM ubuntu:20.04 as wheel_builder_base
+COPY ci/docker/python/linux/tox/apt-packages.txt /tmp/
 RUN apt update && \
     apt-get install -y software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && \
-    apt update
+    apt update && \
+    cat /tmp/apt-packages.txt | xargs apt-get -y install
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+ARG USER_ID=1000
+ARG GROUP_ID=1000
 
-RUN cat /tmp/apt-packages.txt | apt install -y python3.6-dev python3.6-venv python3-pip
+RUN groupadd -g $GROUP_ID user && \
+    useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
+
+FROM wheel_builder_base as WHEEL_BUILDER_PY36
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
@@ -12,17 +21,10 @@ COPY ci/docker/shared/python/requirements-ci.txt requirements.txt /tmp/
 RUN PYTHON=python3.6 && \
     $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-ci.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt
-
 # ==============================================================================
-FROM ubuntu:20.04 as wheel_builder_py37
-RUN apt update && \
-    apt-get install -y software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa && \
-    apt update
-
-RUN cat /tmp/apt-packages.txt | apt install -y python3.7-dev python3.7-venv python3-pip
+FROM wheel_builder_base as WHEEL_BUILDER_PY37
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
@@ -30,17 +32,11 @@ COPY ci/docker/shared/python/requirements-ci.txt requirements.txt /tmp/
 RUN PYTHON=python3.7 && \
     $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-ci.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt
 
 # ==============================================================================
-FROM ubuntu:20.04 as wheel_builder_py38
-RUN apt update && \
-    apt-get install -y software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa && \
-    apt update
-
-RUN cat /tmp/apt-packages.txt | apt install -y python3.8-dev python3.8-venv python3-pip
+FROM wheel_builder_base as WHEEL_BUILDER_PY38
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
@@ -48,23 +44,62 @@ COPY ci/docker/shared/python/requirements-ci.txt requirements.txt /tmp/
 RUN PYTHON=python3.8 && \
     $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-ci.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt
 
 # ==============================================================================
-FROM ubuntu:20.04
-RUN apt update && \
-    apt-get install -y software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa && \
-    apt update
-
-COPY ci/docker/python/linux/tox/apt-packages.txt /tmp/apt-packages.txt
-RUN cat /tmp/apt-packages.txt | xargs apt install -y
+FROM wheel_builder_base as WHEEL_BUILDER_PY39
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
-COPY --from=wheel_builder_py36 /wheels/* /wheels/
-COPY --from=wheel_builder_py37 /wheels/* /wheels/
-COPY --from=wheel_builder_py38 /wheels/* /wheels/
+COPY ci/docker/shared/python/requirements-ci.txt requirements.txt /tmp/
+RUN PYTHON=python3.9 && \
+    $PYTHON -m pip install pip --upgrade pip && \
+    $PYTHON -m pip install wheel && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt
+
+# ==============================================================================
+FROM wheel_builder_base as conan_builder
+RUN pip3 install conan cmake
+COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
+COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/profiles/default
+USER user
+WORKDIR /home/user
+COPY conanfile.py /tmp/conanfile.py
+RUN conan config home
+RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
+    conan remove "*" -b --src -f && \
+    conan remove --locks
+# ==============================================================================
+FROM wheel_builder_base
+
+#RUN pip3 install conan
+#ENV CONAN_USER_HOME=/home/user/
+#RUN conan config home
+#COPY conanfile.py /tmp/conanfile.py
+#RUN conan install /tmp --build missing --build openjp2 --no-import && \
+#    conan remove --locks && \
+#    conan remove "*" -b --src -f &&\
+#    chown -R user:user  /home/user/.conan/data
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+COPY --from=WHEEL_BUILDER_PY36 /wheels/* /wheels/
+COPY --from=WHEEL_BUILDER_PY37 /wheels/* /wheels/
+COPY --from=WHEEL_BUILDER_PY38 /wheels/* /wheels/
+COPY --from=WHEEL_BUILDER_PY39 /wheels/* /wheels/
 ENV PIP_FIND_LINKS=/wheels
-RUN pip3 install tox
+RUN pip3 install tox conan
+USER user
+WORKDIR /home/user
+COPY --from=conan_builder --chown=user:user /home/user/.conan/ /home/user/.conan/
+COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/.conan/profiles/default
+COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
+ADD conanfile.py /tmp/conanfile.py
+ENV CONAN_USER_HOME=/home/user/
+RUN conan config home
+RUN conan install /tmp --build missing --no-import  && \
+    conan remove "*" -b --src -f && \
+    conan remove --locks
+WORKDIR /src
+CMD tox --workdir /tmp/tox --recreate
