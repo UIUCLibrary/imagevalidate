@@ -563,6 +563,11 @@ def getDevPiStagingIndex(){
     }
 }
 
+node(){
+    checkout scm
+    tox = load("ci/jenkins/scripts/tox.groovy")
+}
+
 def test_pkg(glob, timeout_time){
 
     findFiles( glob: glob).each{
