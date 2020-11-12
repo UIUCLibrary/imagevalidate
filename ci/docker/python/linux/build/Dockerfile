@@ -74,6 +74,6 @@ WORKDIR /home/user
 ENV CONAN_USER_HOME=/home/user/
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config home
-RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
+RUN conan install /tmp --build outdated --no-import  && \
     conan remove "*" -b --src -f && \
     conan remove --locks
