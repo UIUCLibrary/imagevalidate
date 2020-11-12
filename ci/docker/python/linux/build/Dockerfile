@@ -18,12 +18,21 @@ RUN python -m pip install --upgrade pip && \
          -i ${PYTHON_INDEX}
 
 FROM wheel_builder as conan_builder
+
 RUN pip install conan cmake
+
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
+RUN groupadd -g $GROUP_ID user && \
+    useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
+
 COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
 COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/profiles/default
 USER user
 WORKDIR /home/user
 COPY conanfile.py /tmp/conanfile.py
+RUN pip install conan
 RUN conan config home
 RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
     conan remove "*" -b --src -f && \
