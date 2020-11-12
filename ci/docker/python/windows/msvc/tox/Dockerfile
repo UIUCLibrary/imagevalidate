@@ -65,6 +65,26 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     }; `
     Write-Host "Finished install packages with Chocolatey"
 
+ARG PYTHON_36_VERSION
+ARG PYTHON_37_VERSION
+ARG PYTHON_38_VERSION
+ARG PYTHON_39_VERSION
+
+RUN $PYTHON_VERSIONS = @(${Env:PYTHON_36_VERSION}, ${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${Env:PYTHON_39_VERSION}) ; `
+    foreach( $PYTHON_VERSION in $PYTHON_VERSIONS ){ `
+        Write-Host "Installing Python $PYTHON_VERSION with Chocolatey" ; `
+        $process = start-process -NoNewWindow -PassThru -FilePath C:\ProgramData\chocolatey\bin\choco.exe -ArgumentList 'install -y --stoponfirstfailure --no-progress --verbose python3', "--version=$PYTHON_VERSION", "-my" -Wait ;`
+        if ( $process.ExitCode -eq 0) `
+        { `
+            Write-Host "Installing Python $PYTHON_VERSION with Chocolatey - Done" ; `
+        } else { `
+            throw "Installing packages with Chocolatey - Failed with exit code ($process.ExitCode)" ;  `
+        };`
+    } ; `
+    Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
+    Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
+    py --list
+
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY36
 SHELL ["cmd", "/S", "/C" ]
