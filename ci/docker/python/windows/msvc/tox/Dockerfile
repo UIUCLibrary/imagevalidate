@@ -150,7 +150,9 @@ FROM BASE_BUILDER
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
-RUN pip install conan
+RUN python -m pip install pip --upgrade ; `
+    pip install wheel ; `
+    pip install conan
 COPY --from=CONAN_BUILDER C:/Users/ContainerAdministrator/.conan/ C:/Users/ContainerAdministrator/.conan/
 ENV CONAN_USER_HOME=C:/Users/ContainerAdministrator
 COPY conanfile.py c:/temp/conanfile.py
