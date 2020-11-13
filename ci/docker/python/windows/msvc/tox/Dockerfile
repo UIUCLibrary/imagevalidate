@@ -142,7 +142,7 @@ COPY ci/docker/shared/conan/remotes.json  C:/Users/ContainerAdministrator/.conan
 COPY ci/docker/python/windows/msvc/shared/profile.ini  C:/Users/ContainerAdministrator/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
 RUN conan config home
-RUN conan install c:/temp/ --build missing --builf openjpeg --no-import  && `
+RUN conan install c:/temp/ --build missing --build openjpeg --no-import  && `
     conan remove "*" -b --src -f && `
     conan remove --lock
 # ==============================================================================
