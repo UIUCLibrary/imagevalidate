@@ -130,12 +130,33 @@ RUN py -m pip install --upgrade pip wheel && `
 #RUN py -m pip install --upgrade pip wheel && `
 #    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
 #    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt
-
+# ==============================================================================
+FROM BASE_BUILDER as CONAN_BUILDER
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+RUN python -m pip install --upgrade pip ; `
+    pip install wheel ; `
+    pip install conan cmake
+COPY conanfile.py c:/temp/conanfile.py
+COPY ci/docker/shared/conan/remotes.json  C:/Users/ContainerAdministrator/.conan/remotes.json
+COPY ci/docker/python/windows/msvc/shared/profile.ini  C:/Users/ContainerAdministrator/.conan/profiles/default
+SHELL ["cmd", "/S", "/C" ]
+RUN conan config home
+RUN conan install c:/temp/ --build missing --no-import  && `
+    conan remove "*" -b --src -f && `
+    conan remove --lock
 # ==============================================================================
 FROM BASE_BUILDER
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
+COPY --from=CONAN_BUILDER C:/Users/ContainerAdministrator/.conan/ C:/Users/ContainerAdministrator/.conan/
+ENV CONAN_USER_HOME=C:/Users/ContainerAdministrator
+COPY conanfile.py c:/temp/conanfile.py
+RUN conan config home
+RUN conan install c:/temp/ --build outdated --no-import  ; `
+    conan remove "*" -b --src -f ; `
+    conan remove --locks
 #
 #ARG PYTHON_36_VERSION
 #RUN choco install python3 --version ${Env:PYTHON_36_VERSION} -my
