@@ -86,15 +86,15 @@ RUN $PYTHON_VERSIONS = @(${Env:PYTHON_36_VERSION}, ${Env:PYTHON_37_VERSION}, ${E
     py --list
 
 # ==============================================================================
-FROM BASE_BUILDER as WHEEL_BUilDER_PY36
-SHELL ["cmd", "/S", "/C" ]
-COPY requirements.txt ci/docker/shared/python/requirements-ci.txt c:/requirements/
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ENV PY_PYTHON=3.6
-RUN py -m pip install --upgrade pip wheel && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt
+#FROM BASE_BUILDER as WHEEL_BUilDER_PY36
+#SHELL ["cmd", "/S", "/C" ]
+#COPY requirements.txt ci/docker/shared/python/requirements-ci.txt c:/requirements/
+#ARG PIP_EXTRA_INDEX_URL
+#ARG PIP_INDEX_URL
+#ENV PY_PYTHON=3.6
+#RUN py -m pip install --upgrade pip wheel && `
+#    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
+#    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt
 
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY37
@@ -121,38 +121,38 @@ RUN py -m pip install --upgrade pip wheel && `
 # ==============================================================================
 
 # ==============================================================================
-FROM BASE_BUILDER as WHEEL_BUilDER_PY39
-SHELL ["cmd", "/S", "/C" ]
-COPY requirements.txt ci/docker/shared/python/requirements-ci.txt c:/requirements/
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ENV PY_PYTHON=3.9
-RUN py -m pip install --upgrade pip wheel && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt
+#FROM BASE_BUILDER as WHEEL_BUilDER_PY39
+#SHELL ["cmd", "/S", "/C" ]
+#COPY requirements.txt ci/docker/shared/python/requirements-ci.txt c:/requirements/
+#ARG PIP_EXTRA_INDEX_URL
+#ARG PIP_INDEX_URL
+#ENV PY_PYTHON=3.9
+#RUN py -m pip install --upgrade pip wheel && `
+#    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
+#    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt
 
 # ==============================================================================
 FROM BASE_BUILDER
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
+#
+#ARG PYTHON_36_VERSION
+#RUN choco install python3 --version ${Env:PYTHON_36_VERSION} -my
+#
+#ARG PYTHON_37_VERSION
+#RUN choco install python3 --version ${Env:PYTHON_37_VERSION} -my
+#
+#ARG PYTHON_38_VERSION
+#RUN choco install python3 --version ${Env:PYTHON_38_VERSION} -my
+##
+##ARG PYTHON_39_VERSION
+##RUN choco install python3 --version ${Env:PYTHON_39_VERSION} -my
 
-ARG PYTHON_36_VERSION
-RUN choco install python3 --version ${Env:PYTHON_36_VERSION} -my
-
-ARG PYTHON_37_VERSION
-RUN choco install python3 --version ${Env:PYTHON_37_VERSION} -my
-
-ARG PYTHON_38_VERSION
-RUN choco install python3 --version ${Env:PYTHON_38_VERSION} -my
-
-ARG PYTHON_39_VERSION
-RUN choco install python3 --version ${Env:PYTHON_39_VERSION} -my
-
-COPY --from=WHEEL_BUilDER_PY36 c:/wheels/ c:/wheels/
+#COPY --from=WHEEL_BUilDER_PY36 c:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUilDER_PY37 c:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUilDER_PY38 c:/wheels/ c:/wheels/
-COPY --from=WHEEL_BUilDER_PY39 c:/wheels/ c:/wheels/
+#COPY --from=WHEEL_BUilDER_PY39 c:/wheels/ c:/wheels/
 
 ENV PIP_FIND_LINKS=c:\wheels
 
