@@ -371,6 +371,33 @@ def test_cpp_code(buildPath){
 //     }
 // }
 
+def devpiRunTest3(devpiClient, pkgName, pkgVersion, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
+    script{
+        if(!fileExists(pkgPropertiesFile)){
+            error "${pkgPropertiesFile} does not exist"
+        }
+        def props = readProperties interpolate: false, file: pkgPropertiesFile
+        if (isUnix()){
+            sh(
+                label: "Running test",
+                script: """${devpiClient} use https://devpi.library.illinois.edu --clientdir certs/
+                           ${devpiClient} login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
+                           ${devpiClient} use ${devpiIndex} --clientdir certs/
+                           ${devpiClient} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
+                """
+            )
+        } else {
+            bat(
+                label: "Running tests on Devpi",
+                script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
+                           devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+                           devpi use ${devpiIndex} --clientdir certs\\
+                           devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
+                           """
+            )
+        }
+    }
+}
 def devpiRunTest2(devpiClient, pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
     script{
         if(!fileExists(pkgPropertiesFile)){
@@ -519,6 +546,14 @@ def build_wheel(){
     }
 }
 
+def fixup_wheel(wheelRegex, platform){
+    script{
+        if(platform == "linux"){
+            sh "auditwheel repair ${wheelRegex} -w ./dist"
+        }
+    }
+}
+
 def getDevPiStagingIndex(){
 
     if (env.TAG_NAME?.trim()){
@@ -526,6 +561,11 @@ def getDevPiStagingIndex(){
     } else{
         return "${env.BRANCH_NAME}_staging"
     }
+}
+
+node(){
+    checkout scm
+    tox = load("ci/jenkins/scripts/tox.groovy")
 }
 
 def test_pkg(glob, timeout_time){
@@ -548,6 +588,15 @@ def test_pkg(glob, timeout_time){
         }
     }
 }
+
+def get_devpi_doc_archive_name(pkgName, pkgVersion){
+    return "${pkgName}-${pkgVersion}.doc.zip"
+}
+
+def DEFAULT_DOCKER_FILENAME = "ci/docker/python/linux/build/Dockerfile"
+def DEFAULT_DOCKER_LABEL = "linux && docker"
+def DEFAULT_DOCKER_BUILD_ARGS = '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+
 def startup(){
     node('linux && docker') {
         try{
@@ -583,8 +632,13 @@ def get_props(){
         node() {
             try{
                 unstash "DIST-INFO"
-                def props = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
-                return props
+                def package_metadata = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
+                echo """Metadata:
+
+Name      ${package_metadata.Name}
+Version   ${package_metadata.Version}
+"""
+                return package_metadata
             } finally {
                 deleteDir()
             }
@@ -614,9 +668,9 @@ pipeline {
         stage("Building"){
             agent {
                 dockerfile {
-                    filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
-                    label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
-                    additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
+                    filename DEFAULT_DOCKER_FILENAME
+                    label DEFAULT_DOCKER_LABEL
+                    additionalBuildArgs DEFAULT_DOCKER_BUILD_ARGS
                 }
             }
             stages{
@@ -642,12 +696,18 @@ pipeline {
                     }
                     post{
                         success{
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            script{
-                                def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
-                                zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-                                stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
-                            }
+                            publishHTML(
+                                [
+                                    allowMissing: false,
+                                    alwaysLinkToLastBuild: false,
+                                    keepAll: false, reportDir: 'build/docs/html',
+                                    reportFiles: 'index.html',
+                                    reportName: 'Documentation',
+                                    reportTitles: ''
+                                ]
+                            )
+                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${get_devpi_doc_archive_name(props.Name, props.Version)}"
+                            stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
                         }
                    }
                }
@@ -673,28 +733,18 @@ pipeline {
             stages{
                 stage("Testing"){
                     stages{
+
                         stage('Testing Python') {
                             agent {
                                 dockerfile {
-                                    filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
-                                    label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
-                                    additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
+                                    filename DEFAULT_DOCKER_FILENAME
+                                    label DEFAULT_DOCKER_LABEL
+                                    additionalBuildArgs DEFAULT_DOCKER_BUILD_ARGS
                                 }
                             }
                             stages{
                                 stage("Run Python Testing"){
                                     parallel {
-                                        stage("Tox") {
-                                            when {
-                                                equals expected: true, actual: params.TEST_RUN_TOX
-                                            }
-                                            steps {
-                                                sh (
-                                                    label: "Run Tox",
-                                                    script: 'tox --workdir .tox -vv  -e py'
-                                                )
-                                            }
-                                        }
                                         stage("Run PyTest Unit Tests"){
                                             steps{
                                                 unstash "LINUX_BUILD_FILES"
@@ -779,6 +829,29 @@ pipeline {
                                             [pattern: 'reports/xml"', type: 'INCLUDE'],
                                         ]
                                     )
+                                }
+                            }
+                        }
+                        stage("Run Tox"){
+                            when{
+                                equals expected: true, actual: params.TEST_RUN_TOX
+                            }
+                            steps {
+                                script{
+                                    def windowsJobs
+                                    def linuxJobs
+                                    stage("Scanning Tox Environments"){
+                                        parallel(
+                                            "Linux":{
+                                                linuxJobs = tox.getToxTestsParallel("Tox Linux", "linux && docker", "ci/docker/python/linux/tox/Dockerfile", '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)')
+                                            },
+                                            "Windows":{
+                                                windowsJobs = tox.getToxTestsParallel("Tox Windows", "windows && docker", "ci/docker/python/windows/msvc/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
+                                            },
+                                            failFast: true
+                                        )
+                                    }
+                                    parallel(windowsJobs + linuxJobs)
                                 }
                             }
                         }
@@ -892,9 +965,9 @@ pipeline {
                 stage('Creating Source Package') {
                     agent {
                         dockerfile {
-                            filename "${CONFIGURATIONS["3.7"].os.linux.agents.build.dockerfile}"
-                            label "${CONFIGURATIONS["3.7"].os.linux.agents.build.label}"
-                            additionalBuildArgs "${CONFIGURATIONS["3.7"].os.linux.agents.build.additionalBuildArgs}"
+                            filename DEFAULT_DOCKER_FILENAME
+                            label DEFAULT_DOCKER_LABEL
+                            additionalBuildArgs DEFAULT_DOCKER_BUILD_ARGS
                         }
                     }
                     steps {
@@ -1060,11 +1133,8 @@ pipeline {
                                 steps{
                                     timeout(15){
                                         build_wheel()
-                                        script{
-                                            if(PLATFORM == "linux"){
-                                                sh "auditwheel repair ./dist/*.whl -w ./dist"
-                                            }
-                                        }
+                                        fixup_wheel("./dist/*.whl", PLATFORM)
+
                                     }
                                 }
                                 post{
@@ -1226,10 +1296,11 @@ pipeline {
                                                            venv/bin/devpi --version
                                                 '''
                                             )
-                                            unstash "DIST-INFO"
-                                            devpiRunTest2(
+//                                             unstash "DIST-INFO"
+                                            devpiRunTest3(
                                                 "venv/bin/devpi",
-                                                "uiucprescon.imagevalidate.dist-info/METADATA",
+                                                props.Name,
+                                                props.Version,
                                                 env.devpiStagingIndex,
                                                 "38-macosx_10_14_x86_64*.*whl",
                                                 DEVPI_USR,
@@ -1264,10 +1335,11 @@ pipeline {
                                                            venv/bin/devpi --version
                                                 '''
                                             )
-                                            unstash "DIST-INFO"
-                                            devpiRunTest2(
+//                                             unstash "DIST-INFO"
+                                            devpiRunTest3(
                                                 "venv/bin/devpi",
-                                                "uiucprescon.imagevalidate.dist-info/METADATA",
+                                                props.Name,
+                                                props.Version,
                                                 env.devpiStagingIndex,
                                                 "tar.gz",
                                                 DEVPI_USR,
@@ -1320,9 +1392,10 @@ pipeline {
                                         }
                                         steps{
                                             timeout(10){
-                                                unstash "DIST-INFO"
-                                                devpiRunTest2("devpi",
-                                                    "uiucprescon.imagevalidate.dist-info/METADATA",
+//                                                 unstash "DIST-INFO"
+                                                devpiRunTest3("devpi",
+                                                    props.Name,
+                                                    props.Version,
                                                     env.devpiStagingIndex,
                                                     CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector['whl'],
                                                     DEVPI_USR,
@@ -1342,9 +1415,9 @@ pipeline {
                                         }
                                         steps{
                                             timeout(10){
-                                                unstash "DIST-INFO"
-                                                devpiRunTest2("devpi",
-                                                    "uiucprescon.imagevalidate.dist-info/METADATA",
+                                                devpiRunTest3("devpi",
+                                                    props.Name,
+                                                    props.Version,
                                                     env.devpiStagingIndex,
                                                     "tar.gz",
                                                     DEVPI_USR,

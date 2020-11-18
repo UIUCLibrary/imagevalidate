@@ -1,4 +1,5 @@
 pybind11
+conan
 pytest
 pytest-runner
-py3exiv2bind>=0.1.5b3
+py3exiv2bind>=0.1.5b12

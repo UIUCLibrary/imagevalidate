@@ -1,4 +1,3 @@
-conan
 coverage
 cmake
 devpi-client
@@ -7,6 +6,7 @@ gcovr
 lxml
 mypy
 pep517
+pybind11
 pytest-cov
 sphinx
 tox

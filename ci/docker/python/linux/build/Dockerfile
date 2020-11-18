@@ -17,6 +17,27 @@ RUN python -m pip install --upgrade pip && \
         -r /requirements/requirements-ci.txt \
          -i ${PYTHON_INDEX}
 
+FROM wheel_builder as conan_builder
+
+RUN pip install conan cmake
+
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
+RUN groupadd -g $GROUP_ID user && \
+    useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
+
+COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
+COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/profiles/default
+USER user
+WORKDIR /home/user
+COPY conanfile.py /tmp/conanfile.py
+RUN pip install conan
+RUN conan config home
+RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
+    conan remove "*" -b --src -f && \
+    conan remove --locks
+
 FROM python:${PYTHON_VERSION}
 
 ARG USER_ID=1000
@@ -44,13 +65,15 @@ RUN pip install --no-index --find-links=/wheels  \
 
 ENV PIP_FIND_LINKS=/wheels
 ENV PIP_NO_CACHE_DIR=1
+COPY --from=conan_builder --chown=user:user /home/user/.conan/ /home/user/.conan/
+COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
+COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/profiles/default
 USER user
 WORKDIR /home/user
 #COPY --chown=user:user ci/docker/shared/conan/remotes.json /home/user/.conan/remotes.json
 ENV CONAN_USER_HOME=/home/user/
-RUN conan config home
 COPY conanfile.py /tmp/conanfile.py
-RUN conan install /tmp --build missing --no-import && \
-    conan remove --locks && \
-    conan remove "*" -b --src -f &&\
-    chown -R user:user  /home/user/.conan/data
+RUN conan config home
+RUN conan install /tmp --build outdated --no-import  && \
+    conan remove "*" -b --src -f && \
+    conan remove --locks
