@@ -1282,6 +1282,8 @@ class BuildConan(setuptools.Command):
         self.announce(f"Using {conan_cache} for conan cache", 5)
         conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
         conan_options = []
+        if platform.system() == "Windows":
+            conan_options.append("*:shared=True")
         build = ['missing']
         settings = []
 
