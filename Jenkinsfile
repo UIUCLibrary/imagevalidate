@@ -734,61 +734,7 @@ pipeline {
             stages{
                 stage("Testing"){
                     stages{
-                        stage("Run Tox"){
-                            when{
-                                equals expected: true, actual: params.TEST_RUN_TOX
-                            }
-                            steps {
-                                script{
-                                    def windowsJobs
-                                    def linuxJobs
-                                    stage("Scanning Tox Environments"){
-                                        parallel(
-                                            "Linux":{
-                                                linuxJobs = tox.getToxTestsParallel("Tox Linux", "linux && docker", "ci/docker/python/linux/tox/Dockerfile", '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)')
-                                            },
-                                            "Windows":{
-                                                windowsJobs = tox.getToxTestsParallel("Tox Windows", "windows && docker", "ci/docker/python/windows/msvc/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
-                                            },
-                                            failFast: true
-                                        )
-                                    }
-                                    parallel(windowsJobs + linuxJobs)
-                                }
-                            }
-                        }
-//                         stage("Tox") {
-//                             when {
-//                                 equals expected: true, actual: params.TEST_RUN_TOX
-//                             }
-//                             parallel{
-//                                 stage("Linux"){
-//                                     agent {
-//                                         dockerfile {
-//                                             filename 'ci/docker/python/linux/tox/Dockerfile'
-//                                             label 'linux && docker'
-//                                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-//                                         }
-//                                     }
-//                                     steps {
-//                                         script {
-//                                           def envs = sh(returnStdout: true, script: "tox -l").trim().split('\n')
-//                                           def cmds = envs.collectEntries({ tox_env ->
-//                                             [tox_env, {
-//                                               sh "tox  -vve $tox_env"
-//                                             }]
-//                                           })
-//                                           parallel(cmds)
-//                                         }
-//
-// //                                         sh (
-// //                                             label: "Run Tox",
-// //                                             script: 'tox --workdir .tox -vv  -e py'
-// //                                         )
-//                                     }
-//                                 }
-//                             }
-//                         }
+
                         stage('Testing Python') {
                             agent {
                                 dockerfile {
@@ -884,6 +830,29 @@ pipeline {
                                             [pattern: 'reports/xml"', type: 'INCLUDE'],
                                         ]
                                     )
+                                }
+                            }
+                        }
+                        stage("Run Tox"){
+                            when{
+                                equals expected: true, actual: params.TEST_RUN_TOX
+                            }
+                            steps {
+                                script{
+                                    def windowsJobs
+                                    def linuxJobs
+                                    stage("Scanning Tox Environments"){
+                                        parallel(
+                                            "Linux":{
+                                                linuxJobs = tox.getToxTestsParallel("Tox Linux", "linux && docker", "ci/docker/python/linux/tox/Dockerfile", '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)')
+                                            },
+                                            "Windows":{
+                                                windowsJobs = tox.getToxTestsParallel("Tox Windows", "windows && docker", "ci/docker/python/windows/msvc/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
+                                            },
+                                            failFast: true
+                                        )
+                                    }
+                                    parallel(windowsJobs + linuxJobs)
                                 }
                             }
                         }
