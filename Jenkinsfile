@@ -292,14 +292,14 @@ def startup(){
         mac = load("ci/jenkins/scripts/mac.groovy")
     }
 
-    mac.build_mac_package(
-        label: 'mac && 10.14 && python3.8',
-        pythonPath: 'python3.8',
-        stash: [
-            includes: 'dist/*.whl',
-            name: "MacOS 10.14 py38 wheel"
-        ]
-    )
+//     mac.build_mac_package(
+//         label: 'mac && 10.14 && python3.8',
+//         pythonPath: 'python3.8',
+//         stash: [
+//             includes: 'dist/*.whl',
+//             name: "MacOS 10.14 py38 wheel"
+//         ]
+//     )
     node('linux && docker') {
         try{
             checkout scm
@@ -701,21 +701,21 @@ pipeline {
                         beforeAgent true
                     }
                     stages{
-//                         stage("3.8"){
-//                             steps{
-//                                 script{
-//                                     def stashName = "MacOS 10.14 py38 wheel"
-//                                     mac.build_mac_package(
-//                                         label: 'mac && 10.14 && python3.8',
-//                                         stash: [
-//                                             includes: 'dist/*.whl',
-//                                             name: stashName
-//                                         ]
-//                                     )
-//                                     stashes << stashName
-//                                 }
-//                             }
-//                         }
+                        stage("3.8"){
+                            steps{
+                                script{
+                                    def stashName = "MacOS 10.14 py38 wheel"
+                                    mac.build_mac_package(
+                                        label: 'mac && 10.14 && python3.8',
+                                        stash: [
+                                            includes: 'dist/*.whl',
+                                            name: stashName
+                                        ]
+                                    )
+                                    stashes << stashName
+                                }
+                            }
+                        }
                         stage('Build wheel for Mac 10.14') {
                             steps{
                                 script{
