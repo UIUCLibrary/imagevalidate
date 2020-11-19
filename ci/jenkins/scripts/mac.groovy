@@ -4,6 +4,7 @@ def build_mac_package(args = [:]){
     def outPath = "dist"
     echo "pythonPath = ${pythonPath}"
     echo "stash = ${args['stash']}"
+
     stage('Build wheel') {
         node(args['label']){
             try{
@@ -20,6 +21,7 @@ def build_mac_package(args = [:]){
                     ]
                 )
             }
+            def stash = args['stash']
             stash includes: stash['includes'], name: stash['name']
         }
     }
