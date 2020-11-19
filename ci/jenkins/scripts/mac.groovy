@@ -1,5 +1,5 @@
 def build_mac_package(args = [:]){
-
+    echo "HERER"
 }
 
 def test_mac_package(toxPath, pkgRegex){
