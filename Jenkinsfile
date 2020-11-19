@@ -362,9 +362,12 @@ pipeline {
         booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
 //         TODO set defaultValue to false
         booleanParam(name: "BUILD_PACKAGES", defaultValue: true, description: "Build Python packages")
-        booleanParam(name: "TEST_PACKAGES", defaultValue: true, description: "Test Python packages by installing them and running tests on the installed package")
+//         TODO set defaultValue to true
+        booleanParam(name: "TEST_PACKAGES", defaultValue: false, description: "Test Python packages by installing them and running tests on the installed package")
         booleanParam(name: "BUILD_MAC_PACKAGES", defaultValue: true, description: "Test Python packages on Mac")
-        booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
+
+//         TODO set defaultValue to false
+        booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only")
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation. Release Branch Only")
     }
