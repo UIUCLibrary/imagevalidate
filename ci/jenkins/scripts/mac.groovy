@@ -21,8 +21,7 @@ def build_mac_package(args = [:]){
                     ]
                 )
             }
-            def localStash = args['stash']
-            stash includes: localStash['includes'], name: localStash['name']
+            stash includes: args['stash']['includes'], name: args['stash']['name']
         }
     }
     stage('Testing Packages'){

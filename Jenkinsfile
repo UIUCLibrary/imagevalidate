@@ -707,6 +707,7 @@ pipeline {
                                     def stashName = "MacOS 10.14 py38 wheel"
                                     mac.build_mac_package(
                                         label: 'mac && 10.14 && python3.8',
+                                        pythonPath: 'python3.8',
                                         stash: [
                                             includes: 'dist/*.whl',
                                             name: stashName
@@ -716,12 +717,13 @@ pipeline {
                                 }
                             }
                         }
-                        stage('Build wheel for Mac 10.14') {
+                        stage("3.9"){
                             steps{
                                 script{
-                                    def stashName = "MacOS 10.14 py38 wheel"
+                                    def stashName = "MacOS 10.14 py39 wheel"
                                     mac.build_mac_package(
-                                        label: 'mac && 10.14 && python3.8',
+                                        label: 'mac && 10.14 && python3.9',
+                                        pythonPath: 'python3.9',
                                         stash: [
                                             includes: 'dist/*.whl',
                                             name: stashName
@@ -730,6 +732,7 @@ pipeline {
                                     stashes << stashName
                                 }
                             }
+                        }
 //                             agent {
 //                                 label 'mac && 10.14 && python3.8'
 //                             }
@@ -755,7 +758,7 @@ pipeline {
 //                                     )
 //                                 }
 //                             }
-                        }
+//                         }
                         stage('Testing Packages on a Mac') {
                             when{
                                 anyOf{
