@@ -700,36 +700,39 @@ pipeline {
                         equals expected: true, actual: params.BUILD_MAC_PACKAGES
                         beforeAgent true
                     }
-                    parallel{
-                        stage("3.8"){
-                            steps{
-                                script{
-                                    def stashName = "MacOS 10.14 py38 wheel"
-                                    mac.build_mac_package(
-                                        label: 'mac && 10.14 && python3.8',
-                                        pythonPath: 'python3.8',
-                                        stash: [
-                                            includes: 'dist/*.whl',
-                                            name: stashName
-                                        ]
-                                    )
-                                    stashes << stashName
-                                }
+                    matrix{
+                        agent none
+                        axes{
+                            axis {
+                                name 'PLATFORM'
+                                values(
+                                    "linux",
+                                    "windows"
+                                )
+                            }
+                            axis {
+                                name "PYTHON_VERSION"
+                                values(
+                                    "3.8",
+                                    '3.9'
+                                )
                             }
                         }
-                        stage("3.9"){
-                            steps{
-                                script{
-                                    def stashName = "MacOS 10.14 py39 wheel"
-                                    mac.build_mac_package(
-                                        label: 'mac && 10.14 && python3.9',
-                                        pythonPath: 'python3.9',
-                                        stash: [
-                                            includes: 'dist/*.whl',
-                                            name: stashName
-                                        ]
-                                    )
-                                    stashes << stashName
+                        stages{
+                            stage("Build"){
+                                steps{
+                                    script{
+                                        def stashName = "MacOS 10.14 py${PYTHON_VERSION} wheel"
+                                        mac.build_mac_package(
+                                            label: "mac && 10.14 && python${PYTHON_VERSION}",
+                                            pythonPath: 'python${PYTHON_VERSION}',
+                                            stash: [
+                                                includes: 'dist/*.whl',
+                                                name: stashName
+                                            ]
+                                        )
+                                        stashes << stashName
+                                    }
                                 }
                             }
                         }
