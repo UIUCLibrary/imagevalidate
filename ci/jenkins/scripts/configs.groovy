@@ -314,6 +314,111 @@ def getConfigurations(){
                 sdist: "*.zip",
                 devpi_wheel_regex: "38-win*.*whl"
             ],
+        ],
+        "3.9": [
+            "os":[
+                "linux":[
+                    base_image: "python:3.9",
+                    agents: [
+                        build:[
+                            dockerfile: "ci/docker/python/linux/build/Dockerfile",
+                            label: "linux && docker",
+                            additionalBuildArgs: "--build-arg PYTHON_VERSION=3.9",
+                        ],
+                        package:[
+                            dockerfile: "ci/docker/python/linux/package/Dockerfile",
+                            label: "linux && docker",
+                            additionalBuildArgs: "--build-arg PYTHON_VERSION=3.9",
+                        ],
+                        test:[
+                            whl: [
+                                dockerfile: "ci/docker/python/linux/build/Dockerfile",
+                                label: "linux && docker",
+                                additionalBuildArgs: "--build-arg PYTHON_VERSION=3.9",
+                            ],
+                            sdist: [
+                                dockerfile: "ci/docker/python/linux/build/Dockerfile",
+                                label: "linux && docker",
+                                additionalBuildArgs: "--build-arg PYTHON_VERSION=3.9",
+                            ]
+                        ],
+                        devpi: [
+                            whl: [
+                                dockerfile: [
+                                    filename: 'ci/docker/python/linux/build/Dockerfile',
+                                    label: 'linux && docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.9 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
+                            ],
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/python/linux/build/Dockerfile',
+                                    label: 'linux && docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.9 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
+                            ]
+                        ]
+                    ],
+                    devpiSelector: [
+                            sdist: "zip",
+                            whl: "39-manylinux*.*whl",
+                    ],
+                ],
+                "windows":[
+                    python_install_url:"https://www.python.org/ftp/python/3.9.0/python-3.9.0-amd64.exe",
+                    base_image: "python:3.9",
+                    agents: [
+                        build:[
+                            dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
+                            label: "windows && Docker",
+                            additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.9.0/python-3.9.0-amd64.exe --build-arg CHOCOLATEY_SOURCE",
+                        ],
+                        package:[
+                            dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
+                            label: "windows && Docker",
+                            additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.9.0/python-3.9.0-amd64.exe --build-arg CHOCOLATEY_SOURCE",
+                        ],
+                        test:[
+                            whl: [
+                                dockerfile: "ci/docker/python/windows/msvc/test/Dockerfile",
+                                label: "windows && Docker",
+                                additionalBuildArgs: "--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.9",
+                            ],
+                            sdist: [
+                                dockerfile: "ci/docker/python/windows/msvc/build/Dockerfile",
+                                label: "windows && Docker",
+                                additionalBuildArgs: "--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.9.0/python-3.9.0-amd64.exe --build-arg CHOCOLATEY_SOURCE",
+                            ]
+                        ],
+                        devpi: [
+                            whl: [
+                                dockerfile: [
+                                    filename: 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile',
+                                    label: 'Windows&&Docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.9'
+                                ]
+                            ],
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/python/windows/msvc/build/Dockerfile',
+                                    label: 'Windows&&Docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.9.0/python-3.9.0-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                                ]
+                            ]
+                        ]
+                    ],
+                    devpiSelector: [
+                        sdist: "zip",
+                        whl: "39-win*.*whl",
+                    ],
+                ]
+            ],
+            tox_env: "py39",
+            pkgRegex: [
+                whl: "*cp39*.whl",
+                sdist: "*.zip",
+                devpi_wheel_regex: "39-win*.*whl"
+            ],
         ]
     ]
     return configs
