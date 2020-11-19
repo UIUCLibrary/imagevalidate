@@ -1,8 +1,6 @@
 def build_mac_package(args = [:]){
     def pythonPath =  args['pythonPath'] ? args['pythonPath']: "python3"
     def outPath = "dist"
-    echo "pythonPath = ${pythonPath}"
-    echo "stash = ${args['stash']}"
 
     node(args['label']){
         checkout scm
