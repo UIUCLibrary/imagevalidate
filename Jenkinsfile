@@ -444,14 +444,6 @@ def devpiRunTest2(devpiClient, pkgPropertiesFile, devpiIndex, devpiSelector, dev
     }
 }
 
-def test_mac_package(toxPath, pkgRegex){
-    findFiles(glob: pkgRegex).each{
-        sh(
-            label: "Testing ${it}",
-            script: "${toxPath} --installpkg=${it.path} -e py -vvv --recreate"
-        )
-    }
-}
 
 def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
     script {
@@ -581,11 +573,9 @@ def getDevPiStagingIndex(){
     }
 }
 
-// node(){
-//     checkout scm
-//     tox = load("ci/jenkins/scripts/tox.groovy")
-// }
 def tox = loadHelper("ci/jenkins/scripts/tox.groovy")
+def mac = loadHelper ("ci/jenkins/scripts/mac.groovy")
+
 def test_pkg(glob, timeout_time){
 
     findFiles( glob: glob).each{
@@ -679,7 +669,7 @@ pipeline {
 //         TODO set defaultValue to false
         booleanParam(name: "BUILD_PACKAGES", defaultValue: true, description: "Build Python packages")
         booleanParam(name: "TEST_PACKAGES", defaultValue: true, description: "Test Python packages by installing them and running tests on the installed package")
-        booleanParam(name: "BUILD_MAC_PACKAGES", defaultValue: false, description: "Test Python packages on Mac")
+        booleanParam(name: "BUILD_MAC_PACKAGES", defaultValue: true, description: "Test Python packages on Mac")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only")
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation. Release Branch Only")
@@ -1071,7 +1061,9 @@ pipeline {
                                                        venv/bin/python -m pip install tox
                                                        """
                                             )
-                                        test_mac_package("venv/bin/tox", "dist/*.whl")
+                                        script{
+                                            mac.test_mac_package("venv/bin/tox", "dist/*.whl")
+                                        }
                                     }
                                     post{
                                         cleanup{
@@ -1101,7 +1093,9 @@ pipeline {
                                                        """
                                             )
                                         unstash "sdist"
-                                        test_mac_package("venv/bin/tox", "dist/*.tar.gz,dist/*.zip")
+                                        script{
+                                            mac.test_mac_package("venv/bin/tox", "dist/*.tar.gz,dist/*.zip")
+                                        }
                                     }
                                     post{
                                         cleanup{
