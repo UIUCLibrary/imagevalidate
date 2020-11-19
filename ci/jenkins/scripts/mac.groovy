@@ -32,7 +32,7 @@ def build_mac_package(args = [:]){
                 unstash args['stash']['name']
                 sh(
                     label:"Installing tox",
-                    script: """"${pythonPath} -m venv venv
+                    script: """${pythonPath} -m venv venv
                                venv/bin/python -m pip install pip --upgrade
                                venv/bin/python -m pip install wheel
                                venv/bin/python -m pip install --upgrade setuptools
