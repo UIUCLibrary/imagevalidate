@@ -12,6 +12,7 @@ def build_mac_package(args = [:]){
                     label: "Building wheel",
                     script: "${pythonPath} -m pip wheel . --no-deps -w ${outPath}"
                 )
+                stash includes: args['stash']['includes'], name: args['stash']['name']
             } finally{
                 cleanWs(
                     deleteDirs: true,
@@ -21,7 +22,7 @@ def build_mac_package(args = [:]){
                     ]
                 )
             }
-            stash includes: args['stash']['includes'], name: args['stash']['name']
+
         }
     }
     stage('Testing Packages'){

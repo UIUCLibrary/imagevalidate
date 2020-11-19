@@ -1,0 +1,12 @@
+conan
+coverage
+cmake
+devpi-client
+flake8
+gcovr
+lxml
+mypy
+pep517
+pytest-cov
+sphinx
+tox
