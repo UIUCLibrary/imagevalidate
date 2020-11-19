@@ -1,6 +1,6 @@
 // @Library(["devpi", "PythonHelpers"]) _
 def CONFIGURATIONS = loadConfigs()
-stashes = []
+wheel_stashes = []
 def loadConfigs(){
     node(){
         echo "loading configurations"
@@ -724,7 +724,7 @@ pipeline {
                                                 name: stashName
                                             ]
                                         )
-                                        stashes << stashName
+                                        wheel_stashes << stashName
                                     }
                                 }
                             }
@@ -907,11 +907,13 @@ pipeline {
                                 post{
                                     always{
                                         script{
+                                            def stashName = "whl ${PLATFORM} ${PYTHON_VERSION}"
                                             if(PLATFORM == "linux"){
-                                                stash includes: 'dist/*manylinux*.whl', name: "whl ${PLATFORM} ${PYTHON_VERSION}"
+                                                stash includes: 'dist/*manylinux*.whl', name: stashName
                                             } else{
-                                                stash includes: 'dist/*.whl', name: "whl ${PLATFORM} ${PYTHON_VERSION}"
+                                                stash includes: 'dist/*.whl', name: stashName
                                             }
+                                            wheel_stashes << stashName
                                         }
                                     }
                                     success{
@@ -1023,14 +1025,10 @@ pipeline {
                     }
                     steps {
                         script{
-                            if(params.BUILD_MAC_PACKAGES){
-                                unstash "MacOS 10.14 py38 wheel"
+                            wheel_stashes.each{
+                                unstash it
                             }
                         }
-                        unstash "whl windows 3.7"
-                        unstash "whl windows 3.8"
-                        unstash "whl linux 3.7"
-                        unstash "whl linux 3.8"
                         unstash "sdist"
                         unstash "DOCS_ARCHIVE"
                         sh(
