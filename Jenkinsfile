@@ -704,13 +704,6 @@ pipeline {
                         agent none
                         axes{
                             axis {
-                                name 'PLATFORM'
-                                values(
-                                    "linux",
-                                    "windows"
-                                )
-                            }
-                            axis {
                                 name "PYTHON_VERSION"
                                 values(
                                     "3.8",
@@ -725,7 +718,7 @@ pipeline {
                                         def stashName = "MacOS 10.14 py${PYTHON_VERSION} wheel"
                                         mac.build_mac_package(
                                             label: "mac && 10.14 && python${PYTHON_VERSION}",
-                                            pythonPath: 'python${PYTHON_VERSION}',
+                                            pythonPath: "python${PYTHON_VERSION}",
                                             stash: [
                                                 includes: 'dist/*.whl',
                                                 name: stashName
