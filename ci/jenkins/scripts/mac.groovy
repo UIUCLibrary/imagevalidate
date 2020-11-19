@@ -35,12 +35,14 @@ def build_mac_package(args = [:]){
                     script: """${pythonPath} -m venv venv
                                venv/bin/python -m pip install pip --upgrade
                                venv/bin/python -m pip install wheel
-                               venv/bin/python -m pip install --upgrade setuptools
                                venv/bin/python -m pip install tox
                                """
+                )
+                findFiles(glob: "dist/*.whl").each{
+                    sh(
+                        label: "Testing ${it}",
+                        script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
                     )
-                script{
-                    test_mac_package("venv/bin/tox", "dist/*.whl")
                 }
             } finally {
                 cleanWs(
@@ -58,14 +60,6 @@ def build_mac_package(args = [:]){
     }
 }
 
-def test_mac_package(toxPath, pkgRegex){
-    findFiles(glob: pkgRegex).each{
-        sh(
-            label: "Testing ${it}",
-            script: "${toxPath} --installpkg=${it.path} -e py -vvv --recreate"
-        )
-    }
-}
 
 return this
 
