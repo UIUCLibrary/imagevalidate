@@ -255,9 +255,6 @@ def getDevPiStagingIndex(){
     }
 }
 
-def tox = loadHelper("ci/jenkins/scripts/tox.groovy")
-def mac = loadHelper("ci/jenkins/scripts/mac.groovy")
-
 def test_pkg(glob, timeout_time){
 
     findFiles( glob: glob).each{
@@ -288,6 +285,19 @@ def DEFAULT_DOCKER_LABEL = "linux && docker"
 def DEFAULT_DOCKER_BUILD_ARGS = '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
 
 def startup(){
+    node(){
+        checkout scm
+        tox = load("ci/jenkins/scripts/tox.groovy")
+        mac = load("ci/jenkins/scripts/mac.groovy")
+    }
+
+    mac.build_mac_package(
+        label: 'mac && 10.14 && python3.8',
+        stash: [
+            includes: 'dist/*.whl',
+            name: "MacOS 10.14 py38 wheel"
+        ]
+    )
     node('linux && docker') {
         try{
             checkout scm
