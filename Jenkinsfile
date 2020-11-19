@@ -326,6 +326,15 @@ def loadConfigs(){
     }
 }
 
+def loadHelper(file){
+    node(){
+        echo "loading ${file}"
+        checkout scm
+        return load(file)
+    }
+}
+
+
 def run_dumpbin(glob){
     script{
         findFiles(glob: glob).each{
@@ -572,11 +581,11 @@ def getDevPiStagingIndex(){
     }
 }
 
-node(){
-    checkout scm
-    tox = load("ci/jenkins/scripts/tox.groovy")
-}
-
+// node(){
+//     checkout scm
+//     tox = load("ci/jenkins/scripts/tox.groovy")
+// }
+def tox = loadHelper("ci/jenkins/scripts/tox.groovy")
 def test_pkg(glob, timeout_time){
 
     findFiles( glob: glob).each{
@@ -1008,6 +1017,11 @@ pipeline {
                         beforeAgent true
                     }
                     stages{
+//                         stage("3.8"){
+//                             build_mac_package(
+//                                 label: 'mac && 10.14 && python3.8'
+//                             )
+//                         }
                         stage('Build wheel for Mac 10.14') {
                             agent {
                                 label 'mac && 10.14 && python3.8'
@@ -1390,7 +1404,6 @@ pipeline {
                                             '3.7',
                                             '3.8',
                                             '3.9'
-
                                         )
                                     }
                                 }
