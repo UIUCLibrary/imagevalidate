@@ -1062,16 +1062,34 @@ pipeline {
                                                 '''
                                             )
 //                                             unstash "DIST-INFO"
-                                            devpiRunTest3(
-                                                "venv/bin/devpi",
-                                                props.Name,
-                                                props.Version,
-                                                env.devpiStagingIndex,
-                                                "38-macosx_10_14_x86_64*.*whl",
-                                                DEVPI_USR,
-                                                DEVPI_PSW,
-                                                "py38"
-                                            )
+sh(
+                                                        label: "Installing devpi client",
+                                                        script: '''python3.8 -m venv venv
+                                                                   venv/bin/python -m pip install --upgrade pip
+                                                                   venv/bin/pip install devpi-client
+                                                                   venv/bin/devpi --version
+                                                        '''
+                                                    )
+                                                testDevpiPackage2(
+                                                    "venv/bin/devpi",
+                                                    env.devpiStagingIndex,
+                                                    DEVPI_USR,
+                                                    DEVPI_PSW,
+                                                    props.Name,
+                                                    props.Version,
+                                                    "38-macosx_10_14_x86_64*.*whl",
+                                                    "py38"
+                                                )
+//                                             devpiRunTest3(
+//                                                 "venv/bin/devpi",
+//                                                 props.Name,
+//                                                 props.Version,
+//                                                 env.devpiStagingIndex,
+//                                                 "38-macosx_10_14_x86_64*.*whl",
+//                                                 DEVPI_USR,
+//                                                 DEVPI_PSW,
+//                                                 "py38"
+//                                             )
                                         }
                                     }
                                     post{
