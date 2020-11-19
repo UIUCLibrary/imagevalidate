@@ -7,6 +7,7 @@ def build_mac_package(args = [:]){
 
     stage('Build wheel') {
         node(args['label']){
+            checkout scm
             try{
                 sh(
                     label: "Building wheel",
