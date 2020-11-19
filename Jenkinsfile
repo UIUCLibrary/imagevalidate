@@ -700,7 +700,7 @@ pipeline {
                         equals expected: true, actual: params.BUILD_MAC_PACKAGES
                         beforeAgent true
                     }
-                    stages{
+                    parallel{
                         stage("3.8"){
                             steps{
                                 script{
@@ -759,79 +759,79 @@ pipeline {
 //                                 }
 //                             }
 //                         }
-                        stage('Testing Packages on a Mac') {
-                            when{
-                                anyOf{
-                                    equals expected: true, actual: params.TEST_PACKAGES
-                                }
-                            }
-                            parallel{
-                                stage("Testing wheel Packages on mac"){
-                                    agent {
-                                        label 'mac && 10.14 && python3.8'
-                                    }
-                                    steps{
-                                        unstash "MacOS 10.14 py38 wheel"
-                                        sh(
-                                            label:"Installing tox",
-                                            script: """python3 -m venv venv
-                                                       venv/bin/python -m pip install pip --upgrade
-                                                       venv/bin/python -m pip install wheel
-                                                       venv/bin/python -m pip install --upgrade setuptools
-                                                       venv/bin/python -m pip install tox
-                                                       """
-                                            )
-                                        script{
-                                            mac.test_mac_package("venv/bin/tox", "dist/*.whl")
-                                        }
-                                    }
-                                    post{
-                                        cleanup{
-                                            cleanWs(
-                                                deleteDirs: true,
-                                                patterns: [
-                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                    [pattern: '.tox/', type: 'INCLUDE'],
-                                                    [pattern: '*.egg-info/', type: 'INCLUDE'],
-                                                ]
-                                            )
-                                        }
-                                    }
-                                }
-                                stage("Testing sdist Packages on mac"){
-                                     agent {
-                                        label 'mac && 10.14 && python3.8'
-                                    }
-                                    steps{
-                                        sh(
-                                            label:"Installing tox",
-                                            script: """python3 -m venv venv
-                                                       venv/bin/python -m pip install pip --upgrade
-                                                       venv/bin/python -m pip install wheel
-                                                       venv/bin/python -m pip install --upgrade setuptools
-                                                       venv/bin/python -m pip install tox
-                                                       """
-                                            )
-                                        unstash "sdist"
-                                        script{
-                                            mac.test_mac_package("venv/bin/tox", "dist/*.tar.gz,dist/*.zip")
-                                        }
-                                    }
-                                    post{
-                                        cleanup{
-                                            cleanWs(
-                                                deleteDirs: true,
-                                                patterns: [
-                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                    [pattern: '.tox/', type: 'INCLUDE'],
-                                                    [pattern: '*.egg-info/', type: 'INCLUDE'],
-                                                ]
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
+//                         stage('Testing Packages on a Mac') {
+//                             when{
+//                                 anyOf{
+//                                     equals expected: true, actual: params.TEST_PACKAGES
+//                                 }
+//                             }
+//                             parallel{
+//                                 stage("Testing wheel Packages on mac"){
+//                                     agent {
+//                                         label 'mac && 10.14 && python3.8'
+//                                     }
+//                                     steps{
+//                                         unstash "MacOS 10.14 py38 wheel"
+//                                         sh(
+//                                             label:"Installing tox",
+//                                             script: """python3 -m venv venv
+//                                                        venv/bin/python -m pip install pip --upgrade
+//                                                        venv/bin/python -m pip install wheel
+//                                                        venv/bin/python -m pip install --upgrade setuptools
+//                                                        venv/bin/python -m pip install tox
+//                                                        """
+//                                             )
+//                                         script{
+//                                             mac.test_mac_package("venv/bin/tox", "dist/*.whl")
+//                                         }
+//                                     }
+//                                     post{
+//                                         cleanup{
+//                                             cleanWs(
+//                                                 deleteDirs: true,
+//                                                 patterns: [
+//                                                     [pattern: '**/__pycache__/', type: 'INCLUDE'],
+//                                                     [pattern: '.tox/', type: 'INCLUDE'],
+//                                                     [pattern: '*.egg-info/', type: 'INCLUDE'],
+//                                                 ]
+//                                             )
+//                                         }
+//                                     }
+//                                 }
+//                                 stage("Testing sdist Packages on mac"){
+//                                      agent {
+//                                         label 'mac && 10.14 && python3.8'
+//                                     }
+//                                     steps{
+//                                         sh(
+//                                             label:"Installing tox",
+//                                             script: """python3 -m venv venv
+//                                                        venv/bin/python -m pip install pip --upgrade
+//                                                        venv/bin/python -m pip install wheel
+//                                                        venv/bin/python -m pip install --upgrade setuptools
+//                                                        venv/bin/python -m pip install tox
+//                                                        """
+//                                             )
+//                                         unstash "sdist"
+//                                         script{
+//                                             mac.test_mac_package("venv/bin/tox", "dist/*.tar.gz,dist/*.zip")
+//                                         }
+//                                     }
+//                                     post{
+//                                         cleanup{
+//                                             cleanWs(
+//                                                 deleteDirs: true,
+//                                                 patterns: [
+//                                                     [pattern: '**/__pycache__/', type: 'INCLUDE'],
+//                                                     [pattern: '.tox/', type: 'INCLUDE'],
+//                                                     [pattern: '*.egg-info/', type: 'INCLUDE'],
+//                                                 ]
+//                                             )
+//                                         }
+//                                     }
+//                                 }
+//                             }
+//                         }
                     }
                 }
                 stage('Testing Packages') {
