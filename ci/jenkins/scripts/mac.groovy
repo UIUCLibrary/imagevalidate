@@ -1,10 +1,14 @@
 def build_mac_package(args = [:]){
     echo "label = ${args['label']}"
+    def pythonPath =  args['pythonPath'] ? args['pythonPath']: "python3"
+    echo "pythonPath = ${pythonPath}"
     echo "stash = ${args['stash']}"
     stage('Build wheel') {
         node(args['label']){
-            echo "HERE"
-            sh "ls -la"
+            sh(
+                label: "Building wheel",
+                script: "${pythonPath} -m pip wheel . --no-deps -w dist"
+            )
         }
     }
     stage('Testing Packages'){

@@ -293,6 +293,7 @@ def startup(){
 
     mac.build_mac_package(
         label: 'mac && 10.14 && python3.8',
+        pythonPath: 'python3.8',
         stash: [
             includes: 'dist/*.whl',
             name: "MacOS 10.14 py38 wheel"
