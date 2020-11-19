@@ -28,8 +28,32 @@ def build_mac_package(args = [:]){
     }
     stage('Testing Packages'){
         node(args['label']){
-            echo "HERE"
-            sh "ls -la"
+            try{
+                unstash args['stash']['name']
+                sh(
+                    label:"Installing tox",
+                    script: """"${pythonPath} -m venv venv
+                               venv/bin/python -m pip install pip --upgrade
+                               venv/bin/python -m pip install wheel
+                               venv/bin/python -m pip install --upgrade setuptools
+                               venv/bin/python -m pip install tox
+                               """
+                    )
+                script{
+                    test_mac_package("venv/bin/tox", "dist/*.whl")
+                }
+            } finally {
+                cleanWs(
+                    deleteDirs: true,
+                    patterns: [
+                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                        [pattern: '.tox/', type: 'INCLUDE'],
+                        [pattern: '*.egg-info/', type: 'INCLUDE'],
+                        [pattern: 'venv/', type: 'INCLUDE'],
+                        [pattern: outPath, type: 'INCLUDE'],
+                    ]
+                )
+            }
         }
     }
 }
