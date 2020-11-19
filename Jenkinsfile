@@ -729,15 +729,17 @@ pipeline {
                                 }
                             }
                             stage("Test Packages"){
+                                when{
+                                     equals expected: true, actual: params.TEST_PACKAGES
+                                }
                                 stages{
                                     stage("Test wheel"){
                                         steps{
                                             script{
-                                                def stashName = "MacOS 10.14 py${PYTHON_VERSION} wheel"
                                                 mac.test_mac_package(
                                                     label: "mac && 10.14 && python${PYTHON_VERSION}",
                                                     pythonPath: "python${PYTHON_VERSION}",
-                                                    stash: stashName,
+                                                    stash: "MacOS 10.14 py${PYTHON_VERSION} wheel",
                                                     glob: "dist/*.whl"
                                                 )
                                             }
