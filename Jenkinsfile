@@ -1,5 +1,6 @@
 // @Library(["devpi", "PythonHelpers"]) _
 def CONFIGURATIONS = loadConfigs()
+stashes = []
 def loadConfigs(){
     node(){
         echo "loading configurations"
@@ -700,45 +701,60 @@ pipeline {
                         beforeAgent true
                     }
                     stages{
-                        stage("3.8"){
+//                         stage("3.8"){
+//                             steps{
+//                                 script{
+//                                     def stashName = "MacOS 10.14 py38 wheel"
+//                                     mac.build_mac_package(
+//                                         label: 'mac && 10.14 && python3.8',
+//                                         stash: [
+//                                             includes: 'dist/*.whl',
+//                                             name: stashName
+//                                         ]
+//                                     )
+//                                     stashes << stashName
+//                                 }
+//                             }
+//                         }
+                        stage('Build wheel for Mac 10.14') {
                             steps{
                                 script{
+                                    def stashName = "MacOS 10.14 py38 wheel"
                                     mac.build_mac_package(
                                         label: 'mac && 10.14 && python3.8',
                                         stash: [
                                             includes: 'dist/*.whl',
-                                            name: "MacOS 10.14 py38 wheel"
+                                            name: stashName
                                         ]
                                     )
+                                    stashes << stashName
                                 }
                             }
-                        }
-                        stage('Build wheel for Mac 10.14') {
-                            agent {
-                                label 'mac && 10.14 && python3.8'
-                            }
-                            steps{
-                                sh(
-                                    label: "Building wheel",
-                                    script: 'python3 -m pip wheel . --no-deps -w dist'
-                                    )
-                            }
-                            post{
-                                success{
-                                    stash includes: 'dist/*.whl', name: "MacOS 10.14 py38 wheel"
-                                    archiveArtifacts artifacts: 'dist/*.whl'
-                                }
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        patterns: [
-                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                            [pattern: 'pykdu_compress.egg-info/', type: 'INCLUDE'],
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                        ]
-                                    )
-                                }
-                            }
+//                             agent {
+//                                 label 'mac && 10.14 && python3.8'
+//                             }
+//                             steps{
+//                                 sh(
+//                                     label: "Building wheel",
+//                                     script: 'python3 -m pip wheel . --no-deps -w dist'
+//                                     )
+//                             }
+//                             post{
+//                                 success{
+//                                     stash includes: 'dist/*.whl', name: "MacOS 10.14 py38 wheel"
+//                                     archiveArtifacts artifacts: 'dist/*.whl'
+//                                 }
+//                                 cleanup{
+//                                     cleanWs(
+//                                         deleteDirs: true,
+//                                         patterns: [
+//                                             [pattern: '**/__pycache__/', type: 'INCLUDE'],
+//                                             [pattern: 'pykdu_compress.egg-info/', type: 'INCLUDE'],
+//                                             [pattern: 'dist/', type: 'INCLUDE'],
+//                                         ]
+//                                     )
+//                                 }
+//                             }
                         }
                         stage('Testing Packages on a Mac') {
                             when{
