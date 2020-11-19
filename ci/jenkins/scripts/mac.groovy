@@ -38,7 +38,11 @@ def test_mac_package(args = [:]){
                            venv/bin/python -m pip install tox
                            """
             )
-            findFiles(glob: glob).each{
+            files = findFiles(glob: glob)
+            if( files.size() == 0){
+                error "No files located in ${glob}"
+            }
+            files.each{
                 sh(
                     label: "Testing ${it}",
                     script: "venv/bin/tox --installpkg=${it.path} -e py -vvv --recreate"
