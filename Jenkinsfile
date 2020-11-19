@@ -728,16 +728,32 @@ pipeline {
                                     }
                                 }
                             }
-                            stage("Test wheel"){
-                                steps{
-                                    script{
-                                        def stashName = "MacOS 10.14 py${PYTHON_VERSION} wheel"
-                                        mac.test_mac_package(
-                                            label: "mac && 10.14 && python${PYTHON_VERSION}",
-                                            pythonPath: "python${PYTHON_VERSION}",
-                                            stash: stashName,
-                                            glob: "dist/*.whl"
-                                        )
+                            stage("Test Packages"){
+                                stages{
+                                    stage("Test wheel"){
+                                        steps{
+                                            script{
+                                                def stashName = "MacOS 10.14 py${PYTHON_VERSION} wheel"
+                                                mac.test_mac_package(
+                                                    label: "mac && 10.14 && python${PYTHON_VERSION}",
+                                                    pythonPath: "python${PYTHON_VERSION}",
+                                                    stash: stashName,
+                                                    glob: "dist/*.whl"
+                                                )
+                                            }
+                                        }
+                                    }
+                                    stage("Test sdist"){
+                                        steps{
+                                            script{
+                                                mac.test_mac_package(
+                                                    label: "mac && 10.14 && python${PYTHON_VERSION}",
+                                                    pythonPath: "python${PYTHON_VERSION}",
+                                                    stash: "sdist",
+                                                    glob: "dist/*.tar.gz,dist/*.zip"
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
