@@ -1,5 +1,6 @@
 def build_mac_package(args = [:]){
-    echo "HERER"
+    echo "label = ${args['label']}"
+    echo "stash = ${args['stash']}"
 }
 
 def test_mac_package(toxPath, pkgRegex){
