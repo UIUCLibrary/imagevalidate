@@ -1224,6 +1224,7 @@ sh(
                                         }
                                         steps{
                                             timeout(10){
+                                                unstash "DIST-INFO"
                                                 devpiRunTest2("devpi",
                                                     "uiucprescon.imagevalidate.dist-info/METADATA",
                                                     env.devpiStagingIndex,
