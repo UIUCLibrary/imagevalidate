@@ -1144,17 +1144,17 @@ sh(
                                                            venv/bin/devpi --version
                                                 '''
                                             )
+                                            testDevpiPackage2(
+                                                    "venv/bin/devpi",
+                                                    env.devpiStagingIndex,
+                                                    DEVPI_USR,
+                                                    DEVPI_PSW,
+                                                    props.Name,
+                                                    props.Version,
+                                                    "tar.gz",
+                                                    "py38"
+                                                )
 //                                             unstash "DIST-INFO"
-                                            devpiRunTest3(
-                                                "venv/bin/devpi",
-                                                props.Name,
-                                                props.Version,
-                                                env.devpiStagingIndex,
-                                                "tar.gz",
-                                                DEVPI_USR,
-                                                DEVPI_PSW,
-                                                "py38"
-                                            )
                                         }
                                     }
                                     post{
