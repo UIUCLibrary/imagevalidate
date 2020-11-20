@@ -127,34 +127,20 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
             checkout scm
             def dockerImageName = "tox${currentBuild.projectName}".replaceAll("-", "").toLowerCase()
             def dockerImage = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .")
-            try{
-                dockerImage.inside{
-                    envs = getToxEnvs()
-                }
-                if(isUnix()){
-                    sh(
-                        label: "Removing Docker Image used to run tox",
-                        script: "docker image ls ${dockerImageName}"
-                    )
-                } else {
-                    bat(
-                        label: "Removing Docker Image used to run tox",
-                        script: """docker image ls ${dockerImageName}
-                                   """
-                    )
-                }
-            } finally {
-                if(isUnix()){
+            dockerImage.inside{
+                envs = getToxEnvs()
+            }
+            if(isUnix()){
                 sh(
-                        label: "Removing Docker Image used to run tox",
-                        script: "docker image rm ${dockerImage.id}"
-                    )
-                } else {
-                    bat(
-                        label: "Removing Docker Image used to run tox",
-                        script: "docker image rm ${dockerImage.id}"
-                    )
-                }
+                    label: "Removing Docker Image used to run tox",
+                    script: "docker image ls ${dockerImageName}"
+                )
+            } else {
+                bat(
+                    label: "Removing Docker Image used to run tox",
+                    script: """docker image ls ${dockerImageName}
+                               """
+                )
             }
         }
         echo "Found tox environments for ${envs.join(', ')}"
