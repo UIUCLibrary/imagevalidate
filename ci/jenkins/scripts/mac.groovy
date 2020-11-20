@@ -27,6 +27,7 @@ def test_mac_package(args = [:]){
     def glob = args['glob']
     node(args['label']){
         try{
+            checkout scm
             unstash args['stash']
             sh(
                 label:"Installing tox",
