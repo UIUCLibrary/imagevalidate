@@ -99,6 +99,29 @@ def devpiRunTest3(devpiClient, pkgName, pkgVersion, devpiIndex, devpiSelector, d
         }
     }
 }
+def testDevpiPackage2(devpiExec, devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
+    if(isUnix()){
+        sh(
+            label: "Running tests on Packages on DevPi",
+            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs
+                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs
+                       ${devpiExec} use ${devpiIndex} --clientdir certs
+                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
+                       """
+        )
+    } else {
+        bat(
+            label: "Running tests on Packages on DevPi",
+            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs\\
+                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+                       ${devpiExec} use ${devpiIndex} --clientdir certs\\
+                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -e ${toxEnv} -v
+                       """
+        )
+    }
+}
+
+
 def devpiRunTest2(devpiClient, pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
     script{
         if(!fileExists(pkgPropertiesFile)){
