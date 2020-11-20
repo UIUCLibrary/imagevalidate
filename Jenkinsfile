@@ -1202,10 +1202,9 @@ sh(
                                         }
                                         steps{
                                             timeout(10){
-//                                                 unstash "DIST-INFO"
-                                                devpiRunTest3("devpi",
-                                                    props.Name,
-                                                    props.Version,
+                                                unstash "DIST-INFO"
+                                                devpiRunTest2("devpi",
+                                                    "uiucprescon.imagevalidate.dist-info/METADATA",
                                                     env.devpiStagingIndex,
                                                     CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector['whl'],
                                                     DEVPI_USR,
@@ -1225,9 +1224,8 @@ sh(
                                         }
                                         steps{
                                             timeout(10){
-                                                devpiRunTest3("devpi",
-                                                    props.Name,
-                                                    props.Version,
+                                                devpiRunTest2("devpi",
+                                                    "uiucprescon.imagevalidate.dist-info/METADATA",
                                                     env.devpiStagingIndex,
                                                     "tar.gz",
                                                     DEVPI_USR,
