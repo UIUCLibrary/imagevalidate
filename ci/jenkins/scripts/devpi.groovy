@@ -32,8 +32,8 @@ def upload(args = [:]){
        }
        if(isUnix()){
             sh(label: "Uploading to DevPi Staging",
-               script: """$(DEVPI} use /DS_Jenkins/${index} --clientdir ${clientDir}
-                          $(DEVPI} upload --from-dir dist --clientdir ${clientDir}
+               script: """${DEVPI} use /DS_Jenkins/${index} --clientdir ${clientDir}
+                          ${DEVPI} upload --from-dir dist --clientdir ${clientDir}
                           """
                )
        } else {
