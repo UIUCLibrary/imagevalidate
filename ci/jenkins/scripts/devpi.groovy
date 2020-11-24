@@ -38,8 +38,8 @@ def upload(args = [:]){
                )
        } else {
            bat(label: "Uploading to DevPi Staging",
-               script: """$(DEVPI} use /DS_Jenkins/${index} --clientdir ${clientDir}
-                          $(DEVPI} upload --from-dir dist --clientdir ${clientDir}
+               script: """${DEVPI} use /DS_Jenkins/${index} --clientdir ${clientDir}
+                          ${DEVPI} upload --from-dir dist --clientdir ${clientDir}
                           """
                )
        }
