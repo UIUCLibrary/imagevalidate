@@ -115,7 +115,6 @@ def pushPackageToIndex(args = [:]){
             )])
         {
         withEnv([
-            "DEVPI_INDEX=${devpiIndex}",
             "DEVPI_SERVER=${server}",
             "CLIENT_DIR=${clientDir}"]){
             if(isUnix()){
