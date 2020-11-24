@@ -1225,22 +1225,22 @@ pipeline {
                         }
                     }
                 }
-//                 cleanup{
-//                     node('linux && docker') {
-//                         script{
-//                             docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-//                                 devpi.removePackage(
-//                                     pkgName: props.Name,
-//                                     pkgVersion: props.Version,
-//                                     index: "/DS_Jenkins/${env.devpiStagingIndex}",
-//                                     server: "https://devpi.library.illinois.edu",
-//                                     credentialsId: 'DS_devpi',
-//
-//                                 )
-//                             }
-//                         }
-//                     }
-//                 }
+                cleanup{
+                    node('linux && docker') {
+                        script{
+                            docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                                devpi.removePackage(
+                                    pkgName: props.Name,
+                                    pkgVersion: props.Version,
+                                    index: "/DS_Jenkins/${env.devpiStagingIndex}",
+                                    server: "https://devpi.library.illinois.edu",
+                                    credentialsId: 'DS_devpi',
+
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
         stage("Release") {
