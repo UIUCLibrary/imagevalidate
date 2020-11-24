@@ -1203,21 +1203,13 @@ pipeline {
                             )
                         }
                     }
-//                         sh(
-//                             label: "Pushing to production/release index",
-//                             script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-//                                        devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-//                                        devpi push --index DS_Jenkins/${env.devpiStagingIndex} ${props.Name}==${props.Version} production/release --clientdir ./devpi
-//                                        """
-//                         )
-//                     }
                 }
             }
             post{
                 success{
-                    script{
-                        if (!env.TAG_NAME?.trim()){
-                            node('linux && docker') {
+                    node('linux && docker') {
+                        script{
+                            if (!env.TAG_NAME?.trim()){
                                 docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                                     devpi.pushPackageToIndex(
                                         pkgName: props.Name,
