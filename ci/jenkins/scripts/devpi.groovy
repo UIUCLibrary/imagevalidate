@@ -16,7 +16,7 @@ def upload(args = [:]){
         {
             sh(label: "Logging into DevPi Staging",
                script: '''devpi use $DEVPI_SERVER --clientdir $CLIENT_DIR
-                          devpi login $USR --password $PWD --clientdir $CLIENT_DIR
+                          devpi login $USR --password=$PWD --clientdir $CLIENT_DIR
                           '''
                )
        }
