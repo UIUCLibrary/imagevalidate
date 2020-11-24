@@ -144,7 +144,50 @@ def pushPackageToIndex(args = [:]){
 }
 
 def removePackage(args = [:]){
+    def clientDir = args['clientDir'] ? args['clientDir']: './devpi'
+    def devpi = args['devpiExec'] ? args['devpiExec']: "devpi"
+    def server = args['server']
+    def pkgName = args['pkgName']
+    def pkgVersion = args['pkgVersion']
+    def index = args['index']
+    withCredentials(
+            [usernamePassword(
+                credentialsId: args['credentialsId'],
+                passwordVariable: 'DEVPI_PASSWORD',
+                usernameVariable: 'DEVPI_USERNAME'
+            )])
+        {
+        withEnv([
+            "DEVPI_INDEX=${devpiIndex}",
+            "DEVPI_SERVER=${server}",
+            "CLIENT_DIR=${clientDir}"]){
+            if(isUnix()){
+                sh(label: "Logging into DevPi",
+                   script: '''$DEVPI use $DEVPI_SERVER --clientdir $CLIENT_DIR
+                              $DEVPI login $DEVPI_USERNAME --password=$DEVPI_PASSWORD --clientdir $CLIENT_DIR
+                              '''
+                   )
 
+            } else {
+                bat(label: "Logging into DevPi Staging",
+                   script: '''%DEVPI% use %DEVPI_SERVER% --clientdir %CLIENT_DIR%
+                              %DEVPI% login %DEVPI_USERNAME% --password=%DEVPI_PASSWORD% --clientdir %CLIENT_DIR%
+                              '''
+                   )
+
+            }
+        }
+        if(isUnix()){
+            sh(label: "Removing Package from DevPi ${index} index",
+               script: "${devpi} remove -y --index ${index} ${pkgName}==${pkgVersion} --clientdir ${clientDir}"
+               )
+        } else{
+           bat(label: "Removing Package from DevPi ${index} index",
+               script: "${devpi} remove -y --index ${index} ${pkgName}==${pkgVersion} --clientdir ${clientDir}"
+               )
+
+        }
+    }
 }
 
 return this

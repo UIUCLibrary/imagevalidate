@@ -1224,15 +1224,14 @@ pipeline {
                     script{
                         node('linux && docker') {
                             docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                echo "HERE"
-//                                 sh(
-//                                     label: "Removing Package from DevPi staging index",
-//                                     script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-//                                                devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-//                                                devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
-//                                                        devpi remove -y ${props.Name}==${props.Version} --clientdir ./devpi
-//                                                        """
-//                                 )
+                                devpi.removePackage(
+                                    pkgName: props.Name,
+                                    pkgVersion: props.Version,
+                                    index: "/DS_Jenkins/${env.devpiStagingIndex}",
+                                    server: "https://devpi.library.illinois.edu",
+                                    credentialsId: 'DS_devpi',
+
+                                )
                             }
                         }
                     }
