@@ -918,7 +918,7 @@ pipeline {
             }
             agent none
             environment{
-                DEVPI = credentials("DS_devpi")
+//                 DEVPI = credentials("DS_devpi")
                 devpiStagingIndex = getDevPiStagingIndex()
             }
             options{
