@@ -1008,6 +1008,7 @@ pipeline {
                                                     devpi.testDevpiPackage(
                                                         devpiExec: "venv/bin/devpi",
                                                         devpiIndex: env.devpiStagingIndex,
+                                                        server: "https://devpi.library.illinois.edu",
                                                         credentialsId: "DS_devpi",
                                                         pkgName: props.Name,
                                                         pkgVersion: props.Version,
@@ -1056,6 +1057,7 @@ pipeline {
                                             script{
                                                 devpi.testDevpiPackage(
                                                         devpiExec: "venv/bin/devpi",
+                                                        server: "https://devpi.library.illinois.edu",
                                                         devpiIndex: env.devpiStagingIndex,
                                                         credentialsId: "DS_devpi",
                                                         pkgName: props.Name,

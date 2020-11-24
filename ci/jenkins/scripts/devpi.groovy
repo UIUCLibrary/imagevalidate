@@ -42,7 +42,7 @@ def testDevpiPackage(args = [:]){
     def pkgSelector = args['pkgSelector']
     def toxEnv = args['toxEnv']
     withEnv([
-            "DEVPI_INDEX=${index}",
+            "DEVPI_INDEX=${devpiIndex}",
             "DEVPI_SERVER=${args['server']}",
             "CLIENT_DIR=${clientDir}",
             "DEVPI=${devpiExec}"
