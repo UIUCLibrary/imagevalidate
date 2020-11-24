@@ -35,7 +35,7 @@ def upload(args = [:]){
                script: """${DEVPI} use /DS_Jenkins/${index} --clientdir ${clientDir}
                           ${DEVPI} upload --from-dir dist --clientdir ${clientDir}
                           """
-               )
+            )
        } else {
            bat(label: "Uploading to DevPi Staging",
                script: """${DEVPI} use /DS_Jenkins/${index} --clientdir ${clientDir}
@@ -98,6 +98,43 @@ def testDevpiPackage(args = [:]){
         }
     }
 }
+def pushPackageToIndex(args = [:]){
+    def sourceIndex = args['sourceIndex']
+    def destinationIndex = args['destinationIndex']
+    def pkgName = args['pkgName']
+    def pkgVersion = args['pkgVersion']
+    def clientDir = args['clientDir'] ? args['clientDir']: './devpi'
+    def devpi = args['devpiExec'] ? args['devpiExec']: "devpi"
 
+    withCredentials([usernamePassword(
+            credentialsId: args['credentialsId'],
+            passwordVariable: 'DEVPI_PASSWORD',
+            usernameVariable: 'DEVPI_USERNAME'
+        )
+    ]){
+        if(isUnix()){
+            sh(label: "Logging into DevPi",
+               script: '''$DEVPI use $DEVPI_SERVER --clientdir $CLIENT_DIR
+                          $DEVPI login $DEVPI_USERNAME --password=$DEVPI_PASSWORD --clientdir $CLIENT_DIR
+                          '''
+               )
+
+        } else {
+            bat(label: "Logging into DevPi Staging",
+               script: '''%DEVPI% use %DEVPI_SERVER% --clientdir %CLIENT_DIR%
+                          %DEVPI% login %DEVPI_USERNAME% --password=%DEVPI_PASSWORD% --clientdir %CLIENT_DIR%
+                          '''
+               )
+
+        }
+    }
+    if(isUnix()){
+        sh(
+            label: "Pushing DevPi package from ${sourceIndex} to ${destinationIndex}",
+            script: "${devpi} push --index ${sourceIndex} ${pkgName}==${pkgVersion} ${destinationIndex} --clientdir ${CLIENT_DIR}"
+        )
+    }
+
+}
 
 return this

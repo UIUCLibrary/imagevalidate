@@ -1093,9 +1093,6 @@ pipeline {
                             }
                         }
                         stage("Test DevPi Packages for Windows and Linux"){
-//                             environment{
-//                                 DEVPI = credentials("DS_devpi")
-//                             }
                             matrix {
                                 axes {
                                     axis {
@@ -1161,15 +1158,6 @@ pipeline {
                                                         toxEnv: CONFIGURATIONS[PYTHON_VERSION].tox_env
                                                     )
                                                 }
-//                                                 unstash "DIST-INFO"
-//                                                 devpiRunTest2("devpi",
-//                                                     "uiucprescon.imagevalidate.dist-info/METADATA",
-//                                                     env.devpiStagingIndex,
-//                                                     "tar.gz",
-//                                                     DEVPI_USR,
-//                                                     DEVPI_PSW,
-//                                                     CONFIGURATIONS[PYTHON_VERSION].tox_env
-//                                                 )
                                             }
                                         }
                                     }
@@ -1216,7 +1204,16 @@ pipeline {
             post{
                 success{
                     node('linux && docker') {
-                        devpiPushToIndex(props.Name, props.Version, "/DS_Jenkins/${env.devpiStagingIndex}", "DS_Jenkins/${env.BRANCH_NAME}", env.DEVPI_USR, env.DEVPI_PSW)
+//                         devpiPushToIndex(props.Name, props.Version, "/DS_Jenkins/${env.devpiStagingIndex}", "DS_Jenkins/${env.BRANCH_NAME}", env.DEVPI_USR, env.DEVPI_PSW)
+                        script{
+                            devpi.pushPackageToIndex(
+                                pkgName: props.Name,
+                                pkgVersion: props.Version,
+                                indexSource: "/DS_Jenkins/${env.devpiStagingIndex}",
+                                indexDestination: "DS_Jenkins/${env.BRANCH_NAME}",
+                                credentialsId: 'DS_devpi'
+                            )
+                        }
                     }
                 }
                 cleanup{
