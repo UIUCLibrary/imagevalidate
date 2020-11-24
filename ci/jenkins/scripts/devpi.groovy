@@ -16,18 +16,33 @@ def upload(args = [:]){
                         )
                             ])
         {
-            sh(label: "Logging into DevPi",
-               script: '''$DEVPI use $DEVPI_SERVER --clientdir $CLIENT_DIR
-                          $DEVPI login $DEVPI_USERNAME --password=$DEVPI_PASSWORD --clientdir $CLIENT_DIR
-                          '''
+            if(isUnix()){
+                sh(label: "Logging into DevPi",
+                   script: '''$DEVPI use $DEVPI_SERVER --clientdir $CLIENT_DIR
+                              $DEVPI login $DEVPI_USERNAME --password=$DEVPI_PASSWORD --clientdir $CLIENT_DIR
+                              '''
+                   )
+           } else {
+               bat(label: "Logging into DevPi",
+                   script: '''%DEVPI% use %DEVPI_SERVER% --clientdir %CLIENT_DIR%
+                              %DEVPI% login %DEVPI_USERNAME% --password%$DEVPI_PASSWORD% --clientdir %CLIENT_DIR%
+                              '''
+                   )
+           }
+       }
+       if(isUnix()){
+            sh(label: "Uploading to DevPi Staging",
+               script: """$(DEVPI} use /DS_Jenkins/${index} --clientdir ${clientDir}
+                          $(DEVPI} upload --from-dir dist --clientdir ${clientDir}
+                          """
+               )
+       } else {
+           bat(label: "Uploading to DevPi Staging",
+               script: """$(DEVPI} use /DS_Jenkins/${index} --clientdir ${clientDir}
+                          $(DEVPI} upload --from-dir dist --clientdir ${clientDir}
+                          """
                )
        }
-        sh(
-            label: "Uploading to DevPi Staging",
-            script: """devpi use /DS_Jenkins/${index} --clientdir ${clientDir}
-                       devpi upload --from-dir dist --clientdir ${clientDir}
-                       """
-           )
     }
 }
 
