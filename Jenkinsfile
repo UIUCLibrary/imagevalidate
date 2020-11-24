@@ -1210,6 +1210,7 @@ pipeline {
                                     devpi.pushPackageToIndex(
                                         pkgName: props.Name,
                                         pkgVersion: props.Version,
+                                        server: "https://devpi.library.illinois.edu",
                                         indexSource: "/DS_Jenkins/${env.devpiStagingIndex}",
                                         indexDestination: "DS_Jenkins/${env.BRANCH_NAME}",
                                         credentialsId: 'DS_devpi'

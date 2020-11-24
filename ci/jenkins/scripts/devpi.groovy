@@ -105,27 +105,34 @@ def pushPackageToIndex(args = [:]){
     def pkgVersion = args['pkgVersion']
     def clientDir = args['clientDir'] ? args['clientDir']: './devpi'
     def devpi = args['devpiExec'] ? args['devpiExec']: "devpi"
+    def server = args['server']
 
-    withCredentials([usernamePassword(
-            credentialsId: args['credentialsId'],
-            passwordVariable: 'DEVPI_PASSWORD',
-            usernameVariable: 'DEVPI_USERNAME'
-        )
-    ]){
-        if(isUnix()){
-            sh(label: "Logging into DevPi",
-               script: '''$DEVPI use $DEVPI_SERVER --clientdir $CLIENT_DIR
-                          $DEVPI login $DEVPI_USERNAME --password=$DEVPI_PASSWORD --clientdir $CLIENT_DIR
-                          '''
-               )
+    withCredentials(
+            [usernamePassword(
+                credentialsId: args['credentialsId'],
+                passwordVariable: 'DEVPI_PASSWORD',
+                usernameVariable: 'DEVPI_USERNAME'
+            )])
+        {
+        withEnv([
+            "DEVPI_INDEX=${devpiIndex}",
+            "DEVPI_SERVER=${server}",
+            "CLIENT_DIR=${clientDir}"]){
+            if(isUnix()){
+                sh(label: "Logging into DevPi",
+                   script: '''$DEVPI use $DEVPI_SERVER --clientdir $CLIENT_DIR
+                              $DEVPI login $DEVPI_USERNAME --password=$DEVPI_PASSWORD --clientdir $CLIENT_DIR
+                              '''
+                   )
 
-        } else {
-            bat(label: "Logging into DevPi Staging",
-               script: '''%DEVPI% use %DEVPI_SERVER% --clientdir %CLIENT_DIR%
-                          %DEVPI% login %DEVPI_USERNAME% --password=%DEVPI_PASSWORD% --clientdir %CLIENT_DIR%
-                          '''
-               )
+            } else {
+                bat(label: "Logging into DevPi Staging",
+                   script: '''%DEVPI% use %DEVPI_SERVER% --clientdir %CLIENT_DIR%
+                              %DEVPI% login %DEVPI_USERNAME% --password=%DEVPI_PASSWORD% --clientdir %CLIENT_DIR%
+                              '''
+                   )
 
+            }
         }
     }
     if(isUnix()){
@@ -134,6 +141,9 @@ def pushPackageToIndex(args = [:]){
             script: "${devpi} push --index ${sourceIndex} ${pkgName}==${pkgVersion} ${destinationIndex} --clientdir ${CLIENT_DIR}"
         )
     }
+}
+
+def removePackage(args = [:]){
 
 }
 
