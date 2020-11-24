@@ -64,97 +64,97 @@ def test_cpp_code(buildPath){
 //     }
 // }
 
-def devpiRunTest3(devpiClient, pkgName, pkgVersion, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
-    script{
-        if(!fileExists(pkgPropertiesFile)){
-            error "${pkgPropertiesFile} does not exist"
-        }
-        def props = readProperties interpolate: false, file: pkgPropertiesFile
-        if (isUnix()){
-            sh(
-                label: "Running test",
-                script: """${devpiClient} use https://devpi.library.illinois.edu --clientdir certs/
-                           ${devpiClient} login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
-                           ${devpiClient} use ${devpiIndex} --clientdir certs/
-                           ${devpiClient} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
-                """
-            )
-        } else {
-            bat(
-                label: "Running tests on Devpi",
-                script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
-                           devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
-                           devpi use ${devpiIndex} --clientdir certs\\
-                           devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
-                           """
-            )
-        }
-    }
-}
-def testDevpiPackage2(devpiExec, devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
-    if(isUnix()){
-        sh(
-            label: "Running tests on Packages on DevPi",
-            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs
-                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs
-                       ${devpiExec} use ${devpiIndex} --clientdir certs
-                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
-                       """
-        )
-    } else {
-        bat(
-            label: "Running tests on Packages on DevPi",
-            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs\\
-                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
-                       ${devpiExec} use ${devpiIndex} --clientdir certs\\
-                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -e ${toxEnv} -v
-                       """
-        )
-    }
-}
+// def devpiRunTest3(devpiClient, pkgName, pkgVersion, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
+//     script{
+//         if(!fileExists(pkgPropertiesFile)){
+//             error "${pkgPropertiesFile} does not exist"
+//         }
+//         def props = readProperties interpolate: false, file: pkgPropertiesFile
+//         if (isUnix()){
+//             sh(
+//                 label: "Running test",
+//                 script: """${devpiClient} use https://devpi.library.illinois.edu --clientdir certs/
+//                            ${devpiClient} login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
+//                            ${devpiClient} use ${devpiIndex} --clientdir certs/
+//                            ${devpiClient} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
+//                 """
+//             )
+//         } else {
+//             bat(
+//                 label: "Running tests on Devpi",
+//                 script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
+//                            devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+//                            devpi use ${devpiIndex} --clientdir certs\\
+//                            devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
+//                            """
+//             )
+//         }
+//     }
+// }
+// def testDevpiPackage2(devpiExec, devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
+//     if(isUnix()){
+//         sh(
+//             label: "Running tests on Packages on DevPi",
+//             script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs
+//                        ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs
+//                        ${devpiExec} use ${devpiIndex} --clientdir certs
+//                        ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
+//                        """
+//         )
+//     } else {
+//         bat(
+//             label: "Running tests on Packages on DevPi",
+//             script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs\\
+//                        ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+//                        ${devpiExec} use ${devpiIndex} --clientdir certs\\
+//                        ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -e ${toxEnv} -v
+//                        """
+//         )
+//     }
+// }
 
 
-def devpiRunTest2(devpiClient, pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
-    script{
-        if(!fileExists(pkgPropertiesFile)){
-            error "${pkgPropertiesFile} does not exist"
-        }
-        def props = readProperties interpolate: false, file: pkgPropertiesFile
-        if (isUnix()){
-            sh(
-                label: "Running test",
-                script: """${devpiClient} use https://devpi.library.illinois.edu --clientdir certs/
-                           ${devpiClient} login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
-                           ${devpiClient} use ${devpiIndex} --clientdir certs/
-                           ${devpiClient} test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
-                """
-            )
-        } else {
-            bat(
-                label: "Running tests on Devpi",
-                script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
-                           devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
-                           devpi use ${devpiIndex} --clientdir certs\\
-                           devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
-                           """
-            )
-        }
-    }
-}
+// def devpiRunTest2(devpiClient, pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
+//     script{
+//         if(!fileExists(pkgPropertiesFile)){
+//             error "${pkgPropertiesFile} does not exist"
+//         }
+//         def props = readProperties interpolate: false, file: pkgPropertiesFile
+//         if (isUnix()){
+//             sh(
+//                 label: "Running test",
+//                 script: """${devpiClient} use https://devpi.library.illinois.edu --clientdir certs/
+//                            ${devpiClient} login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
+//                            ${devpiClient} use ${devpiIndex} --clientdir certs/
+//                            ${devpiClient} test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
+//                 """
+//             )
+//         } else {
+//             bat(
+//                 label: "Running tests on Devpi",
+//                 script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
+//                            devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+//                            devpi use ${devpiIndex} --clientdir certs\\
+//                            devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
+//                            """
+//             )
+//         }
+//     }
+// }
 
 
-def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
-    script {
-                try {
-                    bat "${devpiExecutable} login ${devpiUsername} --password ${devpiPassword}"
-                    bat "${devpiExecutable} use ${devpiIndex}"
-                    bat "${devpiExecutable} remove -y ${pkgName}==${pkgVersion}"
-                } catch (Exception ex) {
-                    echo "Failed to remove ${pkgName}==${pkgVersion} from ${devpiIndex}"
-            }
-
-    }
-}
+// def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
+//     script {
+//                 try {
+//                     bat "${devpiExecutable} login ${devpiUsername} --password ${devpiPassword}"
+//                     bat "${devpiExecutable} use ${devpiIndex}"
+//                     bat "${devpiExecutable} remove -y ${pkgName}==${pkgVersion}"
+//                 } catch (Exception ex) {
+//                     echo "Failed to remove ${pkgName}==${pkgVersion} from ${devpiIndex}"
+//             }
+//
+//     }
+// }
 
 def get_package_version(stashName, metadataFile){
     ws {
@@ -1191,14 +1191,26 @@ pipeline {
                         }
                     }
                     steps {
-                        sh(
-                            label: "Pushing to production/release index",
-                            script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                       devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                       devpi push --index DS_Jenkins/${env.devpiStagingIndex} ${props.Name}==${props.Version} production/release --clientdir ./devpi
-                                       """
-                        )
+                        script{
+                            echo "Pushing to production/release index"
+                            devpi.pushPackageToIndex(
+                                pkgName: props.Name,
+                                pkgVersion: props.Version,
+                                server: "https://devpi.library.illinois.edu",
+                                indexSource: "DS_Jenkins/${env.devpiStagingIndex}",
+                                indexDestination: "production/release",
+                                credentialsId: 'DS_devpi'
+                            )
+                        }
                     }
+//                         sh(
+//                             label: "Pushing to production/release index",
+//                             script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+//                                        devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+//                                        devpi push --index DS_Jenkins/${env.devpiStagingIndex} ${props.Name}==${props.Version} production/release --clientdir ./devpi
+//                                        """
+//                         )
+//                     }
                 }
             }
             post{
@@ -1221,8 +1233,8 @@ pipeline {
                     }
                 }
                 cleanup{
-                    script{
-                        node('linux && docker') {
+                    node('linux && docker') {
+                        script{
                             docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                                 devpi.removePackage(
                                     pkgName: props.Name,
