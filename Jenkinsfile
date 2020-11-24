@@ -1209,13 +1209,9 @@ pipeline {
                 success{
                     echo "success"
                     node('linux && docker') {
-                        echo "HERE"
                         script{
-                            echo "HERE3"
                             if (!env.TAG_NAME?.trim()){
-                                echo "Building"
                                 docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                    echo "success"
                                     devpi.pushPackageToIndex(
                                         pkgName: props.Name,
                                         pkgVersion: props.Version,

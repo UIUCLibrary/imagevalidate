@@ -116,7 +116,9 @@ def pushPackageToIndex(args = [:]){
         {
         withEnv([
             "DEVPI_SERVER=${server}",
-            "CLIENT_DIR=${clientDir}"]){
+            "CLIENT_DIR=${clientDir}",
+            "DEVPI=${devpi}"
+            ]){
             if(isUnix()){
                 sh(label: "Logging into DevPi",
                    script: '''$DEVPI use $DEVPI_SERVER --clientdir $CLIENT_DIR
@@ -157,8 +159,10 @@ def removePackage(args = [:]){
             )])
         {
         withEnv([
+            "DEVPI=${devpi}",
             "DEVPI_SERVER=${server}",
-            "CLIENT_DIR=${clientDir}"]){
+            "CLIENT_DIR=${clientDir}"
+            ]){
             if(isUnix()){
                 sh(label: "Logging into DevPi",
                    script: '''$DEVPI use $DEVPI_SERVER --clientdir $CLIENT_DIR
