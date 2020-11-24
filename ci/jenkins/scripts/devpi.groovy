@@ -58,26 +58,23 @@ def testDevpiPackage(args = [:]){
                 sh(label: "Logging into DevPi",
                    script: '''$DEVPI use $DEVPI_SERVER --clientdir $CLIENT_DIR
                               $DEVPI login $DEVPI_USERNAME --password=$DEVPI_PASSWORD --clientdir $CLIENT_DIR
+                              $DEVPI use $DEVPI_INDEX --clientdir $CLIENT_DIR
                               '''
                    )
                 sh(
                     label: "Running tests on Packages on DevPi",
-                    script: """
-                               $DEVPI use $DEVPI_INDEX --clientdir $CLIENT_DIR
-                               $DEVPI test --index $DEVPI_INDEX ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir $CLIENT_DIR -e ${toxEnv} -v
-                               """
+                    script: "$DEVPI test --index $DEVPI_INDEX ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir $CLIENT_DIR -e ${toxEnv} -v"
                 )
             } else {
                 bat(label: "Logging into DevPi Staging",
                    script: '''%DEVPI% use $DEVPI_SERVER --clientdir %CLIENT_DIR%
                               %DEVPI% login %DEVPI_USERNAME% --password=%$DEVPI_PASSWORD% --clientdir %CLIENT_DIR%
+                              %DEVPI% use %DEVPI_INDEX% --clientdir %CLIENT_DIR%
                               '''
                    )
                 bat(
                     label: "Running tests on Packages on DevPi",
-                    script: """%DEVPI% use %DEVPI_INDEX% --clientdir %CLIENT_DIR%
-                               %DEVPI% test --index %DEVPI_INDEX% ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir %CLIENT_DIR% -e ${toxEnv} -v
-                               """
+                    script: "%DEVPI% test --index %DEVPI_INDEX% ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir %CLIENT_DIR% -e ${toxEnv} -v"
                 )
             }
         }
