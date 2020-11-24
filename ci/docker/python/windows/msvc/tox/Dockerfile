@@ -168,18 +168,6 @@ RUN conan config home
 RUN conan install c:/temp/ --build outdated --no-import  ; `
     conan remove "*" -b --src -f ; `
     conan remove --locks
-#
-#ARG PYTHON_36_VERSION
-#RUN choco install python3 --version ${Env:PYTHON_36_VERSION} -my
-#
-#ARG PYTHON_37_VERSION
-#RUN choco install python3 --version ${Env:PYTHON_37_VERSION} -my
-#
-#ARG PYTHON_38_VERSION
-#RUN choco install python3 --version ${Env:PYTHON_38_VERSION} -my
-##
-##ARG PYTHON_39_VERSION
-##RUN choco install python3 --version ${Env:PYTHON_39_VERSION} -my
 
 COPY --from=WHEEL_BUilDER_PY36 c:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUilDER_PY37 c:/wheels/ c:/wheels/

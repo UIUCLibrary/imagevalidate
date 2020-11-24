@@ -17,47 +17,46 @@ FROM wheel_builder_base as WHEEL_BUILDER_PY36
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
-COPY ci/docker/shared/python/requirements-ci.txt requirements.txt /tmp/
-RUN PYTHON=python3.6 && \
-    $PYTHON -m pip install pip --upgrade pip && \
+COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
+ENV PYTHON=python3.6
+RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-ci.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY37
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
-COPY ci/docker/shared/python/requirements-ci.txt requirements.txt /tmp/
-RUN PYTHON=python3.7 && \
-    $PYTHON -m pip install pip --upgrade pip && \
+COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
+ENV PYTHON=python3.7
+RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-ci.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
 
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY38
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
-COPY ci/docker/shared/python/requirements-ci.txt requirements.txt /tmp/
-RUN PYTHON=python3.8 && \
-    $PYTHON -m pip install pip --upgrade pip && \
+COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
+ENV PYTHON=python3.8
+RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-ci.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
 
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY39
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-
-COPY ci/docker/shared/python/requirements-ci.txt requirements.txt /tmp/
-RUN PYTHON=python3.9 && \
-    $PYTHON -m pip install pip --upgrade pip && \
+COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
+ENV PYTHON=python3.9
+RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-ci.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
 
 # ==============================================================================
 FROM wheel_builder_base as conan_builder
@@ -74,14 +73,6 @@ RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
 # ==============================================================================
 FROM wheel_builder_base
 
-#RUN pip3 install conan
-#ENV CONAN_USER_HOME=/home/user/
-#RUN conan config home
-#COPY conanfile.py /tmp/conanfile.py
-#RUN conan install /tmp --build missing --build openjp2 --no-import && \
-#    conan remove --locks && \
-#    conan remove "*" -b --src -f &&\
-#    chown -R user:user  /home/user/.conan/data
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY --from=WHEEL_BUILDER_PY36 /wheels/* /wheels/
