@@ -1232,7 +1232,7 @@ pipeline {
                                 devpi.removePackage(
                                     pkgName: props.Name,
                                     pkgVersion: props.Version,
-                                    index: "/DS_Jenkins/${env.devpiStagingIndex}",
+                                    index: "DS_Jenkins/${env.devpiStagingIndex}",
                                     server: "https://devpi.library.illinois.edu",
                                     credentialsId: 'DS_devpi',
 

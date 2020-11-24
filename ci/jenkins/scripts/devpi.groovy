@@ -99,8 +99,8 @@ def testDevpiPackage(args = [:]){
     }
 }
 def pushPackageToIndex(args = [:]){
-    def sourceIndex = args['sourceIndex']
-    def destinationIndex = args['destinationIndex']
+    def sourceIndex = args['indexSource']
+    def destinationIndex = args['indexDestination']
     def pkgName = args['pkgName']
     def pkgVersion = args['pkgVersion']
     def clientDir = args['clientDir'] ? args['clientDir']: './devpi'
