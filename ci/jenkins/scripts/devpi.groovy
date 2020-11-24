@@ -35,8 +35,6 @@ def testDevpiPackage(args = [:]){
     def clientDir = args['clientDir'] ? args['clientDir']: './devpi'
     def devpiExec = args['devpiExec'] ? args['devpiExec']: "devpi"
     def devpiIndex  = args['devpiIndex']
-//     def devpiUsername = args['devpiUsername']
-//     def devpiPassword = args['devpiPassword']
     def pkgName  = args['pkgName']
     def pkgVersion = args['pkgVersion']
     def pkgSelector = args['pkgSelector']
@@ -52,7 +50,7 @@ def testDevpiPackage(args = [:]){
                                 passwordVariable: 'DEVPI_PASSWORD',
                                 usernameVariable: 'DEVPI_USERNAME'
                             )
-                                ])
+                        ])
             {
             if(isUnix()){
                 sh(label: "Logging into DevPi",
@@ -61,10 +59,7 @@ def testDevpiPackage(args = [:]){
                               $DEVPI use $DEVPI_INDEX --clientdir $CLIENT_DIR
                               '''
                    )
-                sh(
-                    label: "Running tests on Packages on DevPi",
-                    script: "$DEVPI test --index $DEVPI_INDEX ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir $CLIENT_DIR -e ${toxEnv} -v"
-                )
+
             } else {
                 bat(label: "Logging into DevPi Staging",
                    script: '''%DEVPI% use $DEVPI_SERVER --clientdir %CLIENT_DIR%
@@ -72,11 +67,19 @@ def testDevpiPackage(args = [:]){
                               %DEVPI% use %DEVPI_INDEX% --clientdir %CLIENT_DIR%
                               '''
                    )
-                bat(
-                    label: "Running tests on Packages on DevPi",
-                    script: "%DEVPI% test --index %DEVPI_INDEX% ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir %CLIENT_DIR% -e ${toxEnv} -v"
-                )
+
             }
+        }
+        if(isUnix()){
+            sh(
+                label: "Running tests on Packages on DevPi",
+                script: "${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir ${clientDir} -e ${toxEnv} -v"
+            )
+        } else{
+            bat(
+                label: "Running tests on Packages on DevPi",
+                script: "${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir ${clientDir} -e ${toxEnv} -v"
+            )
         }
     }
 }
