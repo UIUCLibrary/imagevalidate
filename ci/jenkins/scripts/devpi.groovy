@@ -139,7 +139,7 @@ def pushPackageToIndex(args = [:]){
     if(isUnix()){
         sh(
             label: "Pushing DevPi package from ${sourceIndex} to ${destinationIndex}",
-            script: "${devpi} push --index ${sourceIndex} ${pkgName}==${pkgVersion} ${destinationIndex} --clientdir ${CLIENT_DIR}"
+            script: "${devpi} push --index ${sourceIndex} ${pkgName}==${pkgVersion} ${destinationIndex} --clientdir ${clientDir}"
         )
     }
 }
