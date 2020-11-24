@@ -63,8 +63,8 @@ def testDevpiPackage(args = [:]){
                 sh(
                     label: "Running tests on Packages on DevPi",
                     script: """
-                               $DEVPI use $DEVPI_INDEX --clientdir certs
-                               $DEVPI test --index $DEVPI_INDEX ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
+                               $DEVPI use $DEVPI_INDEX --clientdir $CLIENT_DIR
+                               $DEVPI test --index $DEVPI_INDEX ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir $CLIENT_DIR -e ${toxEnv} -v
                                """
                 )
             } else {
