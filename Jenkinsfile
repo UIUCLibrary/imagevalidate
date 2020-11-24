@@ -9,14 +9,6 @@ def loadConfigs(){
     }
 }
 
-def loadHelper(file){
-    node(){
-        echo "loading ${file}"
-        checkout scm
-        return load(file)
-    }
-}
-
 
 def run_dumpbin(glob){
     script{
@@ -203,18 +195,6 @@ def get_package_name(stashName, metadataFile){
     }
 }
 //
-// def test_wheel(pkgRegex, python_version){
-//     script{
-//
-//         bat "python -m venv venv\\${NODE_NAME}\\${python_version} && venv\\${NODE_NAME}\\${python_version}\\Scripts\\python.exe -m pip install pip --upgrade && venv\\${NODE_NAME}\\${python_version}\\Scripts\\pip.exe install tox --upgrade"
-//
-//         def python_wheel = findFiles glob: "**/${pkgRegex}"
-//         python_wheel.each{
-//             echo "Testing ${it}"
-//             bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
-//         }
-//     }
-// }
 
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
@@ -313,6 +293,7 @@ def startup(){
         checkout scm
         tox = load("ci/jenkins/scripts/tox.groovy")
         mac = load("ci/jenkins/scripts/mac.groovy")
+        devpiLib = load("ci/jenkins/scripts/devpi.groovy")
     }
 
 //     mac.build_mac_package(
@@ -952,23 +933,47 @@ pipeline {
                             additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                           }
                     }
-                    steps {
+                    steps{
+                        unstash "DOCS_ARCHIVE"
+                        unstash "sdist"
                         script{
                             wheel_stashes.each{
                                 unstash it
                             }
+                            devpiLib.upload(
+                                server: "https://devpi.library.illinois.edu",
+                                credentialsId: "DS_devpi",
+                                index: devpiStagingIndex,
+                                clientDir: "./devpi"
+                            )
                         }
-                        unstash "sdist"
-                        unstash "DOCS_ARCHIVE"
-                        sh(
-                            label: "Uploading to DevPi Staging",
-                            script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                       devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                       devpi use /${env.DEVPI_USR}/${env.devpiStagingIndex} --clientdir ./devpi
-                                       devpi upload --from-dir dist --clientdir ./devpi"""
-                        )
                     }
                 }
+//                 stage("Deploy to Devpi Staging") {
+//                     agent {
+//                         dockerfile {
+//                             filename 'ci/docker/deploy/devpi/deploy/Dockerfile'
+//                             label 'linux&&docker'
+//                             additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+//                           }
+//                     }
+//                     steps {
+//                         script{
+//                             wheel_stashes.each{
+//                                 unstash it
+//                             }
+//                         }
+//                         unstash "sdist"
+//                         unstash "DOCS_ARCHIVE"
+//                         sh(
+//                             label: "Uploading to DevPi Staging",
+//                             script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+//                                        devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+//                                        devpi use /${env.DEVPI_USR}/${env.devpiStagingIndex} --clientdir ./devpi
+//                                        devpi upload --from-dir dist --clientdir ./devpi"""
+//                         )
+//                     }
+//                 }
                 stage("Test DevPi Package") {
                     stages{
                         stage("Test DevPi packages mac") {
@@ -991,7 +996,7 @@ pipeline {
                                                 '''
                                             )
 //                                             unstash "DIST-INFO"
-sh(
+                                            sh(
                                                         label: "Installing devpi client",
                                                         script: '''python3.8 -m venv venv
                                                                    venv/bin/python -m pip install --upgrade pip
