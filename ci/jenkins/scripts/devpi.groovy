@@ -28,4 +28,36 @@ def upload(args = [:]){
            )
     }
 }
+
+def testDevpiPackage(args = [:]){
+    def devpiExec = args['devpiExec']
+    def devpiIndex  = args['devpiIndex']
+    def devpiUsername = args['devpiUsername']
+    def devpiPassword = args['devpiPassword']
+    def pkgName  = args['pkgName']
+    def pkgVersion = args['pkgVersion']
+    def pkgSelector = args['pkgSelector']
+    def toxEnv = args['toxEnv']
+    if(isUnix()){
+        sh(
+            label: "Running tests on Packages on DevPi",
+            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs
+                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs
+                       ${devpiExec} use ${devpiIndex} --clientdir certs
+                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
+                       """
+        )
+    } else {
+        bat(
+            label: "Running tests on Packages on DevPi",
+            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs\\
+                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+                       ${devpiExec} use ${devpiIndex} --clientdir certs\\
+                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -e ${toxEnv} -v
+                       """
+        )
+    }
+}
+
+
 return this

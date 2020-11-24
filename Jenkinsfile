@@ -293,7 +293,7 @@ def startup(){
         checkout scm
         tox = load("ci/jenkins/scripts/tox.groovy")
         mac = load("ci/jenkins/scripts/mac.groovy")
-        devpiLib = load("ci/jenkins/scripts/devpi.groovy")
+        devpi = load("ci/jenkins/scripts/devpi.groovy")
     }
 
 //     mac.build_mac_package(
@@ -918,7 +918,7 @@ pipeline {
             }
             agent none
             environment{
-//                 DEVPI = credentials("DS_devpi")
+                DEVPI = credentials("DS_devpi")
                 devpiStagingIndex = getDevPiStagingIndex()
             }
             options{
@@ -940,7 +940,7 @@ pipeline {
                             wheel_stashes.each{
                                 unstash it
                             }
-                            devpiLib.upload(
+                            devpi.upload(
                                 server: "https://devpi.library.illinois.edu",
                                 credentialsId: "DS_devpi",
                                 index: devpiStagingIndex,
@@ -1004,16 +1004,18 @@ pipeline {
                                                                    venv/bin/devpi --version
                                                         '''
                                                     )
-                                                testDevpiPackage2(
-                                                    "venv/bin/devpi",
-                                                    env.devpiStagingIndex,
-                                                    DEVPI_USR,
-                                                    DEVPI_PSW,
-                                                    props.Name,
-                                                    props.Version,
-                                                    "38-macosx_10_14_x86_64*.*whl",
-                                                    "py38"
-                                                )
+                                                script{
+                                                    devpi.testDevpiPackage(
+                                                        devpiExec: "venv/bin/devpi",
+                                                        devpiIndex: env.devpiStagingIndex,
+                                                        devpiUsername: DEVPI_USR,
+                                                        devpiPassword: DEVPI_PSW,
+                                                        pkgName: props.Name,
+                                                        pkgVersion: props.Version,
+                                                        pkgSelector: "38-macosx_10_14_x86_64*.*whl",
+                                                        toxEnv: "py38"
+                                                    )
+                                                }
 //                                             devpiRunTest3(
 //                                                 "venv/bin/devpi",
 //                                                 props.Name,
