@@ -62,8 +62,8 @@ def testDevpiPackage(args = [:]){
 
             } else {
                 bat(label: "Logging into DevPi Staging",
-                   script: '''%DEVPI% use $DEVPI_SERVER --clientdir %CLIENT_DIR%
-                              %DEVPI% login %DEVPI_USERNAME% --password=%$DEVPI_PASSWORD% --clientdir %CLIENT_DIR%
+                   script: '''%DEVPI% use %DEVPI_SERVER% --clientdir %CLIENT_DIR%
+                              %DEVPI% login %DEVPI_USERNAME% --password=%DEVPI_PASSWORD% --clientdir %CLIENT_DIR%
                               %DEVPI% use %DEVPI_INDEX% --clientdir %CLIENT_DIR%
                               '''
                    )
