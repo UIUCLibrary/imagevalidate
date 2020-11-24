@@ -1008,8 +1008,7 @@ pipeline {
                                                     devpi.testDevpiPackage(
                                                         devpiExec: "venv/bin/devpi",
                                                         devpiIndex: env.devpiStagingIndex,
-                                                        devpiUsername: DEVPI_USR,
-                                                        devpiPassword: DEVPI_PSW,
+                                                        credentialsId: "DS_devpi",
                                                         pkgName: props.Name,
                                                         pkgVersion: props.Version,
                                                         pkgSelector: "38-macosx_10_14_x86_64*.*whl",
@@ -1054,16 +1053,27 @@ pipeline {
                                                            venv/bin/devpi --version
                                                 '''
                                             )
-                                            testDevpiPackage2(
-                                                    "venv/bin/devpi",
-                                                    env.devpiStagingIndex,
-                                                    DEVPI_USR,
-                                                    DEVPI_PSW,
-                                                    props.Name,
-                                                    props.Version,
-                                                    "tar.gz",
-                                                    "py38"
-                                                )
+                                            script{
+                                                devpi.testDevpiPackage(
+                                                        devpiExec: "venv/bin/devpi",
+                                                        devpiIndex: env.devpiStagingIndex,
+                                                        credentialsId: "DS_devpi",
+                                                        pkgName: props.Name,
+                                                        pkgVersion: props.Version,
+                                                        pkgSelector: 'tar.gz',
+                                                        toxEnv: 'py38'
+                                                    )
+                                            }
+//                                             testDevpiPackage2(
+//                                                     "venv/bin/devpi",
+//                                                     env.devpiStagingIndex,
+//                                                     DEVPI_USR,
+//                                                     DEVPI_PSW,
+//                                                     props.Name,
+//                                                     props.Version,
+//                                                     "tar.gz",
+//                                                     "py38"
+//                                                 )
 //                                             unstash "DIST-INFO"
                                         }
                                     }

@@ -2,21 +2,23 @@ def upload(args = [:]){
     def credentialsId = args['credentialsId']
     def clientDir = args['clientDir'] ? args['clientDir']: './devpi'
     def index = args['index']
+    def devpiExec = args['devpiExec'] ? args['devpiExec']: "devpi"
     withEnv([
             "DEVPI_INDEX=${index}",
             "DEVPI_SERVER=${args['server']}",
-            "CLIENT_DIR=${clientDir}"
+            "CLIENT_DIR=${clientDir}",
+            "DEVPI=${devpiExec}"
         ]) {
         withCredentials([usernamePassword(
                             credentialsId: credentialsId,
-                            passwordVariable: 'PASSWORD',
-                            usernameVariable: 'USR'
+                            passwordVariable: 'DEVPI_PASSWORD',
+                            usernameVariable: 'DEVPI_USERNAME'
                         )
                             ])
         {
-            sh(label: "Logging into DevPi Staging",
-               script: '''devpi use $DEVPI_SERVER --clientdir $CLIENT_DIR
-                          devpi login $USR --password=$PASSWORD --clientdir $CLIENT_DIR
+            sh(label: "Logging into DevPi",
+               script: '''$DEVPI use $DEVPI_SERVER --clientdir $CLIENT_DIR
+                          $DEVPI login $DEVPI_USERNAME --password=$DEVPI_PASSWORD --clientdir $CLIENT_DIR
                           '''
                )
        }
@@ -30,32 +32,55 @@ def upload(args = [:]){
 }
 
 def testDevpiPackage(args = [:]){
-    def devpiExec = args['devpiExec']
+    def clientDir = args['clientDir'] ? args['clientDir']: './devpi'
+    def devpiExec = args['devpiExec'] ? args['devpiExec']: "devpi"
     def devpiIndex  = args['devpiIndex']
-    def devpiUsername = args['devpiUsername']
-    def devpiPassword = args['devpiPassword']
+//     def devpiUsername = args['devpiUsername']
+//     def devpiPassword = args['devpiPassword']
     def pkgName  = args['pkgName']
     def pkgVersion = args['pkgVersion']
     def pkgSelector = args['pkgSelector']
     def toxEnv = args['toxEnv']
-    if(isUnix()){
-        sh(
-            label: "Running tests on Packages on DevPi",
-            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs
-                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs
-                       ${devpiExec} use ${devpiIndex} --clientdir certs
-                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
-                       """
-        )
-    } else {
-        bat(
-            label: "Running tests on Packages on DevPi",
-            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs\\
-                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
-                       ${devpiExec} use ${devpiIndex} --clientdir certs\\
-                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -e ${toxEnv} -v
-                       """
-        )
+    withEnv([
+            "DEVPI_INDEX=${index}",
+            "DEVPI_SERVER=${args['server']}",
+            "CLIENT_DIR=${clientDir}",
+            "DEVPI=${devpiExec}"
+        ]) {
+        withCredentials([usernamePassword(
+                                credentialsId: args['credentialsId'],
+                                passwordVariable: 'DEVPI_PASSWORD',
+                                usernameVariable: 'DEVPI_USERNAME'
+                            )
+                                ])
+            {
+            if(isUnix()){
+                sh(label: "Logging into DevPi",
+                   script: '''$DEVPI use $DEVPI_SERVER --clientdir $CLIENT_DIR
+                              $DEVPI login $DEVPI_USERNAME --password=$DEVPI_PASSWORD --clientdir $CLIENT_DIR
+                              '''
+                   )
+                sh(
+                    label: "Running tests on Packages on DevPi",
+                    script: """
+                               $DEVPI use $DEVPI_INDEX --clientdir certs
+                               $DEVPI test --index $DEVPI_INDEX ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
+                               """
+                )
+            } else {
+                bat(label: "Logging into DevPi Staging",
+                   script: '''%DEVPI% use $DEVPI_SERVER --clientdir %CLIENT_DIR%
+                              %DEVPI% login %DEVPI_USERNAME% --password=%$DEVPI_PASSWORD% --clientdir %CLIENT_DIR%
+                              '''
+                   )
+                bat(
+                    label: "Running tests on Packages on DevPi",
+                    script: """%DEVPI% use %DEVPI_INDEX% --clientdir %CLIENT_DIR%
+                               %DEVPI% test --index %DEVPI_INDEX% ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir %CLIENT_DIR% -e ${toxEnv} -v
+                               """
+                )
+            }
+        }
     }
 }
 
