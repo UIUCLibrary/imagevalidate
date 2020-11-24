@@ -1126,15 +1126,26 @@ pipeline {
                                         }
                                         steps{
                                             timeout(10){
-                                                unstash "DIST-INFO"
-                                                devpiRunTest2("devpi",
-                                                    "uiucprescon.imagevalidate.dist-info/METADATA",
-                                                    env.devpiStagingIndex,
-                                                    CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector['whl'],
-                                                    DEVPI_USR,
-                                                    DEVPI_PSW,
-                                                    CONFIGURATIONS[PYTHON_VERSION].tox_env
-                                                )
+                                                script{
+                                                    devpi.testDevpiPackage(
+                                                        devpiIndex: env.devpiStagingIndex,
+                                                        server: "https://devpi.library.illinois.edu",
+                                                        credentialsId: "DS_devpi",
+                                                        pkgName: props.Name,
+                                                        pkgVersion: props.Version,
+                                                        pkgSelector: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector['whl'],
+                                                        toxEnv: CONFIGURATIONS[PYTHON_VERSION].tox_env
+                                                    )
+                                                }
+//                                                 unstash "DIST-INFO"
+//                                                 devpiRunTest2("devpi",
+//                                                     "uiucprescon.imagevalidate.dist-info/METADATA",
+//                                                     env.devpiStagingIndex,
+//                                                     CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector['whl'],
+//                                                     DEVPI_USR,
+//                                                     DEVPI_PSW,
+//                                                     CONFIGURATIONS[PYTHON_VERSION].tox_env
+//                                                 )
                                             }
                                         }
                                     }
