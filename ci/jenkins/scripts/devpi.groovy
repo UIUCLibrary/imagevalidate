@@ -10,14 +10,16 @@ def upload(args = [:]){
         echo "got server = ${env.DEVPI_SERVER} index = ${env.DEVPI_INDEX} credentialsId = ${credentialsId} clientDir = ${env.CLIENT_DIR}"
         withCredentials([usernamePassword(
                             credentialsId: credentialsId,
-                            passwordVariable: 'PWD',
-                            usernameVariable: 'USR')
+                            passwordVariable: 'PASSWORD',
+                            usernameVariable: 'USR'
+                        )
                             ])
         {
-            sh 'echo "got server = $DEVPI_SERVER | index = $DEVPI_INDEX | credentialsId = $credentialsId | clientDir = $CLIENT_DIR"'
+            sh 'echo "got server = $DEVPI_SERVER | index = $DEVPI_INDEX | clientDir = $CLIENT_DIR"'
+            sh "printenv"
             sh(label: "Logging into DevPi Staging",
                script: '''devpi use $DEVPI_SERVER --clientdir $CLIENT_DIR
-                          devpi login $USR --password=$PWD --clientdir $CLIENT_DIR
+                          devpi login $USR --password=$PASSWORD --clientdir $CLIENT_DIR
                           '''
                )
        }
