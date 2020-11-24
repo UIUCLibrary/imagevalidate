@@ -1203,25 +1203,27 @@ pipeline {
             }
             post{
                 success{
-                    node('linux && docker') {
-                        echo "Pushing "
-                        script{
-                            docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                devpi.pushPackageToIndex(
-                                    pkgName: props.Name,
-                                    pkgVersion: props.Version,
-                                    indexSource: "/DS_Jenkins/${env.devpiStagingIndex}",
-                                    indexDestination: "DS_Jenkins/${env.BRANCH_NAME}",
-                                    credentialsId: 'DS_devpi'
-                                )
+                    script{
+                        if (!env.TAG_NAME?.trim()){
+                            node('linux && docker') {
+                                docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                                    devpi.pushPackageToIndex(
+                                        pkgName: props.Name,
+                                        pkgVersion: props.Version,
+                                        indexSource: "/DS_Jenkins/${env.devpiStagingIndex}",
+                                        indexDestination: "DS_Jenkins/${env.BRANCH_NAME}",
+                                        credentialsId: 'DS_devpi'
+                                    )
+                                }
                             }
                         }
                     }
                 }
                 cleanup{
-                    node('linux && docker') {
-                        script{
+                    script{
+                        node('linux && docker') {
                             docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                                echo "HERE"
 //                                 sh(
 //                                     label: "Removing Package from DevPi staging index",
 //                                     script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
