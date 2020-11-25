@@ -814,35 +814,53 @@ pipeline {
 //                 }
                 stage("Test DevPi Package") {
                     stages{
-                        stage("Test DevPi packages mac") {
-                            when{
-                                equals expected: true, actual: params.BUILD_MAC_PACKAGES
-                            }
-                            parallel{
-                                stage("Wheel"){
-                                    agent {
-                                        label 'mac && 10.14 && python3.8'
-                                    }
-                                    steps{
-                                        timeout(10){
-                                            sh(
-                                                label: "Installing devpi client",
-                                                script: '''python3 -m venv venv
-                                                           venv/bin/python -m pip install --upgrade pip
-                                                           venv/bin/pip install devpi-client
-                                                           venv/bin/devpi --version
-                                                '''
+                            stage("Test DevPi packages mac") {
+                                when{
+                                    equals expected: true, actual: params.BUILD_MAC_PACKAGES
+                                    beforeAgent true
+                                }
+                                matrix {
+                                    axes{
+                                        axis {
+                                            name "PYTHON_VERSION"
+                                            values(
+                                                "3.8",
+                                                '3.9'
                                             )
-//                                             unstash "DIST-INFO"
-                                            sh(
+                                        }
+                                        axis {
+                                            name "FORMAT"
+                                            values(
+                                                "wheel",
+                                                'sdist'
+                                            )
+                                        }
+                                    }
+                                    agent none
+                                    stages{
+                                        stage("Test devpi Package"){
+                                            agent {
+                                                label "mac && 10.14 && python${PYTHON_VERSION}"
+                                            }
+                                            steps{
+                                                timeout(10){
+                                                    sh(
                                                         label: "Installing devpi client",
-                                                        script: '''python3.8 -m venv venv
+                                                        script: '''python${PYTHON_VERSION} -m venv venv
                                                                    venv/bin/python -m pip install --upgrade pip
                                                                    venv/bin/pip install devpi-client
                                                                    venv/bin/devpi --version
                                                         '''
                                                     )
-                                                script{
+                                                    script{
+                                                    def devpiPackageName
+                                                    if(FORMAT == "wheel"){
+                                                        devpiPackageName = "${PYTHON_VERSION.replace('.','')}-*macosx*.*whl"
+                                                    } else if(FORMAT == "sdist"){
+                                                        devpiPackageName = "tar.gz"
+                                                    } else{
+                                                        error "unknown format ${FORMAT}"
+                                                    }
                                                     devpi.testDevpiPackage(
                                                         devpiExec: "venv/bin/devpi",
                                                         devpiIndex: env.devpiStagingIndex,
@@ -850,66 +868,141 @@ pipeline {
                                                         credentialsId: "DS_devpi",
                                                         pkgName: props.Name,
                                                         pkgVersion: props.Version,
-                                                        pkgSelector: "38-macosx_10_14_x86_64*.*whl",
-                                                        toxEnv: "py38"
+                                                        pkgSelector: devpiPackageName,
+                                                        toxEnv: "py${PYTHON_VERSION.replace('.','')}"
                                                     )
                                                 }
-                                        }
-                                    }
-                                    post{
-                                        cleanup{
-                                            cleanWs(
-                                                notFailBuild: true,
-                                                deleteDirs: true,
-                                                patterns: [
-                                                    [pattern: 'venv/', type: 'INCLUDE'],
-                                                ]
-                                            )
-                                        }
-                                    }
-                                }
-                                stage("sdist"){
-                                    agent {
-                                        label 'mac && 10.14 && python3.8'
-                                    }
-                                    steps{
-                                        timeout(10){
-                                            sh(
-                                                label: "Installing devpi client",
-                                                script: '''python3 -m venv venv
-                                                           venv/bin/python -m pip install --upgrade pip
-                                                           venv/bin/pip install devpi-client
-                                                           venv/bin/devpi --version
-                                                '''
-                                            )
-                                            script{
-                                                devpi.testDevpiPackage(
-                                                        devpiExec: "venv/bin/devpi",
-                                                        server: "https://devpi.library.illinois.edu",
-                                                        devpiIndex: env.devpiStagingIndex,
-                                                        credentialsId: "DS_devpi",
-                                                        pkgName: props.Name,
-                                                        pkgVersion: props.Version,
-                                                        pkgSelector: 'tar.gz',
-                                                        toxEnv: 'py38'
-                                                    )
+//                                                     script{
+//                                                         def devpiPackageName
+//                                                         if(FORMAT == "wheel"){
+//                                                             devpiPackageName = "${PYTHON_VERSION.replace('.','')}-*macosx*.*whl"
+//                                                         } else if(FORMAT == "sdist"){
+//                                                             devpiPackageName = "tar.gz"
+//                                                         } else{
+//                                                             error "unknown format ${FORMAT}"
+//                                                         }
+//                                                         devpiRunTest2(
+//                                                             "venv/bin/devpi",
+//                                                             "pykdu_compress.dist-info/METADATA",
+//                                                             env.devpiStagingIndex,
+//                                                             devpiPackageName,
+//                                                             DEVPI_USR,
+//                                                             DEVPI_PSW,
+//                                                             "py${PYTHON_VERSION.replace('.','')}"
+//                                                         )
+//                                                     }
+                                                }
                                             }
-                                        }
-                                    }
-                                    post{
-                                        cleanup{
-                                            cleanWs(
-                                                notFailBuild: true,
-                                                deleteDirs: true,
-                                                patterns: [
-                                                    [pattern: 'venv/', type: 'INCLUDE'],
-                                                ]
-                                            )
+                                            post{
+                                                cleanup{
+                                                    cleanWs(
+                                                        notFailBuild: true,
+                                                        deleteDirs: true,
+                                                        patterns: [
+                                                            [pattern: 'venv/', type: 'INCLUDE'],
+                                                        ]
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
+//                         stage("Test DevPi packages mac") {
+//                             when{
+//                                 equals expected: true, actual: params.BUILD_MAC_PACKAGES
+//                             }
+//                             stages{
+//                                 stage("Wheel"){
+//                                     agent {
+//                                         label 'mac && 10.14 && python3.8'
+//                                     }
+//                                     steps{
+//                                         timeout(10){
+//                                             sh(
+//                                                 label: "Installing devpi client",
+//                                                 script: '''python3 -m venv venv
+//                                                            venv/bin/python -m pip install --upgrade pip
+//                                                            venv/bin/pip install devpi-client
+//                                                            venv/bin/devpi --version
+//                                                 '''
+//                                             )
+//                                             sh(
+//                                                         label: "Installing devpi client",
+//                                                         script: '''python3.8 -m venv venv
+//                                                                    venv/bin/python -m pip install --upgrade pip
+//                                                                    venv/bin/pip install devpi-client
+//                                                                    venv/bin/devpi --version
+//                                                         '''
+//                                                     )
+//                                                 script{
+//                                                     devpi.testDevpiPackage(
+//                                                         devpiExec: "venv/bin/devpi",
+//                                                         devpiIndex: env.devpiStagingIndex,
+//                                                         server: "https://devpi.library.illinois.edu",
+//                                                         credentialsId: "DS_devpi",
+//                                                         pkgName: props.Name,
+//                                                         pkgVersion: props.Version,
+//                                                         pkgSelector: "38-macosx_10_14_x86_64*.*whl",
+//                                                         toxEnv: "py38"
+//                                                     )
+//                                                 }
+//                                         }
+//                                     }
+//                                     post{
+//                                         cleanup{
+//                                             cleanWs(
+//                                                 notFailBuild: true,
+//                                                 deleteDirs: true,
+//                                                 patterns: [
+//                                                     [pattern: 'venv/', type: 'INCLUDE'],
+//                                                 ]
+//                                             )
+//                                         }
+//                                     }
+//                                 }
+//                                 stage("sdist"){
+//                                     agent {
+//                                         label 'mac && 10.14 && python3.8'
+//                                     }
+//                                     steps{
+//                                         timeout(10){
+//                                             sh(
+//                                                 label: "Installing devpi client",
+//                                                 script: '''python3 -m venv venv
+//                                                            venv/bin/python -m pip install --upgrade pip
+//                                                            venv/bin/pip install devpi-client
+//                                                            venv/bin/devpi --version
+//                                                 '''
+//                                             )
+//                                             script{
+//                                                 devpi.testDevpiPackage(
+//                                                         devpiExec: "venv/bin/devpi",
+//                                                         server: "https://devpi.library.illinois.edu",
+//                                                         devpiIndex: env.devpiStagingIndex,
+//                                                         credentialsId: "DS_devpi",
+//                                                         pkgName: props.Name,
+//                                                         pkgVersion: props.Version,
+//                                                         pkgSelector: 'tar.gz',
+//                                                         toxEnv: 'py38'
+//                                                     )
+//                                             }
+//                                         }
+//                                     }
+//                                     post{
+//                                         cleanup{
+//                                             cleanWs(
+//                                                 notFailBuild: true,
+//                                                 deleteDirs: true,
+//                                                 patterns: [
+//                                                     [pattern: 'venv/', type: 'INCLUDE'],
+//                                                 ]
+//                                             )
+//                                         }
+//                                     }
+//                                 }
+//                             }
+//                         }
                         stage("Test DevPi Packages for Windows and Linux"){
                             matrix {
                                 axes {
