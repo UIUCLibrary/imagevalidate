@@ -853,44 +853,25 @@ pipeline {
                                                         '''
                                                     )
                                                     script{
-                                                    def devpiPackageName
-                                                    if(FORMAT == "wheel"){
-                                                        devpiPackageName = "${PYTHON_VERSION.replace('.','')}-*macosx*.*whl"
-                                                    } else if(FORMAT == "sdist"){
-                                                        devpiPackageName = "tar.gz"
-                                                    } else{
-                                                        error "unknown format ${FORMAT}"
+                                                        def devpiPackageName
+                                                        if(FORMAT == "wheel"){
+                                                            devpiPackageName = "${PYTHON_VERSION.replace('.','')}-*macosx*.*whl"
+                                                        } else if(FORMAT == "sdist"){
+                                                            devpiPackageName = "tar.gz"
+                                                        } else{
+                                                            error "unknown format ${FORMAT}"
+                                                        }
+                                                        devpi.testDevpiPackage(
+                                                            devpiExec: "venv/bin/devpi",
+                                                            devpiIndex: env.devpiStagingIndex,
+                                                            server: "https://devpi.library.illinois.edu",
+                                                            credentialsId: "DS_devpi",
+                                                            pkgName: props.Name,
+                                                            pkgVersion: props.Version,
+                                                            pkgSelector: devpiPackageName,
+                                                            toxEnv: "py${PYTHON_VERSION.replace('.','')}"
+                                                        )
                                                     }
-                                                    devpi.testDevpiPackage(
-                                                        devpiExec: "venv/bin/devpi",
-                                                        devpiIndex: env.devpiStagingIndex,
-                                                        server: "https://devpi.library.illinois.edu",
-                                                        credentialsId: "DS_devpi",
-                                                        pkgName: props.Name,
-                                                        pkgVersion: props.Version,
-                                                        pkgSelector: devpiPackageName,
-                                                        toxEnv: "py${PYTHON_VERSION.replace('.','')}"
-                                                    )
-                                                }
-//                                                     script{
-//                                                         def devpiPackageName
-//                                                         if(FORMAT == "wheel"){
-//                                                             devpiPackageName = "${PYTHON_VERSION.replace('.','')}-*macosx*.*whl"
-//                                                         } else if(FORMAT == "sdist"){
-//                                                             devpiPackageName = "tar.gz"
-//                                                         } else{
-//                                                             error "unknown format ${FORMAT}"
-//                                                         }
-//                                                         devpiRunTest2(
-//                                                             "venv/bin/devpi",
-//                                                             "pykdu_compress.dist-info/METADATA",
-//                                                             env.devpiStagingIndex,
-//                                                             devpiPackageName,
-//                                                             DEVPI_USR,
-//                                                             DEVPI_PSW,
-//                                                             "py${PYTHON_VERSION.replace('.','')}"
-//                                                         )
-//                                                     }
                                                 }
                                             }
                                             post{
