@@ -182,11 +182,15 @@ def removePackage(args = [:]){
     }
     if(isUnix()){
         sh(label: "Removing Package from DevPi ${index} index",
-           script: "${devpi} remove -y --index ${index} ${pkgName}==${pkgVersion} --clientdir ${clientDir}"
+           script: """${devpi} use ${index} --clientdir ${clientDir}
+                      ${devpi} remove -y --index ${index} ${pkgName}==${pkgVersion} --clientdir ${clientDir}
+                      """
            )
     } else{
        bat(label: "Removing Package from DevPi ${index} index",
-           script: "${devpi} remove -y --index ${index} ${pkgName}==${pkgVersion} --clientdir ${clientDir}"
+           script: """${devpi} use ${index}--clientdir ${clientDir}
+                      ${devpi} remove -y --index ${index} ${pkgName}==${pkgVersion} --clientdir ${clientDir}
+                      """
            )
 
     }
