@@ -151,18 +151,17 @@ def removePackage(args = [:]){
     def pkgName = args['pkgName']
     def pkgVersion = args['pkgVersion']
     def index = args['index']
-    withCredentials(
-            [usernamePassword(
-                credentialsId: args['credentialsId'],
-                passwordVariable: 'DEVPI_PASSWORD',
-                usernameVariable: 'DEVPI_USERNAME'
-            )])
-        {
-        withEnv([
-            "DEVPI=${devpi}",
-            "DEVPI_SERVER=${server}",
-            "CLIENT_DIR=${clientDir}"
-            ]){
+    withEnv([
+        "DEVPI=${devpi}",
+        "DEVPI_SERVER=${server}",
+        "CLIENT_DIR=${clientDir}"
+        ]){
+        withCredentials(
+                [usernamePassword(
+                    credentialsId: args['credentialsId'],
+                    passwordVariable: 'DEVPI_PASSWORD',
+                    usernameVariable: 'DEVPI_USERNAME'
+            )]){
             if(isUnix()){
                 sh(label: "Logging into DevPi",
                    script: '''$DEVPI use $DEVPI_SERVER --clientdir $CLIENT_DIR
