@@ -21,8 +21,8 @@ COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/require
 ENV PYTHON=python3.6
 RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY37
 ARG PIP_EXTRA_INDEX_URL
@@ -32,8 +32,8 @@ COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/require
 ENV PYTHON=python3.7
 RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
 
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY38
@@ -44,8 +44,8 @@ COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/require
 ENV PYTHON=python3.8
 RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
 
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY39
@@ -55,8 +55,8 @@ COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/require
 ENV PYTHON=python3.9
 RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
 
 # ==============================================================================
 FROM wheel_builder_base as conan_builder
