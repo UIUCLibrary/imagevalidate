@@ -451,6 +451,7 @@ pipeline {
                         dockerfile {
                             filename 'ci/docker/sonarcloud/Dockerfile'
                             label 'linux && docker'
+                            args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/home/user/.sonar/cache'
                         }
                     }
                     options{
