@@ -808,7 +808,7 @@ pipeline {
                                                     '''
                                                 )
                                                 script{
-                                                    devpi.testDevpiPackage(
+                                                    devpiLib.testDevpiPackage(
                                                         devpiExec: "venv/bin/devpi",
                                                         devpiIndex: getDevPiStagingIndex(),
                                                         server: "https://devpi.library.illinois.edu",
@@ -964,7 +964,7 @@ pipeline {
                                         steps{
                                             timeout(10){
                                                 script{
-                                                    devpi.testDevpiPackage(
+                                                    devpiLib.testDevpiPackage(
                                                         devpiIndex: getDevPiStagingIndex(),
                                                         server: "https://devpi.library.illinois.edu",
                                                         credentialsId: "DS_devpi",
@@ -988,7 +988,7 @@ pipeline {
                                         steps{
                                             timeout(10){
                                                 script{
-                                                    devpi.testDevpiPackage(
+                                                    devpiLib.testDevpiPackage(
                                                         devpiIndex: getDevPiStagingIndex(),
                                                         server: "https://devpi.library.illinois.edu",
                                                         credentialsId: "DS_devpi",
@@ -1033,7 +1033,7 @@ pipeline {
                     steps {
                         script{
                             echo "Pushing to production/release index"
-                            devpi.pushPackageToIndex(
+                            devpiLib.pushPackageToIndex(
                                 pkgName: props.Name,
                                 pkgVersion: props.Version,
                                 server: "https://devpi.library.illinois.edu",
@@ -1052,7 +1052,7 @@ pipeline {
                         script{
                             if (!env.TAG_NAME?.trim()){
                                 docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                    devpi.pushPackageToIndex(
+                                    devpiLib.pushPackageToIndex(
                                         pkgName: props.Name,
                                         pkgVersion: props.Version,
                                         server: "https://devpi.library.illinois.edu",
@@ -1069,7 +1069,7 @@ pipeline {
                     node('linux && docker') {
                         script{
                             docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                devpi.removePackage(
+                                devpiLib.removePackage(
                                     pkgName: props.Name,
                                     pkgVersion: props.Version,
                                     index: "DS_Jenkins/${getDevPiStagingIndex()}",
