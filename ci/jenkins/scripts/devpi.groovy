@@ -187,7 +187,7 @@ def removePackage(args = [:]){
            )
     } else{
        bat(label: "Removing Package from DevPi ${index} index",
-           script: """${devpi} use ${index}--clientdir ${clientDir}
+           script: """${devpi} use ${index} --clientdir ${clientDir}
                       ${devpi} remove -y --index ${index} ${pkgName}==${pkgVersion} --clientdir ${clientDir}
                       """
            )
