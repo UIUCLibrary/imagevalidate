@@ -185,7 +185,7 @@ pipeline {
         timeout(time: 1, unit: 'DAYS')
     }
     parameters {
-        booleanParam(name: "RUN_CHECKS", defaultValue: false, description: "Run checks on code")
+        booleanParam(name: "RUN_CHECKS", defaultValue: true, description: "Run checks on code")
         booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
         booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
         booleanParam(name: "BUILD_PACKAGES", defaultValue: true, description: "Build Python packages")
