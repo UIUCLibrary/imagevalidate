@@ -117,7 +117,11 @@ def generateToxReport(tox_env, toxResultFile){
     return reportSections.join("\n")
 }
 
-def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
+def getToxTestsParallel(args = [:]){
+    def envNamePrefix = args['envNamePrefix']
+    def label = args['label']
+    def dockerfile = args['dockerfile']
+    def dockerArgs = args['dockerArgs']
     script{
         def TOX_RESULT_FILE_NAME = "tox_result.json"
         def envs
