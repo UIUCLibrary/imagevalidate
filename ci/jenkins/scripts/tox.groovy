@@ -202,7 +202,7 @@ def getToxTestsParallel(args = [:]){
                                 )
                                 throw e
                             }
-                            def checksReportText = generateToxReport(tox_env, 'tox_result.json')
+                            def checksReportText = generateToxReport(tox_env, TOX_RESULT_FILE_NAME)
                             publishChecks(
                                     name: githubChecksName,
                                     summary: 'Use Tox to test installed package',
