@@ -1,3 +1,10 @@
 [build-system]
 requires = ["setuptools>=40.8.0", "wheel", "cmake", "pybind11", "ninja", "conan", 'macholib; platform_system == "Darwin"']
 build-backend = "setuptools.build_meta"
+
+[tool.coverage.run]
+relative_files = true
+branch = true
+source = [
+    "uiucprescon/imagevalidate"
+]
