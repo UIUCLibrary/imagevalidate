@@ -49,7 +49,7 @@ class HathiTiff(AbsProfile):
         return "HathiTrust Tiff"
 
     def validate(self, file: str) -> Report:
-        """Validate the image file.
+        """Validate the image file as a HathiTrust tiff.
 
         Args:
             file:

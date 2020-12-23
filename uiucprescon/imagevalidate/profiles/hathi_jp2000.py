@@ -49,7 +49,7 @@ class HathiJP2000(AbsProfile):
         return "HathiTrust JPEG 2000"
 
     def validate(self, file: str) -> Report:
-        """Validate the image file.
+        """Validate the image file as a HathiTrust jpeg2000 image.
 
         Args:
             file:
