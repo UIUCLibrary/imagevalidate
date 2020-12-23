@@ -1,10 +1,12 @@
+"""Profiles for testing images against."""
+
 import inspect
 import abc
 
-from .absProfile import AbsProfile
 import importlib
 import importlib.util
 import pkgutil
+from .absProfile import AbsProfile
 
 __all__ = [
     "AbsProfile",
@@ -14,8 +16,7 @@ valid_profiles = []
 
 
 def _load() -> None:
-    """Dynamically load all the profiles with AbsProfile in into the
-    profiles namespace"""
+    """Dynamically load profiles with AbsProfile in the profiles namespace."""
 
     def is_profile(i: abc.ABCMeta) -> bool:
         if not inspect.isclass(i):
@@ -26,11 +27,11 @@ def _load() -> None:
 
     module_path = __path__  # type: ignore
 
-    for loader, module_name, is_pkgin in \
+    for _, module_name, _ in \
             pkgutil.walk_packages(module_path):
 
         mod = importlib.import_module(f".{module_name}", __package__)
-        for name, module_class in inspect.getmembers(mod, is_profile):
+        for _, module_class in inspect.getmembers(mod, is_profile):
             if issubclass(module_class, AbsProfile):
                 globals()[module_class.__name__] = module_class
                 # __all__.append(module_class.__name__)

@@ -1,3 +1,5 @@
+"""Profile for validating images."""
+
 import os
 import inspect
 from typing import Type, Set, Dict
@@ -8,28 +10,43 @@ known_profiles: Dict[str, Type[profile_pkg.AbsProfile]] = {}
 
 
 class Profile:
-    """Profile loader for validating embedded metadata in image files"""
+    """Profile loader for validating embedded metadata in image files."""
 
     def __init__(self, validation_profile: profile_pkg.AbsProfile) -> None:
+        """Set the profile to validate against.
+
+        Args:
+            validation_profile:
+        """
         self._profile = validation_profile
 
     def validate(self, file: str) -> imagevalidate.Report:
+        """Validate the image file.
+
+        Args:
+            file:
+                Path to image file to validate
+        Returns:
+            Report on validity of the file
+
+        """
         if not os.path.exists(file):
             raise FileNotFoundError("Unable to locate {}".format(file))
         return self._profile.validate(file)
 
 
 def available_profiles() -> Set[str]:
-    """Get the names of all available profiles
+    """Get the names of all available profiles.
 
-    Returns: List of available profiles accessible in this version
+    Returns:
+        List of available profiles accessible in this version
 
     """
     return set(known_profiles.keys())
 
 
 def get_profile(name: str) -> profile_pkg.AbsProfile:
-    """Locate a profile based on the name of the class"""
+    """Locate a profile based on the name of the class."""
     return known_profiles[name]()
 
 

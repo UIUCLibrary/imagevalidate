@@ -1,14 +1,18 @@
+"""Abstract class for creating a profile."""
+
 import abc
 
-import py3exiv2bind
 from typing import Dict, List, Optional, Set
+import py3exiv2bind
 from uiucprescon.imagevalidate import Report, IssueCategory, messages
 from uiucprescon.imagevalidate.report import Result, ResultCategory
 
 
 class AbsProfile(metaclass=abc.ABCMeta):
     """Base class for metadata validation.
-    Implement the validate method when creating new profile"""
+
+    Implement the validate method when creating new profile
+    """
 
     expected_metadata_constants: Dict[str, str] = dict()
     expected_metadata_any_value: List[str] = list()
@@ -17,11 +21,11 @@ class AbsProfile(metaclass=abc.ABCMeta):
     @staticmethod
     @abc.abstractmethod
     def profile_name() -> str:
-        pass
+        """Get the name of the profile."""
 
     @abc.abstractmethod
     def validate(self, file: str) -> Report:
-        """Validate a file
+        """Validate a file.
 
         Args:
             file: file path to the file to be validate
@@ -57,7 +61,7 @@ class AbsProfile(metaclass=abc.ABCMeta):
     @staticmethod
     def generate_error_msg(category: IssueCategory, field: str,
                            report_data: Result) -> str:
-
+        """Generate error message."""
         message_types: Dict[IssueCategory, messages.AbsMessage] = {
             IssueCategory.INVALID_DATA: messages.InvalidData(),
             IssueCategory.EMPTY_DATA: messages.EmptyData(),
@@ -75,6 +79,7 @@ class AbsProfile(metaclass=abc.ABCMeta):
 
     @staticmethod
     def analyze_data_for_issues(result: Result) -> Optional[IssueCategory]:
+        """Parse data for issues."""
         if result.actual is None:
             return IssueCategory.MISSING_FIELD
 
@@ -91,6 +96,7 @@ class AbsProfile(metaclass=abc.ABCMeta):
     @classmethod
     def get_data_from_image(cls, filename: str) \
             -> Dict[str, Result]:
+        """Access data from image."""
         image = py3exiv2bind.Image(filename)
         data: Dict[str, Result] = dict()
         data.update(cls._get_metadata_has_values(image))

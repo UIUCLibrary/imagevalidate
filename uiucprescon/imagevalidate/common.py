@@ -1,3 +1,5 @@
+"""Common helper functions."""
+
 import abc
 
 import py3exiv2bind
@@ -6,31 +8,69 @@ from uiucprescon.imagevalidate import openjp2wrap  # type: ignore
 
 
 class InvalidStrategy(Exception):
-    pass
+    """Invalid strategy is used."""
 
 
 class AbsColorSpaceExtractor(metaclass=abc.ABCMeta):
-    """Base class for different methods of extracting the color space from an \
-    image file"""
+    """Base class for extracting the color space from an image file."""
 
+    @abc.abstractmethod
     def check(self, image: str) -> str:
-        pass
+        """Check the color space of a given file.
+
+        Args:
+            image:
+                path to an image file
+
+        Returns:
+            color space name
+
+        """
 
 
 class ExtractColorSpace:
+    """Strategy context for extract color space from a file."""
+
     def __init__(self, strategy: AbsColorSpaceExtractor) -> None:
+        """Set the Strategy used for extracting the color space information.
+
+        Args:
+            strategy:
+                Strategy to use
+        """
         self.strategy = strategy
 
     def check(self, image: str) -> str:
+        """Check the color space of a given file.
+
+        Args:
+            image:
+                path to an image file
+
+        Returns:
+            color space name
+
+        """
         return self.strategy.check(image)
 
 
 class ColorSpaceIccDeviceModelCheck(AbsColorSpaceExtractor):
-    """Extract the color space by trying to read the device_model tag in the
-    ICC profile.
-    Useful for identifying sRGB."""
+    """Extract color space by reading the device_model tag in the ICC profile.
+
+    Useful for identifying sRGB.
+    """
 
     def check(self, image: str) -> str:
+        """Check the color space of a given file.
+
+        Args:
+            image:
+                path to an image file
+
+        Returns:
+            color space name
+
+        """
         exiv_image = py3exiv2bind.Image(image)
         try:
             icc = exiv_image.icc()
@@ -45,16 +85,25 @@ class ColorSpaceIccDeviceModelCheck(AbsColorSpaceExtractor):
 
 
 class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
-    """Extract the color space value by reading the pref_ccm from the header
-    of the ICC profile."""
+    """Extract color space from reading pref_ccm in the ICC profile header."""
 
     def check(self, image: str) -> str:
+        """Check the color space of a given file.
+
+        Args:
+            image:
+                path to an image file
+
+        Returns:
+            color space name
+
+        """
         exiv2_image = py3exiv2bind.Image(image)
         try:
             icc = exiv2_image.icc()
-        except py3exiv2bind.core.NoICCError as e:
+        except py3exiv2bind.core.NoICCError as error:
             raise InvalidStrategy("Unable to get ICC profile."
-                                  "Reason: {}".format(e))
+                                  "Reason: {}".format(error))
 
         pref_ccm = icc.get("pref_ccm").value.decode("ascii").rstrip(' \0')
         if not pref_ccm:
@@ -63,5 +112,17 @@ class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
 
 
 class ColorSpaceOJPCheck(AbsColorSpaceExtractor):
+    """Color space extractor using openjpeg library."""
+
     def check(self, image: str) -> str:
+        """Check the color space of a given file.
+
+        Args:
+            image:
+                path to an image file
+
+        Returns:
+            color space name
+
+        """
         return openjp2wrap.get_colorspace(image)

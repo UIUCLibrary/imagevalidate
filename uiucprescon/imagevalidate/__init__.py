@@ -1,3 +1,5 @@
+"""Validate images against a profile."""
+
 from .issues import IssueCategory
 from .report import Report
 from .profile import Profile, available_profiles, get_profile

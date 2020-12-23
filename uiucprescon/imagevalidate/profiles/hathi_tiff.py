@@ -1,8 +1,10 @@
+"""Profile for HathiTrust tiff files."""
+
 import collections
 import sys
+import typing
 
 import py3exiv2bind
-import typing
 from uiucprescon.imagevalidate import IssueCategory
 from uiucprescon.imagevalidate import Report, common
 from uiucprescon.imagevalidate.report import Result
@@ -10,7 +12,8 @@ from . import AbsProfile
 
 
 class HathiTiff(AbsProfile):
-    """Profile for validating Tiff files for HathiTrust"""
+    """Profile for validating Tiff files for HathiTrust."""
+
     expected_metadata_any_value = [
         'Xmp.dc.creator',
 
@@ -42,9 +45,20 @@ class HathiTiff(AbsProfile):
 
     @staticmethod
     def profile_name() -> str:
+        """Get the profile name."""
         return "HathiTrust Tiff"
 
     def validate(self, file: str) -> Report:
+        """Validate the image file.
+
+        Args:
+            file:
+                File path to an image file
+
+        Returns:
+            Returns a report of the results.
+
+        """
         report = Report()
         report.filename = file
         report_data = self.get_data_from_image(file)
@@ -65,7 +79,7 @@ class HathiTiff(AbsProfile):
 
     @classmethod
     def get_data_from_image(cls, filename: str) -> typing.Dict[str, Result]:
-
+        """Get data from image."""
         image = py3exiv2bind.Image(filename)
         data = super().get_data_from_image(filename)
 
@@ -83,6 +97,16 @@ class HathiTiff(AbsProfile):
 
     @staticmethod
     def determine_color_space(filename: str) -> typing.Optional[str]:
+        """Determine the color space of a given file.
+
+        Args:
+            filename:
+                file path to image
+
+        Returns:
+            color space name
+
+        """
         strategies = [
             common.ColorSpaceIccDeviceModelCheck,
             common.ColorSpaceIccPrefCcmCheck,
@@ -92,8 +116,8 @@ class HathiTiff(AbsProfile):
             try:
                 colorspace_extractor = common.ExtractColorSpace(strategy())
                 return colorspace_extractor.check(filename)
-            except common.InvalidStrategy as e:
+            except common.InvalidStrategy as error:
                 print(f"Unable to determine color space using "
-                      f"{strategy.__name__}. Reason given: {e}",
+                      f"{strategy.__name__}. Reason given: {error}",
                       file=sys.stderr)
         return None
