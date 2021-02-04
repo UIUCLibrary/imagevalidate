@@ -2,18 +2,18 @@
 wheel_stashes = []
 
 def getMacDevpiName(pythonVersion, format){
-    if(format == "wheel"){
+    if(format == 'wheel'){
         return "${pythonVersion.replace('.','')}-*macosx*.*whl"
-    } else if(format == "sdist"){
-        return "tar.gz"
+    } else if(format == 'sdist'){
+        return 'tar.gz'
     } else{
         error "unknown format ${format}"
     }
 }
 def test_cpp_code(buildPath){
-    stage("Build CPP"){
+    stage('Build CPP'){
         tee("logs/cmake-build.log"){
-            sh(label: "Testing CPP Code",
+            sh(label: 'Testing CPP Code',
                script: """conan install . -if ${buildPath} -o "*:shared=True"
                           cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
                           cmake --build ${buildPath} -j \$(grep -c ^processor /proc/cpuinfo)
@@ -21,8 +21,8 @@ def test_cpp_code(buildPath){
             )
         }
     }
-    stage("CTest"){
-        sh(label: "Running CTest",
+    stage('CTest'){
+        sh(label: 'Running CTest',
            script: "cd ${buildPath} && ctest --output-on-failure --no-compress-output -T Test"
         )
     }
@@ -41,15 +41,15 @@ def get_sonarqube_unresolved_issues(report_task_file){
 
 def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
     def props = readProperties interpolate: true, file: metadataFile
-    withSonarQubeEnv(installationName:"sonarcloud", credentialsId: sonarCredentials) {
+    withSonarQubeEnv(installationName:'sonarcloud', credentialsId: sonarCredentials) {
         if (env.CHANGE_ID){
             sh(
-                label: "Running Sonar Scanner",
+                label: 'Running Sonar Scanner',
                 script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
                 )
         } else {
             sh(
-                label: "Running Sonar Scanner",
+                label: 'Running Sonar Scanner',
                 script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
                 )
         }
@@ -65,11 +65,11 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
 }
 def build_wheel(){
     if(isUnix()){
-        sh(label: "Building Python Wheel",
+        sh(label: 'Building Python Wheel',
            script: 'python -m pep517.build --binary .'
         )
     } else{
-        bat(label: "Building Python Wheel",
+        bat(label: 'Building Python Wheel',
             script: 'python -m pep517.build --binary .'
         )
     }
@@ -77,7 +77,7 @@ def build_wheel(){
 
 def fixup_wheel(wheelRegex, platform){
     script{
-        if(platform == "linux"){
+        if(platform == 'linux'){
             sh "auditwheel repair ${wheelRegex} -w ./dist"
         }
     }
@@ -86,7 +86,7 @@ def fixup_wheel(wheelRegex, platform){
 def getDevPiStagingIndex(){
 
     if (env.TAG_NAME?.trim()){
-        return "tag_staging"
+        return 'tag_staging'
     } else{
         return "${env.BRANCH_NAME}_staging"
     }
@@ -117,26 +117,26 @@ def get_devpi_doc_archive_name(pkgName, pkgVersion){
     return "${pkgName}-${pkgVersion}.doc.zip"
 }
 
-def DEFAULT_DOCKER_FILENAME = "ci/docker/python/linux/build/Dockerfile"
+def DEFAULT_DOCKER_FILENAME = 'ci/docker/python/linux/build/Dockerfile'
 def DEFAULT_DOCKER_LABEL = "linux && docker"
 def DEFAULT_DOCKER_BUILD_ARGS = '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
 
 def startup(){
     node(){
         checkout scm
-        tox = load("ci/jenkins/scripts/tox.groovy")
-        mac = load("ci/jenkins/scripts/mac.groovy")
-        devpiLib = load("ci/jenkins/scripts/devpi.groovy")
-        configurations = load("ci/jenkins/scripts/configs.groovy").getConfigurations()
+        tox = load('ci/jenkins/scripts/tox.groovy')
+        mac = load('ci/jenkins/scripts/mac.groovy')
+        devpiLib = load('ci/jenkins/scripts/devpi.groovy')
+        configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
     }
     node('linux && docker') {
         try{
             checkout scm
             docker.image('python:3.8').inside {
                 timeout(2){
-                    stage("Getting Distribution Info"){
+                    stage('Getting Distribution Info'){
                         sh(
-                           label: "Running setup.py with dist_info",
+                           label: 'Running setup.py with dist_info',
                            script: """python --version
                                       python setup.py dist_info
                                    """
@@ -159,7 +159,7 @@ def startup(){
 }
 
 def get_props(){
-    stage("Reading Package Metadata"){
+    stage('Reading Package Metadata'){
         node() {
             try{
                 unstash "DIST-INFO"
@@ -177,7 +177,7 @@ Version   ${package_metadata.Version}
     }
 }
 startup()
-def props = get_props()
+props = get_props()
 
 pipeline {
     agent none
@@ -185,18 +185,18 @@ pipeline {
         timeout(time: 1, unit: 'DAYS')
     }
     parameters {
-        booleanParam(name: "RUN_CHECKS", defaultValue: true, description: "Run checks on code")
-        booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
-        booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
-        booleanParam(name: "BUILD_PACKAGES", defaultValue: true, description: "Build Python packages")
-        booleanParam(name: "TEST_PACKAGES", defaultValue: true, description: "Test Python packages by installing them and running tests on the installed package")
-        booleanParam(name: "BUILD_MAC_PACKAGES", defaultValue: false, description: "Test Python packages on Mac")
-        booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
-        booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only")
-        booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation. Release Branch Only")
+        booleanParam(name: 'RUN_CHECKS', defaultValue: true, description: 'Run checks on code')
+        booleanParam(name: 'TEST_RUN_TOX', defaultValue: false, description: 'Run Tox Tests')
+        booleanParam(name: 'USE_SONARQUBE', defaultValue: true, description: 'Send data test data to SonarQube')
+        booleanParam(name: 'BUILD_PACKAGES', defaultValue: true, description: 'Build Python packages')
+        booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
+        booleanParam(name: 'BUILD_MAC_PACKAGES', defaultValue: false, description: 'Test Python packages on Mac')
+        booleanParam(name: 'DEPLOY_DEVPI', defaultValue: false, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
+        booleanParam(name: 'DEPLOY_DEVPI_PRODUCTION', defaultValue: false, description: 'Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only')
+        booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: 'Update online documentation. Release Branch Only')
     }
     stages {
-        stage("Building"){
+        stage('Building'){
             agent {
                 dockerfile {
                     filename DEFAULT_DOCKER_FILENAME
@@ -205,10 +205,10 @@ pipeline {
                 }
             }
             stages{
-                stage("Building Python Package"){
+                stage('Building Python Package'){
                     steps {
                         sh(
-                            label: "Building",
+                            label: 'Building',
                             script: 'CFLAGS="--coverage" python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
                         )
                     }
@@ -218,10 +218,10 @@ pipeline {
                         }
                     }
                 }
-                stage("Sphinx Documentation"){
+                stage('Sphinx Documentation'){
                     steps {
                         sh(
-                            label: "Building docs",
+                            label: 'Building docs',
                             script: 'python -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees'
                         )
                     }
@@ -237,7 +237,7 @@ pipeline {
                                     reportTitles: ''
                                 ]
                             )
-                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${get_devpi_doc_archive_name(props.Name, props.Version)}"
+                            zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${get_devpi_doc_archive_name(props.Name, props.Version)}"
                             stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
                         }
                    }
@@ -251,18 +251,18 @@ pipeline {
                            [pattern: 'logs/', type: 'INCLUDE'],
                            [pattern: 'build/', type: 'INCLUDE'],
                            [pattern: 'dist/', type: 'INCLUDE'],
-                           [pattern: ".eggs/", type: 'INCLUDE']
+                           [pattern: '.eggs/', type: 'INCLUDE']
                        ]
                    )
                }
            }
         }
-        stage("Checks"){
+        stage('Checks'){
             when{
                 equals expected: true, actual: params.RUN_CHECKS
             }
             stages{
-                stage("Testing"){
+                stage('Testing'){
                     stages{
                         stage('Testing Python') {
                             agent {
@@ -273,14 +273,14 @@ pipeline {
                                 }
                             }
                             stages{
-                                stage("Run Python Testing"){
+                                stage('Run Python Testing'){
                                     parallel {
-                                        stage("Run PyTest Unit Tests"){
+                                        stage('Run PyTest Unit Tests'){
                                             steps{
-                                                unstash "LINUX_BUILD_FILES"
-                                                catchError(buildResult: "UNSTABLE", message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
+                                                unstash 'LINUX_BUILD_FILES'
+                                                catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: 'UNSTABLE') {
                                                     sh(
-                                                        label: "Running Pytest",
+                                                        label: 'Running Pytest',
                                                         script:'''mkdir -p reports/coverage
                                                                   coverage run --parallel-mode --source=uiucprescon -m pytest --junitxml=reports/pytest.xml --integration
                                                                   '''
@@ -289,15 +289,15 @@ pipeline {
                                             }
                                             post {
                                                 always {
-                                                    junit "reports/pytest.xml"
-                                                    stash includes: "reports/pytest.xml", name: "PYTEST_REPORT"
+                                                    junit 'reports/pytest.xml'
+                                                    stash includes: 'reports/pytest.xml', name: 'PYTEST_REPORT'
                                                 }
                                             }
                                         }
-                                        stage("Run Doctest Tests"){
+                                        stage('Run Doctest Tests'){
                                            steps {
-                                               catchError(buildResult: "SUCCESS", message: 'Doctest found issues', stageResult: "UNSTABLE") {
-                                                   sh( label: "Running Doctest",
+                                               catchError(buildResult: 'SUCCESS', message: 'Doctest found issues', stageResult: 'UNSTABLE') {
+                                                   sh( label: 'Running Doctest',
                                                        script: '''coverage run --parallel-mode --source=uiucprescon -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v
                                                                   mkdir -p reports
                                                                   mv build/docs/output.txt reports/doctest.txt
@@ -306,11 +306,11 @@ pipeline {
                                                }
                                            }
                                         }
-                                        stage("Run MyPy Static Analysis") {
+                                        stage('Run MyPy Static Analysis') {
                                             steps{
-                                                catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
+                                                catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
                                                     sh(
-                                                        label: "Running Mypy",
+                                                        label: 'Running Mypy',
                                                         script: '''mkdir -p logs
                                                                    mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log
                                                                    '''
@@ -320,13 +320,13 @@ pipeline {
                                             post {
                                                 always {
                                                     recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                                                 }
                                             }
                                         }
                                         stage("Run Flake8 Static Analysis") {
                                             steps{
-                                                catchError(buildResult: "SUCCESS", message: 'Flake8 found issues', stageResult: "UNSTABLE") {
+                                                catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
                                                     sh '''mkdir -p logs
                                                           flake8 uiucprescon --format=pylint --tee --output-file=logs/flake8.log
                                                           '''
@@ -362,7 +362,7 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Run Tox"){
+                        stage('Run Tox'){
                             when{
                                 equals expected: true, actual: params.TEST_RUN_TOX
                             }
@@ -370,17 +370,17 @@ pipeline {
                                 script{
                                     def windowsJobs = [:]
                                     def linuxJobs = [:]
-                                    stage("Scanning Tox Environments"){
+                                    stage('Scanning Tox Environments'){
                                         parallel(
-                                            "Linux":{
+                                            'Linux':{
                                                 linuxJobs = tox.getToxTestsParallel(
-                                                    envNamePrefix: "Tox Linux",
+                                                    envNamePrefix: 'Tox Linux',
                                                     label: "linux && docker",
                                                     dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
                                                     dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                                 )
                                             },
-                                            "Windows":{
+                                            'Windows':{
                                                 windowsJobs = tox.getToxTestsParallel(
                                                     envNamePrefix: 'Tox Windows',
                                                     label: 'windows && docker',
@@ -398,7 +398,7 @@ pipeline {
                         stage('Testing CPP code') {
                             agent {
                                 dockerfile {
-                                    filename "ci/docker/cpp/Dockerfile"
+                                    filename 'ci/docker/cpp/Dockerfile'
                                     additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                     label "linux && docker"
                                 }
@@ -410,7 +410,7 @@ pipeline {
                                 always{
                                     recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
                                     sh "mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml"
-                                    stash(includes: "reports/coverage_cpp.xml", name: "CPP_COVERAGE_REPORT")
+                                    stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
                                    xunit(
                                        testTimeMargin: '3000',
                                        thresholdMode: 1,
@@ -422,7 +422,7 @@ pipeline {
                                            CTest(
                                                deleteOutputFiles: true,
                                                failIfNotNew: true,
-                                               pattern: "build/Testing/**/*.xml",
+                                               pattern: 'build/Testing/**/*.xml',
                                                skipNoTestFiles: true,
                                                stopProcessingIfError: true
                                            )
@@ -443,8 +443,8 @@ pipeline {
                     post{
                         always{
                             node(""){
-                                unstash "PYTHON_COVERAGE_REPORT"
-                                unstash "CPP_COVERAGE_REPORT"
+                                unstash 'PYTHON_COVERAGE_REPORT'
+                                unstash 'CPP_COVERAGE_REPORT'
                                 publishCoverage(
                                     adapters: [
                                             coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
@@ -456,7 +456,7 @@ pipeline {
                         }
                     }
                 }
-                stage("Sonarcloud Analysis"){
+                stage('Sonarcloud Analysis'){
                     agent {
                         dockerfile {
                             filename 'ci/docker/sonarcloud/Dockerfile'
@@ -473,8 +473,8 @@ pipeline {
                         beforeOptions true
                     }
                     steps{
-                        unstash "PYTHON_COVERAGE_REPORT"
-                        unstash "PYTEST_REPORT"
+                        unstash 'PYTHON_COVERAGE_REPORT'
+                        unstash 'PYTEST_REPORT'
                         unstash "FLAKE8_REPORT"
                         unstash "DIST-INFO"
                         sonarcloudSubmit("uiucprescon.imagevalidate.dist-info/METADATA", "reports/sonar-report.json", 'sonarcloud-uiucprescon.imagevalidate')
@@ -493,7 +493,7 @@ pipeline {
                 }
             }
         }
-        stage("Packaging"){
+        stage('Packaging'){
             when{
                 anyOf{
                     equals expected: true, actual: params.BUILD_PACKAGES
@@ -516,7 +516,7 @@ pipeline {
                     }
                     post{
                         always{
-                            stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
+                            stash includes: 'dist/*.zip,dist/*.tar.gz', name: 'sdist'
                         }
                         success{
                             archiveArtifacts artifacts: "dist/*.zip,dist/*.tar.gz", fingerprint: true
@@ -532,7 +532,7 @@ pipeline {
                         }
                     }
                 }
-                stage("Mac Versions"){
+                stage('Mac Versions'){
                     when{
                         equals expected: true, actual: params.BUILD_MAC_PACKAGES
                         beforeAgent true
@@ -570,7 +570,7 @@ pipeline {
                                      equals expected: true, actual: params.TEST_PACKAGES
                                 }
                                 stages{
-                                    stage("Test wheel"){
+                                    stage('Test wheel'){
                                         steps{
                                             script{
                                                 mac.test_mac_package(
@@ -582,7 +582,7 @@ pipeline {
                                             }
                                         }
                                     }
-                                    stage("Test sdist"){
+                                    stage('Test sdist'){
                                         steps{
                                             script{
                                                 mac.test_mac_package(
@@ -613,12 +613,12 @@ pipeline {
                             axis {
                                 name 'PLATFORM'
                                 values(
-                                    "linux",
-                                    "windows"
+                                    'linux',
+                                    'windows'
                                 )
                             }
                             axis {
-                                name "PYTHON_VERSION"
+                                name 'PYTHON_VERSION'
                                 values(
                                     "3.6",
                                     "3.7",
@@ -628,7 +628,7 @@ pipeline {
                             }
                         }
                         stages{
-                            stage("Creating bdist wheel"){
+                            stage('Creating bdist wheel'){
                                 agent {
                                     dockerfile {
                                         filename configurations[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile
@@ -647,7 +647,7 @@ pipeline {
                                     always{
                                         script{
                                             def stashName = "whl ${PLATFORM} ${PYTHON_VERSION}"
-                                            if(PLATFORM == "linux"){
+                                            if(PLATFORM == 'linux'){
                                                 stash includes: 'dist/*manylinux*.whl', name: stashName
                                             } else{
                                                 stash includes: 'dist/*.whl', name: stashName
@@ -656,7 +656,7 @@ pipeline {
                                         }
                                     }
                                     success{
-                                        archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
+                                        archiveArtifacts artifacts: 'dist/*.whl', fingerprint: true
                                     }
                                     cleanup{
                                         cleanWs(
@@ -666,14 +666,14 @@ pipeline {
                                     }
                                 }
                             }
-                            stage("Testing Python packages"){
+                            stage('Testing Python packages'){
                                 when{
                                     anyOf{
                                         equals expected: true, actual: params.TEST_PACKAGES
                                     }
                                 }
                                 stages{
-                                    stage("Testing wheel package"){
+                                    stage('Testing wheel package'){
                                         agent {
                                             dockerfile {
                                                 filename configurations[PYTHON_VERSION].os[PLATFORM].agents.test['whl'].dockerfile
@@ -700,7 +700,7 @@ pipeline {
                                             }
                                         }
                                     }
-                                    stage("Testing sdist package"){
+                                    stage('Testing sdist package'){
                                         agent {
                                             dockerfile {
                                                 filename configurations[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile
@@ -709,7 +709,7 @@ pipeline {
                                              }
                                         }
                                         steps{
-                                            unstash "sdist"
+                                            unstash 'sdist'
                                             catchError(stageResult: 'FAILURE') {
                                                 test_pkg("dist/**/${configurations[PYTHON_VERSION].pkgRegex['sdist']}", 15)
                                             }
@@ -734,14 +734,14 @@ pipeline {
                 }
             }
         }
-        stage("Deploy to Devpi"){
+        stage('Deploy to Devpi'){
             when {
                 allOf{
                     equals expected: true, actual: params.DEPLOY_DEVPI
                     anyOf {
-                        equals expected: "master", actual: env.BRANCH_NAME
-                        equals expected: "dev", actual: env.BRANCH_NAME
-                        tag "*"
+                        equals expected: 'master', actual: env.BRANCH_NAME
+                        equals expected: 'dev', actual: env.BRANCH_NAME
+                        tag '*'
                     }
                 }
             }
@@ -753,7 +753,7 @@ pipeline {
                 lock("uiucprescon.imagevalidate-devpi")
             }
             stages{
-                stage("Deploy to Devpi Staging") {
+                stage('Deploy to Devpi Staging') {
                     agent {
                         dockerfile {
                             filename 'ci/docker/deploy/devpi/deploy/Dockerfile'
@@ -762,24 +762,24 @@ pipeline {
                           }
                     }
                     steps{
-                        unstash "DOCS_ARCHIVE"
-                        unstash "sdist"
+                        unstash 'DOCS_ARCHIVE'
+                        unstash 'sdist'
                         script{
                             wheel_stashes.each{
                                 unstash it
                             }
                             devpiLib.upload(
-                                server: "https://devpi.library.illinois.edu",
-                                credentialsId: "DS_devpi",
+                                server: 'https://devpi.library.illinois.edu',
+                                credentialsId: 'DS_devpi',
                                 index: getDevPiStagingIndex(),
-                                clientDir: "./devpi"
+                                clientDir: './devpi'
                             )
                         }
                     }
                 }
-                stage("Test DevPi Package") {
+                stage('Test DevPi Package') {
                     stages{
-                        stage("Test DevPi packages mac") {
+                        stage('Test DevPi packages mac') {
                             when{
                                 equals expected: true, actual: params.BUILD_MAC_PACKAGES
                                 beforeAgent true
@@ -787,30 +787,30 @@ pipeline {
                             matrix {
                                 axes{
                                     axis {
-                                        name "PYTHON_VERSION"
+                                        name 'PYTHON_VERSION'
                                         values(
-                                            "3.8",
+                                            '3.8',
                                             '3.9'
                                         )
                                     }
                                     axis {
-                                        name "FORMAT"
+                                        name 'FORMAT'
                                         values(
-                                            "wheel",
+                                            'wheel',
                                             'sdist'
                                         )
                                     }
                                 }
                                 agent none
                                 stages{
-                                    stage("Test devpi Package"){
+                                    stage('Test devpi Package'){
                                         agent {
                                             label "mac && 10.14 && python${PYTHON_VERSION}"
                                         }
                                         steps{
                                             timeout(10){
                                                 sh(
-                                                    label: "Installing devpi client",
+                                                    label: 'Installing devpi client',
                                                     script: '''python${PYTHON_VERSION} -m venv venv
                                                                venv/bin/python -m pip install --upgrade pip
                                                                venv/bin/pip install devpi-client
@@ -819,10 +819,10 @@ pipeline {
                                                 )
                                                 script{
                                                     devpiLib.testDevpiPackage(
-                                                        devpiExec: "venv/bin/devpi",
+                                                        devpiExec: 'venv/bin/devpi',
                                                         devpiIndex: getDevPiStagingIndex(),
-                                                        server: "https://devpi.library.illinois.edu",
-                                                        credentialsId: "DS_devpi",
+                                                        server: 'https://devpi.library.illinois.edu',
+                                                        credentialsId: 'DS_devpi',
                                                         pkgName: props.Name,
                                                         pkgVersion: props.Version,
                                                         pkgSelector: getMacDevpiName(PYTHON_VERSION, FORMAT),
@@ -846,19 +846,19 @@ pipeline {
                                 }
                             }
                         }
-//                         stage("Test DevPi packages mac") {
+//                         stage('Test DevPi packages mac') {
 //                             when{
 //                                 equals expected: true, actual: params.BUILD_MAC_PACKAGES
 //                             }
 //                             stages{
-//                                 stage("Wheel"){
+//                                 stage('Wheel'){
 //                                     agent {
 //                                         label 'mac && 10.14 && python3.8'
 //                                     }
 //                                     steps{
 //                                         timeout(10){
 //                                             sh(
-//                                                 label: "Installing devpi client",
+//                                                 label: 'Installing devpi client',
 //                                                 script: '''python3 -m venv venv
 //                                                            venv/bin/python -m pip install --upgrade pip
 //                                                            venv/bin/pip install devpi-client
@@ -866,7 +866,7 @@ pipeline {
 //                                                 '''
 //                                             )
 //                                             sh(
-//                                                         label: "Installing devpi client",
+//                                                         label: 'Installing devpi client',
 //                                                         script: '''python3.8 -m venv venv
 //                                                                    venv/bin/python -m pip install --upgrade pip
 //                                                                    venv/bin/pip install devpi-client
@@ -875,10 +875,10 @@ pipeline {
 //                                                     )
 //                                                 script{
 //                                                     devpi.testDevpiPackage(
-//                                                         devpiExec: "venv/bin/devpi",
+//                                                         devpiExec: 'venv/bin/devpi',
 //                                                         devpiIndex: env.devpiStagingIndex,
-//                                                         server: "https://devpi.library.illinois.edu",
-//                                                         credentialsId: "DS_devpi",
+//                                                         server: 'https://devpi.library.illinois.edu',
+//                                                         credentialsId: 'DS_devpi',
 //                                                         pkgName: props.Name,
 //                                                         pkgVersion: props.Version,
 //                                                         pkgSelector: "38-macosx_10_14_x86_64*.*whl",
@@ -899,14 +899,14 @@ pipeline {
 //                                         }
 //                                     }
 //                                 }
-//                                 stage("sdist"){
+//                                 stage('sdist'){
 //                                     agent {
 //                                         label 'mac && 10.14 && python3.8'
 //                                     }
 //                                     steps{
 //                                         timeout(10){
 //                                             sh(
-//                                                 label: "Installing devpi client",
+//                                                 label: 'Installing devpi client',
 //                                                 script: '''python3 -m venv venv
 //                                                            venv/bin/python -m pip install --upgrade pip
 //                                                            venv/bin/pip install devpi-client
@@ -915,10 +915,10 @@ pipeline {
 //                                             )
 //                                             script{
 //                                                 devpi.testDevpiPackage(
-//                                                         devpiExec: "venv/bin/devpi",
-//                                                         server: "https://devpi.library.illinois.edu",
+//                                                         devpiExec: 'venv/bin/devpi',
+//                                                         server: 'https://devpi.library.illinois.edu',
 //                                                         devpiIndex: env.devpiStagingIndex,
-//                                                         credentialsId: "DS_devpi",
+//                                                         credentialsId: 'DS_devpi',
 //                                                         pkgName: props.Name,
 //                                                         pkgVersion: props.Version,
 //                                                         pkgSelector: 'tar.gz',
@@ -941,14 +941,14 @@ pipeline {
 //                                 }
 //                             }
 //                         }
-                        stage("Test DevPi Packages for Windows and Linux"){
+                        stage('Test DevPi Packages for Windows and Linux'){
                             matrix {
                                 axes {
                                     axis {
                                         name 'PLATFORM'
                                         values(
-                                            "linux",
-                                            "windows"
+                                            'linux',
+                                            'windows'
                                         )
                                     }
                                     axis {
@@ -963,7 +963,7 @@ pipeline {
                                 }
                                 agent none
                                 stages{
-                                    stage("Testing DevPi wheel Package"){
+                                    stage('Testing DevPi wheel Package'){
                                         agent {
                                           dockerfile {
                                             additionalBuildArgs "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['whl'].dockerfile.additionalBuildArgs}"
@@ -976,8 +976,8 @@ pipeline {
                                                 script{
                                                     devpiLib.testDevpiPackage(
                                                         devpiIndex: getDevPiStagingIndex(),
-                                                        server: "https://devpi.library.illinois.edu",
-                                                        credentialsId: "DS_devpi",
+                                                        server: 'https://devpi.library.illinois.edu',
+                                                        credentialsId: 'DS_devpi',
                                                         pkgName: props.Name,
                                                         pkgVersion: props.Version,
                                                         pkgSelector: configurations[PYTHON_VERSION].os[PLATFORM].devpiSelector['whl'],
@@ -987,7 +987,7 @@ pipeline {
                                             }
                                         }
                                     }
-                                    stage("Testing DevPi sdist Package"){
+                                    stage('Testing DevPi sdist Package'){
                                         agent {
                                           dockerfile {
                                             additionalBuildArgs "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.additionalBuildArgs}"
@@ -1000,11 +1000,11 @@ pipeline {
                                                 script{
                                                     devpiLib.testDevpiPackage(
                                                         devpiIndex: getDevPiStagingIndex(),
-                                                        server: "https://devpi.library.illinois.edu",
-                                                        credentialsId: "DS_devpi",
+                                                        server: 'https://devpi.library.illinois.edu',
+                                                        credentialsId: 'DS_devpi',
                                                         pkgName: props.Name,
                                                         pkgVersion: props.Version,
-                                                        pkgSelector: "tar.gz",
+                                                        pkgSelector: 'tar.gz',
                                                         toxEnv: configurations[PYTHON_VERSION].tox_env
                                                     )
                                                 }
@@ -1016,13 +1016,13 @@ pipeline {
                         }
                     }
                 }
-                stage("Deploy to DevPi Production") {
+                stage('Deploy to DevPi Production') {
                     when {
                         allOf{
                             equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
                             anyOf {
-                                branch "master"
-                                tag "*"
+                                branch 'master'
+                                tag '*'
                             }
                         }
                         beforeInput true
@@ -1031,7 +1031,7 @@ pipeline {
                           timeout(time: 1, unit: 'DAYS')
                     }
                     input {
-                      message 'Release to DevPi Production? '
+                      message 'Release to DevPi Production?'
                     }
                     agent {
                         dockerfile {
@@ -1042,13 +1042,13 @@ pipeline {
                     }
                     steps {
                         script{
-                            echo "Pushing to production/release index"
+                            echo 'Pushing to production/release index'
                             devpiLib.pushPackageToIndex(
                                 pkgName: props.Name,
                                 pkgVersion: props.Version,
-                                server: "https://devpi.library.illinois.edu",
+                                server: 'https://devpi.library.illinois.edu',
                                 indexSource: "DS_Jenkins/${getDevPiStagingIndex()}",
-                                indexDestination: "production/release",
+                                indexDestination: 'production/release',
                                 credentialsId: 'DS_devpi'
                             )
                         }
@@ -1057,15 +1057,14 @@ pipeline {
             }
             post{
                 success{
-                    echo "success"
                     node('linux && docker') {
                         script{
                             if (!env.TAG_NAME?.trim()){
-                                docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                                docker.build('imagevalidate:devpi','-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                                     devpiLib.pushPackageToIndex(
                                         pkgName: props.Name,
                                         pkgVersion: props.Version,
-                                        server: "https://devpi.library.illinois.edu",
+                                        server: 'https://devpi.library.illinois.edu',
                                         indexSource: "DS_Jenkins/${getDevPiStagingIndex()}",
                                         indexDestination: "DS_Jenkins/${env.BRANCH_NAME}",
                                         credentialsId: 'DS_devpi'
@@ -1078,12 +1077,12 @@ pipeline {
                 cleanup{
                     node('linux && docker') {
                         script{
-                            docker.build("imagevalidate:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                            docker.build('imagevalidate:devpi','-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                                 devpiLib.removePackage(
                                     pkgName: props.Name,
                                     pkgVersion: props.Version,
                                     index: "DS_Jenkins/${getDevPiStagingIndex()}",
-                                    server: "https://devpi.library.illinois.edu",
+                                    server: 'https://devpi.library.illinois.edu',
                                     credentialsId: 'DS_devpi',
 
                                 )
@@ -1093,13 +1092,13 @@ pipeline {
                 }
             }
         }
-        stage("Release") {
+        stage('Release') {
             parallel {
-                stage("Deploy Online Documentation") {
+                stage('Deploy Online Documentation') {
                     when {
                         allOf{
                             equals expected: true, actual: params.DEPLOY_DOCS
-                            branch "master"
+                            branch 'master'
                         }
                         beforeAgent true
                         beforeInput true
@@ -1107,11 +1106,11 @@ pipeline {
                     input {
                         message 'Update project documentation'
                         parameters {
-                            string(name: 'DEPLOY_DOCS_URL_SUBFOLDER', defaultValue: "imagevalidate", description: 'The directory that the docs should be saved under')
+                            string(name: 'DEPLOY_DOCS_URL_SUBFOLDER', defaultValue: 'imagevalidate', description: 'The directory that the docs should be saved under')
                         }
                     }
                     steps {
-                        dir("build/docs/html/"){
+                        dir('build/docs/html/'){
                             sshPublisher(
                                 publishers: [
                                     sshPublisherDesc(
