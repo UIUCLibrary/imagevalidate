@@ -1418,7 +1418,7 @@ pipeline {
                                     devpi.testDevpiPackage(
                                         agent: [
                                             dockerfile: [
-                                                filename: 'ci/docker/windows/tox/Dockerfile',
+                                                filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
                                                 label: 'windows && docker'
                                             ]
@@ -1443,7 +1443,7 @@ pipeline {
                                     devpi.testDevpiPackage(
                                         agent: [
                                             dockerfile: [
-                                                filename: 'ci/docker/windows/tox_no_vs/Dockerfile',
+                                                filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
                                                 label: 'windows && docker'
                                             ]
