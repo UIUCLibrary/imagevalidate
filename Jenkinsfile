@@ -129,7 +129,7 @@ def DEFAULT_DOCKER_BUILD_ARGS = '--build-arg PYTHON_VERSION=3.7 --build-arg USER
 def startup(){
     node(){
         checkout scm
-        tox = load('ci/jenkins/scripts/tox.groovy')
+
         mac = load('ci/jenkins/scripts/mac.groovy')
         devpiLib = load('ci/jenkins/scripts/devpi.groovy')
         configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
@@ -190,12 +190,12 @@ pipeline {
         timeout(time: 1, unit: 'DAYS')
     }
     parameters {
-//         todo: set defaultValue to true
-        booleanParam(name: 'RUN_CHECKS', defaultValue: false, description: 'Run checks on code')
-        booleanParam(name: 'TEST_RUN_TOX', defaultValue: false, description: 'Run Tox Tests')
-        booleanParam(name: 'USE_SONARQUBE', defaultValue: true, description: 'Send data test data to SonarQube')
+        booleanParam(name: 'RUN_CHECKS', defaultValue: true, description: 'Run checks on code')
 //         todo: set defaultValue to false
-        booleanParam(name: 'BUILD_PACKAGES', defaultValue: true, description: 'Build Python packages')
+        booleanParam(name: 'TEST_RUN_TOX', defaultValue: true, description: 'Run Tox Tests')
+//         todo: set defaultValue to true
+        booleanParam(name: 'USE_SONARQUBE', defaultValue: false, description: 'Send data test data to SonarQube')
+        booleanParam(name: 'BUILD_PACKAGES', defaultValue: false, description: 'Build Python packages')
         booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
         booleanParam(name: 'BUILD_MAC_PACKAGES', defaultValue: false, description: 'Test Python packages on Mac')
         booleanParam(name: 'DEPLOY_DEVPI', defaultValue: false, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
@@ -375,6 +375,11 @@ pipeline {
                             }
                             steps {
                                 script{
+                                    def tox
+                                    node(){
+                                        checkout scm
+                                        tox = load('ci/jenkins/scripts/tox.groovy')
+                                    }
                                     def windowsJobs = [:]
                                     def linuxJobs = [:]
                                     stage('Scanning Tox Environments'){
@@ -384,7 +389,7 @@ pipeline {
                                                     envNamePrefix: 'Tox Linux',
                                                     label: 'linux && docker',
                                                     dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
-                                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                                 )
                                             },
                                             'Windows':{
