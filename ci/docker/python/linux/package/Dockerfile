@@ -54,6 +54,8 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt /tmp/
 
+# ==============================================================================
+
 RUN PYTHON=python3.9 && \
     $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
@@ -61,6 +63,19 @@ RUN PYTHON=python3.9 && \
         -r /tmp/requirements-ci.txt \
         -r /tmp/requirements.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
+
+# ==============================================================================
+FROM base as conan_builder
+RUN pip3 install conan cmake
+ENV CONAN_USER_HOME=/conan
+COPY ci/docker/shared/conan/remotes.json  /conan/.conan/remotes.json
+COPY ci/docker/python/linux/package/conan/profile.ini  /conan/.conan/profiles/default
+COPY conanfile.py /tmp/conanfile.py
+RUN conan config home
+RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
+    conan remove "*" -b --src -f && \
+    conan remove --locks
+# ==============================================================================
 
 FROM base
 ENV PIP_FIND_LINKS=/wheels
@@ -76,3 +91,13 @@ RUN python3.8 -m pip install pip --upgrade pip
 
 COPY --from=PYTHON39_WHEEL_BUILDER /wheels/* $PIP_FIND_LINKS/
 RUN python3.9 -m pip install pip --upgrade pip
+ENV CONAN_USER_HOME=/conan
+COPY ci/docker/python/linux/package/conan/profile.ini  /conan/.conan/profiles/default
+COPY ci/docker/shared/conan/remotes.json  /conan/.conan/remotes.json
+ADD conanfile.py /tmp/conanfile.py
+COPY --from=conan_builder /conan/ /conan/
+RUN conan config home
+RUN conan install /tmp --build missing --no-import  && \
+    conan remove "*" -b --src -f && \
+    conan remove --locks
+RUN chmod -R 777 /conan
