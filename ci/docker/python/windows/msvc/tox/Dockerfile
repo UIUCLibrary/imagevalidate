@@ -154,7 +154,7 @@ RUN certutil -addstore -f root roots.sst ; `
 
 RUN python -m pip install pip --upgrade ; `
     pip install wheel ; `
-    pip install conan
+    pip install conan devpi_client
 
 COPY --from=CONAN_BUILDER C:/Users/ContainerAdministrator/.conan/ C:/Users/ContainerAdministrator/.conan/
 ENV CONAN_USER_HOME=C:/Users/ContainerAdministrator
