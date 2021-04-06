@@ -132,7 +132,7 @@ def startup(){
     node('linux && docker') {
         try{
             checkout scm
-            docker.image('python:3.8').inside {
+            docker.image('python').inside {
                 timeout(2){
                     stage('Getting Distribution Info'){
                         sh(
@@ -141,8 +141,8 @@ def startup(){
                                       python setup.py dist_info
                                    """
                         )
-                        stash includes: "uiucprescon.imagevalidate.dist-info/**", name: 'DIST-INFO'
-                        archiveArtifacts artifacts: "uiucprescon.imagevalidate.dist-info/**"
+                        stash includes: "*.dist-info/**", name: 'DIST-INFO'
+                        archiveArtifacts artifacts: "*.dist-info/**"
                     }
                 }
             }
