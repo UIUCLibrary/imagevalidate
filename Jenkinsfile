@@ -1,5 +1,11 @@
 // @Library(["devpi", "PythonHelpers"]) _
-wheel_stashes = []
+
+SUPPORTED_MAC_VERSIONS = ['3.8', '3.9']
+SUPPORTED_LINUX_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
+SUPPORTED_WINDOWS_VERSIONS = []
+// SUPPORTED_WINDOWS_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
+
+wheelStashes = []
 
 def getMacDevpiName(pythonVersion, format){
     if(format == 'wheel'){
@@ -12,7 +18,7 @@ def getMacDevpiName(pythonVersion, format){
 }
 def test_cpp_code(buildPath){
     stage('Build CPP'){
-        tee("logs/cmake-build.log"){
+        tee('logs/cmake-build.log'){
             sh(label: 'Testing CPP Code',
                script: """conan install . -if ${buildPath} -o "*:shared=True"
                           cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
@@ -59,29 +65,29 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
          if (sonarqube_result.status != 'OK') {
              unstable "SonarQube quality gate: ${sonarqube_result.status}"
          }
-         def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
+         def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
          writeJSON file: outputJson, json: outstandingIssues
      }
 }
-def build_wheel(){
-    if(isUnix()){
-        sh(label: 'Building Python Wheel',
-           script: 'python -m pep517.build --binary .'
-        )
-    } else{
-        bat(label: 'Building Python Wheel',
-            script: 'python -m pep517.build --binary .'
-        )
-    }
-}
+// def build_wheel(){
+//     if(isUnix()){
+//         sh(label: 'Building Python Wheel',
+//            script: 'python -m pep517.build --binary .'
+//         )
+//     } else{
+//         bat(label: 'Building Python Wheel',
+//             script: 'python -m pep517.build --binary .'
+//         )
+//     }
+// }
 
-def fixup_wheel(wheelRegex, platform){
-    script{
-        if(platform == 'linux'){
-            sh "auditwheel repair ${wheelRegex} -w ./dist"
-        }
-    }
-}
+// def fixup_wheel(wheelRegex, platform){
+//     script{
+//         if(platform == 'linux'){
+//             sh "auditwheel repair ${wheelRegex} -w ./dist"
+//         }
+//     }
+// }
 
 def getDevPiStagingIndex(){
 
@@ -92,33 +98,33 @@ def getDevPiStagingIndex(){
     }
 }
 
-def test_pkg(glob, timeout_time){
-
-    findFiles( glob: glob).each{
-        timeout(timeout_time){
-            if(isUnix()){
-                sh(label: "Testing ${it}",
-                   script: """python --version
-                              tox --installpkg=${it.path} -e py -vv
-                              """
-                )
-            } else {
-                bat(label: "Testing ${it}",
-                    script: """python --version
-                               tox --installpkg=${it.path} -e py -vv
-                               """
-                )
-            }
-        }
-    }
-}
+// def test_pkg(glob, timeout_time){
+//
+//     findFiles( glob: glob).each{
+//         timeout(timeout_time){
+//             if(isUnix()){
+//                 sh(label: "Testing ${it}",
+//                    script: """python --version
+//                               tox --installpkg=${it.path} -e py -vv
+//                               """
+//                 )
+//             } else {
+//                 bat(label: "Testing ${it}",
+//                     script: """python --version
+//                                tox --installpkg=${it.path} -e py -vv
+//                                """
+//                 )
+//             }
+//         }
+//     }
+// }
 
 def get_devpi_doc_archive_name(pkgName, pkgVersion){
     return "${pkgName}-${pkgVersion}.doc.zip"
 }
 
 def DEFAULT_DOCKER_FILENAME = 'ci/docker/python/linux/build/Dockerfile'
-def DEFAULT_DOCKER_LABEL = "linux && docker"
+def DEFAULT_DOCKER_LABEL = 'linux && docker'
 def DEFAULT_DOCKER_BUILD_ARGS = '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
 
 def startup(){
@@ -141,8 +147,8 @@ def startup(){
                                       python setup.py dist_info
                                    """
                         )
-                        stash includes: "*.dist-info/**", name: 'DIST-INFO'
-                        archiveArtifacts artifacts: "*.dist-info/**"
+                        stash includes: '*.dist-info/**', name: 'DIST-INFO'
+                        archiveArtifacts artifacts: '*.dist-info/**'
                     }
                 }
             }
@@ -162,8 +168,8 @@ def get_props(){
     stage('Reading Package Metadata'){
         node() {
             try{
-                unstash "DIST-INFO"
-                def package_metadata = readProperties interpolate: true, file: "uiucprescon.imagevalidate.dist-info/METADATA"
+                unstash 'DIST-INFO'
+                def package_metadata = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
                 echo """Metadata:
 
 Name      ${package_metadata.Name}
@@ -185,9 +191,11 @@ pipeline {
         timeout(time: 1, unit: 'DAYS')
     }
     parameters {
-        booleanParam(name: 'RUN_CHECKS', defaultValue: true, description: 'Run checks on code')
+//         todo: set defaultValue to true
+        booleanParam(name: 'RUN_CHECKS', defaultValue: false, description: 'Run checks on code')
         booleanParam(name: 'TEST_RUN_TOX', defaultValue: false, description: 'Run Tox Tests')
         booleanParam(name: 'USE_SONARQUBE', defaultValue: true, description: 'Send data test data to SonarQube')
+//         todo: set defaultValue to false
         booleanParam(name: 'BUILD_PACKAGES', defaultValue: true, description: 'Build Python packages')
         booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
         booleanParam(name: 'BUILD_MAC_PACKAGES', defaultValue: false, description: 'Test Python packages on Mac')
@@ -214,7 +222,7 @@ pipeline {
                     }
                     post{
                         success{
-                            stash includes: "build/**,uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd,uiucprescon/imagevalidate/*.so", name: 'LINUX_BUILD_FILES'
+                            stash includes: 'build/**,uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd,uiucprescon/imagevalidate/*.so', name: 'LINUX_BUILD_FILES'
                         }
                     }
                 }
@@ -238,7 +246,7 @@ pipeline {
                                 ]
                             )
                             zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${get_devpi_doc_archive_name(props.Name, props.Version)}"
-                            stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
+                            stash includes: 'dist/*.doc.zip,build/docs/html/**', name: 'DOCS_ARCHIVE'
                         }
                    }
                }
@@ -324,7 +332,7 @@ pipeline {
                                                 }
                                             }
                                         }
-                                        stage("Run Flake8 Static Analysis") {
+                                        stage('Run Flake8 Static Analysis') {
                                             steps{
                                                 catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
                                                     sh '''mkdir -p logs
@@ -335,7 +343,7 @@ pipeline {
                                             post {
                                                 always {
                                                     recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                                    stash includes: "logs/flake8.log", name: "FLAKE8_REPORT"
+                                                    stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
                                                 }
                                             }
                                         }
@@ -375,7 +383,7 @@ pipeline {
                                             'Linux':{
                                                 linuxJobs = tox.getToxTestsParallel(
                                                     envNamePrefix: 'Tox Linux',
-                                                    label: "linux && docker",
+                                                    label: 'linux && docker',
                                                     dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
                                                     dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                                 )
@@ -400,7 +408,7 @@ pipeline {
                                 dockerfile {
                                     filename 'ci/docker/cpp/Dockerfile'
                                     additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                                    label "linux && docker"
+                                    label 'linux && docker'
                                 }
                             }
                             steps{
@@ -409,7 +417,7 @@ pipeline {
                             post{
                                 always{
                                     recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
-                                    sh "mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml"
+                                    sh 'mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml'
                                     stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
                                    xunit(
                                        testTimeMargin: '3000',
@@ -442,7 +450,7 @@ pipeline {
                     }
                     post{
                         always{
-                            node(""){
+                            node(''){
                                 unstash 'PYTHON_COVERAGE_REPORT'
                                 unstash 'CPP_COVERAGE_REPORT'
                                 publishCoverage(
@@ -456,284 +464,689 @@ pipeline {
                         }
                     }
                 }
-                stage('Sonarcloud Analysis'){
-                    agent {
-                        dockerfile {
-                            filename 'ci/docker/sonarcloud/Dockerfile'
-                            label 'linux && docker'
-                            args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/home/user/.sonar/cache'
-                        }
-                    }
-                    options{
-                        lock("uiucprescon.imagevalidate-sonarscanner")
-                    }
-                    when{
-                        equals expected: true, actual: params.USE_SONARQUBE
-                        beforeAgent true
-                        beforeOptions true
-                    }
-                    steps{
-                        unstash 'PYTHON_COVERAGE_REPORT'
-                        unstash 'PYTEST_REPORT'
-                        unstash "FLAKE8_REPORT"
-                        unstash "DIST-INFO"
-                        sonarcloudSubmit("uiucprescon.imagevalidate.dist-info/METADATA", "reports/sonar-report.json", 'sonarcloud-uiucprescon.imagevalidate')
-                    }
-                    post {
-                        always{
-                            script{
-                                if(fileExists('reports/sonar-report.json')){
-                                    stash includes: "reports/sonar-report.json", name: 'SONAR_REPORT'
-                                    archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
-                                    recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
-                                }
-                            }
-                        }
-                    }
-                }
+//                 stage('Sonarcloud Analysis'){
+//                     agent {
+//                         dockerfile {
+//                             filename 'ci/docker/sonarcloud/Dockerfile'
+//                             label 'linux && docker'
+//                             args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/home/user/.sonar/cache'
+//                         }
+//                     }
+//                     options{
+//                         lock('uiucprescon.imagevalidate-sonarscanner')
+//                     }
+//                     when{
+//                         equals expected: true, actual: params.USE_SONARQUBE
+//                         beforeAgent true
+//                         beforeOptions true
+//                     }
+//                     steps{
+//                         unstash 'PYTHON_COVERAGE_REPORT'
+//                         unstash 'PYTEST_REPORT'
+//                         unstash 'FLAKE8_REPORT'
+//                         unstash 'DIST-INFO'
+//                         sonarcloudSubmit('uiucprescon.imagevalidate.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-uiucprescon.imagevalidate')
+//                     }
+//                     post {
+//                         always{
+//                             script{
+//                                 if(fileExists('reports/sonar-report.json')){
+//                                     stash includes: 'reports/sonar-report.json', name: 'SONAR_REPORT'
+//                                     archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
+//                                     recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+//                                 }
+//                             }
+//                         }
+//                     }
+//                 }
             }
         }
-        stage('Packaging'){
+        stage('Python Packaging'){
             when{
                 anyOf{
                     equals expected: true, actual: params.BUILD_PACKAGES
-                    equals expected: true, actual: params.BUILD_MAC_PACKAGES
                     equals expected: true, actual: params.DEPLOY_DEVPI
                     equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
                 }
+                beforeAgent true
             }
             stages{
-                stage('Creating Source Package') {
-                    agent {
-                        dockerfile {
-                            filename DEFAULT_DOCKER_FILENAME
-                            label DEFAULT_DOCKER_LABEL
-                            additionalBuildArgs DEFAULT_DOCKER_BUILD_ARGS
-                        }
-                    }
-                    steps {
-                        sh "python -m pep517.build --source ."
-                    }
-                    post{
-                        always{
-                            stash includes: 'dist/*.zip,dist/*.tar.gz', name: 'sdist'
-                        }
-                        success{
-                            archiveArtifacts artifacts: "dist/*.zip,dist/*.tar.gz", fingerprint: true
-                        }
-                        cleanup{
-                            cleanWs(
-                                deleteDirs: true,
-                                patterns: [
-                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                    [pattern: 'build/', type: 'INCLUDE'],
-                                ]
-                            )
-                        }
-                    }
-                }
-                stage('Mac Versions'){
-                    when{
-                        equals expected: true, actual: params.BUILD_MAC_PACKAGES
-                        beforeAgent true
-                    }
-                    matrix{
-                        agent none
-                        axes{
-                            axis {
-                                name 'PYTHON_VERSION'
-                                values(
-                                    '3.8',
-                                    '3.9'
-                                )
+                stage('Building'){
+                    steps{
+                        script{
+                            def packages
+                            node(){
+                                checkout scm
+                                packages = load 'ci/jenkins/scripts/packaging.groovy'
                             }
-                        }
-                        stages{
-                            stage('Build'){
-                                steps{
-                                    script{
-                                        def stashName = "MacOS 10.14 py${PYTHON_VERSION} wheel"
-                                        mac.build_mac_package(
-                                            label: "mac && 10.14 && python${PYTHON_VERSION}",
-                                            pythonPath: "python${PYTHON_VERSION}",
-                                            stash: [
-                                                includes: 'dist/*.whl',
-                                                name: stashName
+                            def macBuildStages = [:]
+                                SUPPORTED_MAC_VERSIONS.each{ pythonVersion ->
+                                    macBuildStages["MacOS - Python ${pythonVersion}: wheel"] = {
+                                        packages.buildPkg(
+                                            agent: [
+                                                label: "mac && python${pythonVersion}",
+                                            ],
+                                            buildCmd: {
+                                                sh "python${pythonVersion} -m pip wheel -v --no-deps -w ./dist ."
+                                            },
+                                            post:[
+                                                cleanup: {
+                                                    cleanWs(
+                                                        patterns: [
+                                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                            ],
+                                                        notFailBuild: true,
+                                                        deleteDirs: true
+                                                    )
+                                                },
+                                                success: {
+                                                    stash includes: 'dist/*.whl', name: "python${pythonVersion} mac wheel"
+                                                    wheelStashes << "python${pythonVersion} mac wheel"
+                                                }
                                             ]
                                         )
-                                        wheel_stashes << stashName
                                     }
                                 }
-                            }
-                            stage('Test Packages'){
-                                when{
-                                     equals expected: true, actual: params.TEST_PACKAGES
-                                }
-                                stages{
-                                    stage('Test wheel'){
-                                        steps{
-                                            script{
-                                                mac.test_mac_package(
-                                                    label: "mac && 10.14 && python${PYTHON_VERSION}",
-                                                    pythonPath: "python${PYTHON_VERSION}",
-                                                    stash: "MacOS 10.14 py${PYTHON_VERSION} wheel",
-                                                    glob: 'dist/*.whl'
-                                                )
-                                            }
-                                        }
-                                    }
-                                    stage('Test sdist'){
-                                        steps{
-                                            script{
-                                                mac.test_mac_package(
-                                                    label: "mac && 10.14 && python${PYTHON_VERSION}",
-                                                    pythonPath: "python${PYTHON_VERSION}",
-                                                    stash: 'sdist',
-                                                    glob: 'dist/*.tar.gz,dist/*.zip'
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                stage('Testing Packages') {
-                    when{
-                        anyOf{
-                            equals expected: true, actual: params.BUILD_PACKAGES
-                            equals expected: true, actual: params.DEPLOY_DEVPI
-                            equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
-                        }
-                    }
-                    matrix{
-                        agent none
-                        axes{
-                            axis {
-                                name 'PLATFORM'
-                                values(
-                                    'linux',
-                                    'windows'
-                                )
-                            }
-                            axis {
-                                name 'PYTHON_VERSION'
-                                values(
-                                    "3.6",
-                                    "3.7",
-                                    "3.8",
-                                    '3.9'
-                                )
-                            }
-                        }
-                        stages{
-                            stage('Creating bdist wheel'){
-                                agent {
-                                    dockerfile {
-                                        filename configurations[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile
-                                        label "${PLATFORM} && docker"
-                                        additionalBuildArgs configurations[PYTHON_VERSION].os[PLATFORM].agents.build.additionalBuildArgs
-                                     }
-                                }
-                                steps{
-                                    timeout(15){
-                                        build_wheel()
-                                        fixup_wheel('./dist/*.whl', PLATFORM)
-
-                                    }
-                                }
-                                post{
-                                    always{
-                                        script{
-                                            def stashName = "whl ${PLATFORM} ${PYTHON_VERSION}"
-                                            if(PLATFORM == 'linux'){
-                                                stash includes: 'dist/*manylinux*.whl', name: stashName
-                                            } else{
-                                                stash includes: 'dist/*.whl', name: stashName
-                                            }
-                                            wheel_stashes << stashName
-                                        }
-                                    }
-                                    success{
-                                        archiveArtifacts artifacts: 'dist/*.whl', fingerprint: true
-                                    }
-                                    cleanup{
-                                        cleanWs(
-                                            deleteDirs: true,
-                                            patterns: [[pattern: 'dist/', type: 'INCLUDE']]
+                                def windowsBuildStages = [:]
+                                SUPPORTED_WINDOWS_VERSIONS.each{ pythonVersion ->
+                                    windowsBuildStages["Windows - Python ${pythonVersion}: wheel"] = {
+                                        packages.buildPkg(
+                                            agent: [
+                                                dockerfile: [
+                                                    label: 'windows && docker',
+                                                    filename: 'ci/docker/windows/tox/Dockerfile',
+                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+                                                ]
+                                            ],
+                                            buildCmd: {
+                                                bat "py -${pythonVersion} -m pip wheel -v --no-deps -w ./dist ."
+                                            },
+                                            post:[
+                                                cleanup: {
+                                                    cleanWs(
+                                                        patterns: [
+                                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                            ],
+                                                        notFailBuild: true,
+                                                        deleteDirs: true
+                                                    )
+                                                },
+                                                success: {
+                                                    stash includes: 'dist/*.whl', name: "python${pythonVersion} windows wheel"
+                                                    wheelStashes << "python${pythonVersion} windows wheel"
+                                                }
+                                            ]
                                         )
                                     }
                                 }
-                            }
-                            stage('Testing Python packages'){
-                                when{
-                                    anyOf{
-                                        equals expected: true, actual: params.TEST_PACKAGES
+                                def buildStages =  [
+                                   failFast: true,
+                                    'Source Distribution': {
+                                        packages.buildPkg(
+                                            agent: [
+                                                dockerfile: [
+                                                    label: 'linux && docker',
+                                                    filename: 'ci/docker/python/linux/package/Dockerfile',
+                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                                ]
+                                            ],
+                                            buildCmd: {
+                                                sh 'python -m build --sdist .'
+                                            },
+                                            post:[
+                                                success: {
+                                                    stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
+                                                    wheelStashes << 'sdist'
+                                                    archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
+                                                },
+                                                cleanup: {
+                                                    cleanWs(
+                                                        patterns: [
+                                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                            ],
+                                                        notFailBuild: true,
+                                                        deleteDirs: true
+                                                    )
+                                                },
+                                            ]
+                                        )
+                                    }
+                                ]
+                                def linuxBuildStages = [:]
+                                SUPPORTED_LINUX_VERSIONS.each{ pythonVersion ->
+                                    linuxBuildStages["Linux - Python ${pythonVersion}: wheel"] = {
+                                        packages.buildPkg(
+                                            agent: [
+                                                dockerfile: [
+                                                    label: 'linux && docker',
+                                                    filename: 'ci/docker/python/linux/package/Dockerfile',
+                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                                ]
+                                            ],
+                                            buildCmd: {
+                                                sh(label: 'Building python wheel',
+                                                   script:"""python${pythonVersion} -m build --wheel .
+                                                             auditwheel repair ./dist/*.whl -w ./dist
+                                                             """
+                                                   )
+                                            },
+                                            post:[
+                                                cleanup: {
+                                                    cleanWs(
+                                                        patterns: [
+                                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                            ],
+                                                        notFailBuild: true,
+                                                        deleteDirs: true
+                                                    )
+                                                },
+                                                success: {
+                                                    stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux wheel"
+                                                    wheelStashes << "python${pythonVersion} linux wheel"
+                                                }
+                                            ]
+                                        )
                                     }
                                 }
-                                stages{
-                                    stage('Testing wheel package'){
-                                        agent {
-                                            dockerfile {
-                                                filename configurations[PYTHON_VERSION].os[PLATFORM].agents.test['whl'].dockerfile
-                                                label configurations[PYTHON_VERSION].os[PLATFORM].agents.test['whl'].label
-                                                additionalBuildArgs configurations[PYTHON_VERSION].os[PLATFORM].agents.test['whl'].additionalBuildArgs
-                                             }
-                                        }
-                                        steps{
-                                            unstash "whl ${PLATFORM} ${PYTHON_VERSION}"
-                                            catchError(stageResult: 'FAILURE') {
-                                                test_pkg("dist/**/${configurations[PYTHON_VERSION].pkgRegex['whl']}", 15)
-                                            }
-                                        }
-                                        post{
-                                            cleanup{
-                                                cleanWs(
-                                                    deleteDirs: true,
-                                                    notFailBuild: true,
-                                                    patterns: [
-                                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                                    ]
+                                buildStages = buildStages + windowsBuildStages + linuxBuildStages
+                                if(params.BUILD_MAC_PACKAGES == true){
+                                    buildStages = buildStages + macBuildStages
+                                }
+                                parallel(buildStages)
+                        }
+                    }
+                }
+                stage('Testing'){
+                    when{
+                        equals expected: true, actual: params.TEST_PACKAGES
+                    }
+                    steps{
+                        script{
+                            def packages
+                            node(){
+                                checkout scm
+                                packages = load 'ci/jenkins/scripts/packaging.groovy'
+                            }
+                            def macTestStages = [:]
+                            SUPPORTED_MAC_VERSIONS.each{ pythonVersion ->
+                                macTestStages["MacOS - Python ${pythonVersion}: wheel"] = {
+                                    packages.testPkg2(
+                                        agent: [
+                                            label: "mac && python${pythonVersion}",
+                                        ],
+                                        testSetup: {
+                                            checkout scm
+                                            unstash "python${pythonVersion} mac wheel"
+                                        },
+                                        testCommand: {
+                                            findFiles(glob: 'dist/*.whl').each{
+                                                sh(label: 'Running Tox',
+                                                   script: """python${pythonVersion} -m venv venv
+                                                   ./venv/bin/python -m pip install --upgrade pip
+                                                   ./venv/bin/pip install tox
+                                                   ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
                                                 )
                                             }
-                                        }
-                                    }
-                                    stage('Testing sdist package'){
-                                        agent {
-                                            dockerfile {
-                                                filename configurations[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile
-                                                label configurations[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].label
-                                                additionalBuildArgs configurations[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].additionalBuildArgs
-                                             }
-                                        }
-                                        steps{
+                                        },
+                                        post:[
+                                            cleanup: {
+                                                cleanWs(
+                                                    patterns: [
+                                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                                            [pattern: 'venv/', type: 'INCLUDE'],
+                                                            [pattern: '.tox/', type: 'INCLUDE'],
+                                                        ],
+                                                    notFailBuild: true,
+                                                    deleteDirs: true
+                                                )
+                                            },
+                                            success: {
+                                                 archiveArtifacts artifacts: 'dist/*.whl'
+                                            }
+                                        ]
+                                    )
+                                }
+                                macTestStages["MacOS - Python ${pythonVersion}: sdist"] = {
+                                    packages.testPkg2(
+                                        agent: [
+                                            label: "mac && python${pythonVersion}",
+                                        ],
+                                        testSetup: {
+                                            checkout scm
                                             unstash 'sdist'
-                                            catchError(stageResult: 'FAILURE') {
-                                                test_pkg("dist/**/${configurations[PYTHON_VERSION].pkgRegex['sdist']}", 15)
-                                            }
-                                        }
-                                        post{
-                                            cleanup{
-                                                cleanWs(
-                                                    deleteDirs: true,
-                                                    notFailBuild: true,
-                                                    patterns: [
-                                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                                    ]
+                                        },
+                                        testCommand: {
+                                            findFiles(glob: 'dist/*.tar.gz').each{
+                                                sh(label: 'Running Tox',
+                                                   script: """python${pythonVersion} -m venv venv
+                                                   ./venv/bin/python -m pip install --upgrade pip
+                                                   ./venv/bin/pip install tox
+                                                   ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
                                                 )
                                             }
-                                        }
-                                    }
+
+                                        },
+                                        post:[
+                                            cleanup: {
+                                                cleanWs(
+                                                    patterns: [
+                                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                                            [pattern: 'venv/', type: 'INCLUDE'],
+                                                            [pattern: '.tox/', type: 'INCLUDE'],
+                                                        ],
+                                                    notFailBuild: true,
+                                                    deleteDirs: true
+                                                )
+                                            },
+                                        ]
+                                    )
                                 }
                             }
+                            def windowsTestStages = [:]
+                            SUPPORTED_WINDOWS_VERSIONS.each{ pythonVersion ->
+                                windowsTestStages["Windows - Python ${pythonVersion}: wheel"] = {
+                                    packages.testPkg2(
+                                        agent: [
+                                            dockerfile: [
+                                                label: 'windows && docker',
+                                                filename: 'ci/docker/windows/tox_no_vs/Dockerfile',
+                                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+                                            ]
+                                        ],
+                                        dockerImageName: "${currentBuild.fullProjectName}_test_no_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                                        testSetup: {
+                                             checkout scm
+                                             unstash "python${pythonVersion} windows wheel"
+                                        },
+                                        testCommand: {
+                                             findFiles(glob: 'dist/*.whl').each{
+                                                 bat(label: 'Running Tox', script: "tox --installpkg ${it.path} --workdir %TEMP%\\tox  -e py${pythonVersion.replace('.', '')}")
+                                             }
+
+                                        },
+                                        post:[
+                                            cleanup: {
+                                                cleanWs(
+                                                    patterns: [
+                                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                        ],
+                                                    notFailBuild: true,
+                                                    deleteDirs: true
+                                                )
+                                            },
+                                            success: {
+                                                archiveArtifacts artifacts: 'dist/*.whl'
+                                            }
+                                        ]
+                                    )
+                                }
+                                windowsTestStages["Windows - Python ${pythonVersion}: sdist"] = {
+                                    packages.testPkg2(
+                                        agent: [
+                                            dockerfile: [
+                                                label: 'windows && docker',
+                                                filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
+                                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+                                            ]
+                                        ],
+                                        dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                                        testSetup: {
+                                            checkout scm
+                                            unstash 'sdist'
+                                        },
+                                        testCommand: {
+                                            findFiles(glob: 'dist/*.tar.gz').each{
+                                                bat(label: 'Running Tox', script: "tox --workdir %TEMP%\\tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}")
+                                            }
+                                        },
+                                        post:[
+                                            cleanup: {
+                                                cleanWs(
+                                                    patterns: [
+                                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                        ],
+                                                    notFailBuild: true,
+                                                    deleteDirs: true
+                                                )
+                                            },
+                                        ]
+                                    )
+                                }
+                            }
+                            def linuxTestStages = [:]
+                            SUPPORTED_LINUX_VERSIONS.each{ pythonVersion ->
+                                linuxTestStages["Linux - Python ${pythonVersion}: wheel"] = {
+                                    packages.testPkg2(
+                                        agent: [
+                                            dockerfile: [
+                                                label: 'linux && docker',
+                                                filename: 'ci/docker/python/linux/tox/Dockerfile',
+                                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                            ]
+                                        ],
+                                        testSetup: {
+                                            checkout scm
+                                            unstash "python${pythonVersion} linux wheel"
+                                        },
+                                        testCommand: {
+                                            findFiles(glob: 'dist/*.whl').each{
+                                                timeout(5){
+                                                    sh(
+                                                        label: 'Running Tox',
+                                                        script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                                                        )
+                                                }
+                                            }
+                                        },
+                                        post:[
+                                            cleanup: {
+                                                cleanWs(
+                                                    patterns: [
+                                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                        ],
+                                                    notFailBuild: true,
+                                                    deleteDirs: true
+                                                )
+                                            },
+                                            success: {
+                                                archiveArtifacts artifacts: 'dist/*.whl'
+                                            },
+                                        ]
+                                    )
+                                }
+                                linuxTestStages["Linux - Python ${pythonVersion}: sdist"] = {
+                                    packages.testPkg2(
+                                        agent: [
+                                            dockerfile: [
+                                                label: 'linux && docker',
+                                                filename: 'ci/docker/python/linux/tox/Dockerfile',
+                                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                            ]
+                                        ],
+                                        testSetup: {
+                                            checkout scm
+                                            unstash 'sdist'
+                                        },
+                                        testCommand: {
+                                            findFiles(glob: 'dist/*.tar.gz').each{
+                                                sh(
+                                                    label: 'Running Tox',
+                                                    script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                                                    )
+                                            }
+                                        },
+                                        post:[
+                                            cleanup: {
+                                                cleanWs(
+                                                    patterns: [
+                                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                        ],
+                                                    notFailBuild: true,
+                                                    deleteDirs: true
+                                                )
+                                            },
+                                        ]
+                                    )
+                                }
+
+                            }
+
+                            def testingStages = windowsTestStages + linuxTestStages
+                            if(params.BUILD_MAC_PACKAGES == true){
+                                testingStages = testingStages + macTestStages
+                            }
+                            parallel(testingStages)
                         }
                     }
                 }
             }
         }
+//         stage('Packaging'){
+//             when{
+//                 anyOf{
+//                     equals expected: true, actual: params.BUILD_PACKAGES
+//                     equals expected: true, actual: params.BUILD_MAC_PACKAGES
+//                     equals expected: true, actual: params.DEPLOY_DEVPI
+//                     equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+//                 }
+//             }
+//             stages{
+//                 stage('Creating Source Package') {
+//                     agent {
+//                         dockerfile {
+//                             filename DEFAULT_DOCKER_FILENAME
+//                             label DEFAULT_DOCKER_LABEL
+//                             additionalBuildArgs DEFAULT_DOCKER_BUILD_ARGS
+//                         }
+//                     }
+//                     steps {
+//                         sh "python -m pep517.build --source ."
+//                     }
+//                     post{
+//                         always{
+//                             stash includes: 'dist/*.zip,dist/*.tar.gz', name: 'sdist'
+//                         }
+//                         success{
+//                             archiveArtifacts artifacts: "dist/*.zip,dist/*.tar.gz", fingerprint: true
+//                         }
+//                         cleanup{
+//                             cleanWs(
+//                                 deleteDirs: true,
+//                                 patterns: [
+//                                     [pattern: 'dist/', type: 'INCLUDE'],
+//                                     [pattern: 'build/', type: 'INCLUDE'],
+//                                 ]
+//                             )
+//                         }
+//                     }
+//                 }
+//                 stage('Mac Versions'){
+//                     when{
+//                         equals expected: true, actual: params.BUILD_MAC_PACKAGES
+//                         beforeAgent true
+//                     }
+//                     matrix{
+//                         agent none
+//                         axes{
+//                             axis {
+//                                 name 'PYTHON_VERSION'
+//                                 values(
+//                                     '3.8',
+//                                     '3.9'
+//                                 )
+//                             }
+//                         }
+//                         stages{
+//                             stage('Build'){
+//                                 steps{
+//                                     script{
+//                                         def stashName = "MacOS 10.14 py${PYTHON_VERSION} wheel"
+//                                         mac.build_mac_package(
+//                                             label: "mac && 10.14 && python${PYTHON_VERSION}",
+//                                             pythonPath: "python${PYTHON_VERSION}",
+//                                             stash: [
+//                                                 includes: 'dist/*.whl',
+//                                                 name: stashName
+//                                             ]
+//                                         )
+//                                         wheel_stashes << stashName
+//                                     }
+//                                 }
+//                             }
+//                             stage('Test Packages'){
+//                                 when{
+//                                      equals expected: true, actual: params.TEST_PACKAGES
+//                                 }
+//                                 stages{
+//                                     stage('Test wheel'){
+//                                         steps{
+//                                             script{
+//                                                 mac.test_mac_package(
+//                                                     label: "mac && 10.14 && python${PYTHON_VERSION}",
+//                                                     pythonPath: "python${PYTHON_VERSION}",
+//                                                     stash: "MacOS 10.14 py${PYTHON_VERSION} wheel",
+//                                                     glob: 'dist/*.whl'
+//                                                 )
+//                                             }
+//                                         }
+//                                     }
+//                                     stage('Test sdist'){
+//                                         steps{
+//                                             script{
+//                                                 mac.test_mac_package(
+//                                                     label: "mac && 10.14 && python${PYTHON_VERSION}",
+//                                                     pythonPath: "python${PYTHON_VERSION}",
+//                                                     stash: 'sdist',
+//                                                     glob: 'dist/*.tar.gz,dist/*.zip'
+//                                                 )
+//                                             }
+//                                         }
+//                                     }
+//                                 }
+//                             }
+//                         }
+//                     }
+//                 }
+//                 stage('Testing Packages') {
+//                     when{
+//                         anyOf{
+//                             equals expected: true, actual: params.BUILD_PACKAGES
+//                             equals expected: true, actual: params.DEPLOY_DEVPI
+//                             equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+//                         }
+//                     }
+//                     matrix{
+//                         agent none
+//                         axes{
+//                             axis {
+//                                 name 'PLATFORM'
+//                                 values(
+//                                     'linux',
+//                                     'windows'
+//                                 )
+//                             }
+//                             axis {
+//                                 name 'PYTHON_VERSION'
+//                                 values(
+//                                     "3.6",
+//                                     "3.7",
+//                                     "3.8",
+//                                     '3.9'
+//                                 )
+//                             }
+//                         }
+//                         stages{
+//                             stage('Creating bdist wheel'){
+//                                 agent {
+//                                     dockerfile {
+//                                         filename configurations[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile
+//                                         label "${PLATFORM} && docker"
+//                                         additionalBuildArgs configurations[PYTHON_VERSION].os[PLATFORM].agents.build.additionalBuildArgs
+//                                      }
+//                                 }
+//                                 steps{
+//                                     timeout(15){
+//                                         build_wheel()
+//                                         fixup_wheel('./dist/*.whl', PLATFORM)
+//
+//                                     }
+//                                 }
+//                                 post{
+//                                     always{
+//                                         script{
+//                                             def stashName = "whl ${PLATFORM} ${PYTHON_VERSION}"
+//                                             if(PLATFORM == 'linux'){
+//                                                 stash includes: 'dist/*manylinux*.whl', name: stashName
+//                                             } else{
+//                                                 stash includes: 'dist/*.whl', name: stashName
+//                                             }
+//                                             wheel_stashes << stashName
+//                                         }
+//                                     }
+//                                     success{
+//                                         archiveArtifacts artifacts: 'dist/*.whl', fingerprint: true
+//                                     }
+//                                     cleanup{
+//                                         cleanWs(
+//                                             deleteDirs: true,
+//                                             patterns: [[pattern: 'dist/', type: 'INCLUDE']]
+//                                         )
+//                                     }
+//                                 }
+//                             }
+//                             stage('Testing Python packages'){
+//                                 when{
+//                                     anyOf{
+//                                         equals expected: true, actual: params.TEST_PACKAGES
+//                                     }
+//                                 }
+//                                 stages{
+//                                     stage('Testing wheel package'){
+//                                         agent {
+//                                             dockerfile {
+//                                                 filename configurations[PYTHON_VERSION].os[PLATFORM].agents.test['whl'].dockerfile
+//                                                 label configurations[PYTHON_VERSION].os[PLATFORM].agents.test['whl'].label
+//                                                 additionalBuildArgs configurations[PYTHON_VERSION].os[PLATFORM].agents.test['whl'].additionalBuildArgs
+//                                              }
+//                                         }
+//                                         steps{
+//                                             unstash "whl ${PLATFORM} ${PYTHON_VERSION}"
+//                                             catchError(stageResult: 'FAILURE') {
+//                                                 test_pkg("dist/**/${configurations[PYTHON_VERSION].pkgRegex['whl']}", 15)
+//                                             }
+//                                         }
+//                                         post{
+//                                             cleanup{
+//                                                 cleanWs(
+//                                                     deleteDirs: true,
+//                                                     notFailBuild: true,
+//                                                     patterns: [
+//                                                         [pattern: 'dist/', type: 'INCLUDE'],
+//                                                         [pattern: '.tox/', type: 'INCLUDE'],
+//                                                     ]
+//                                                 )
+//                                             }
+//                                         }
+//                                     }
+//                                     stage('Testing sdist package'){
+//                                         agent {
+//                                             dockerfile {
+//                                                 filename configurations[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile
+//                                                 label configurations[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].label
+//                                                 additionalBuildArgs configurations[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].additionalBuildArgs
+//                                              }
+//                                         }
+//                                         steps{
+//                                             unstash 'sdist'
+//                                             catchError(stageResult: 'FAILURE') {
+//                                                 test_pkg("dist/**/${configurations[PYTHON_VERSION].pkgRegex['sdist']}", 15)
+//                                             }
+//                                         }
+//                                         post{
+//                                             cleanup{
+//                                                 cleanWs(
+//                                                     deleteDirs: true,
+//                                                     notFailBuild: true,
+//                                                     patterns: [
+//                                                         [pattern: 'dist/', type: 'INCLUDE'],
+//                                                         [pattern: '.tox/', type: 'INCLUDE'],
+//                                                     ]
+//                                                 )
+//                                             }
+//                                         }
+//                                     }
+//                                 }
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//         }
         stage('Deploy to Devpi'){
             when {
                 allOf{
@@ -750,7 +1163,7 @@ pipeline {
 //                 devpiStagingIndex = getDevPiStagingIndex()
 //             }
             options{
-                lock("uiucprescon.imagevalidate-devpi")
+                lock('uiucprescon.imagevalidate-devpi')
             }
             stages{
                 stage('Deploy to Devpi Staging') {
@@ -765,7 +1178,7 @@ pipeline {
                         unstash 'DOCS_ARCHIVE'
                         unstash 'sdist'
                         script{
-                            wheel_stashes.each{
+                            wheelStashes.each{
                                 unstash it
                             }
                             devpiLib.upload(
