@@ -68,7 +68,7 @@ RUN py -m pip install --upgrade pip wheel && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extras.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt
-
+RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY37
 SHELL ["cmd", "/S", "/C" ]
@@ -80,7 +80,7 @@ RUN py -m pip install --upgrade pip wheel && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extras.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt
-
+RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY38
 SHELL ["cmd", "/S", "/C" ]
@@ -92,8 +92,7 @@ RUN py -m pip install --upgrade pip wheel && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extras.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt
-
-# ==============================================================================
+RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
 
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY39
@@ -106,6 +105,7 @@ RUN py -m pip install --upgrade pip wheel && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extras.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt
+RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
 # ==============================================================================
 
 FROM BASE_BUILDER
