@@ -61,16 +61,16 @@ RUN $PYTHON -m pip install pip --upgrade pip && \
 # ==============================================================================
 FROM wheel_builder_base as conan_builder
 RUN pip3 install conan cmake
-COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
-COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/profiles/default
-USER user
-WORKDIR /home/user
+ENV CONAN_USER_HOME=/conan
+COPY ci/docker/shared/conan/remotes.json  /conan/.conan/remotes.json
+COPY ci/docker/python/linux/package/conan/profile.ini  /conan/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config home
 RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
     conan remove "*" -b --src -f && \
     conan remove --locks
 # ==============================================================================
+
 FROM wheel_builder_base
 
 ARG PIP_EXTRA_INDEX_URL
@@ -81,16 +81,15 @@ COPY --from=WHEEL_BUILDER_PY38 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY39 /wheels/* /wheels/
 ENV PIP_FIND_LINKS=/wheels
 RUN pip3 install tox conan
-USER user
-WORKDIR /home/user
-COPY --from=conan_builder --chown=user:user /home/user/.conan/ /home/user/.conan/
-COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/.conan/profiles/default
-COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
+COPY ci/docker/shared/conan/profile.ini  /home/user/.conan/profiles/default
+COPY ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
 ADD conanfile.py /tmp/conanfile.py
-ENV CONAN_USER_HOME=/home/user/
+ENV CONAN_USER_HOME=/conan
+COPY --from=conan_builder /conan/ /conan/
 RUN conan config home
 RUN conan install /tmp --build missing --no-import  && \
     conan remove "*" -b --src -f && \
     conan remove --locks
+RUN chmod -R 777 /conan
 WORKDIR /src
 CMD tox --workdir /tmp/tox --recreate
