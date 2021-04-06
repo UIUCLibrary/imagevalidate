@@ -2,8 +2,7 @@
 
 SUPPORTED_MAC_VERSIONS = ['3.8', '3.9']
 SUPPORTED_LINUX_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
-SUPPORTED_WINDOWS_VERSIONS = []
-// SUPPORTED_WINDOWS_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
+SUPPORTED_WINDOWS_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
 
 wheelStashes = []
 
@@ -554,7 +553,7 @@ pipeline {
                                             agent: [
                                                 dockerfile: [
                                                     label: 'windows && docker',
-                                                    filename: 'ci/docker/windows/tox/Dockerfile',
+                                                    filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                                 ]
                                             ],
@@ -750,7 +749,7 @@ pipeline {
                                         agent: [
                                             dockerfile: [
                                                 label: 'windows && docker',
-                                                filename: 'ci/docker/windows/tox_no_vs/Dockerfile',
+                                                filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                             ]
                                         ],
