@@ -328,12 +328,12 @@ pipeline {
                                         stage('Run MyPy Static Analysis') {
                                             steps{
                                                 catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
-                                                    sh(
-                                                        label: 'Running Mypy',
-                                                        script: '''mkdir -p logs
-                                                                   mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log
-                                                                   '''
-                                                   )
+                                                    tee('logs/mypy.log'){
+                                                        sh(
+                                                            label: 'Running Mypy',
+                                                            script: 'mypy -p uiucprescon --html-report reports/mypy/html'
+                                                       )
+                                                    }
                                                 }
                                             }
                                             post {
