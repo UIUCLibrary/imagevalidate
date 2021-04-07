@@ -1,33 +1,103 @@
-FROM quay.io/pypa/manylinux2014_x86_64
-#FROM quay.io/pypa/manylinux2010_x86_64
-ARG USER_ID=1000
-ARG GROUP_ID=1000
+FROM quay.io/pypa/manylinux2014_x86_64 as base
+RUN yum install -y openjpeg2-devel
+ENV PATH=/opt/python/cp39-cp39/bin:/opt/python/cp38-cp38/bin:/opt/python/cp37-cp37m/bin:/opt/python/cp36-cp36m/bin:/opt/python/cp35-cp35m/bin:$PATH
+RUN mkdir -p /.cache/pip && \
+    chmod -R 777 /.cache
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
 
-RUN groupadd -g $GROUP_ID user && \
-    useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
+RUN python -m pip install pip --upgrade && python -m pip install wheel
+RUN python --version && python -m pip install conan cmake build
+# ==============================================================================
+FROM base as PYTHON36_WHEEL_BUILDER
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt /tmp/
 
-ARG CMAKE_DOWNLOAD_URL=https://github.com/Kitware/CMake/releases/download/v3.17.3/cmake-3.17.3-Linux-x86_64.sh
-RUN curl -L --output  /tmp/install_cmake.sh $CMAKE_DOWNLOAD_URL && \
-    chmod +x /tmp/install_cmake.sh  && \
-    /tmp/install_cmake.sh  --skip-license --prefix=/usr && \
-    cmake --version
+RUN PYTHON=python3.6 && \
+    $PYTHON -m pip install pip --upgrade pip && \
+    $PYTHON -m pip install wheel && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir \
+        -r /tmp/requirements-ci.txt \
+        -r /tmp/requirements.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
+# ==============================================================================
+FROM base as PYTHON37_WHEEL_BUILDER
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt /tmp/
 
-RUN ln -sf /usr/bin/python2 /usr/bin/python && \
-    yum install -y openjpeg2-devel
+RUN PYTHON=python3.7 && \
+    $PYTHON -m pip install pip --upgrade pip && \
+    $PYTHON -m pip install wheel && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir \
+        -r /tmp/requirements-ci.txt \
+        -r /tmp/requirements.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
+# ==============================================================================
+FROM base as PYTHON38_WHEEL_BUILDER
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt /tmp/
 
-ARG PYTHON_VERSION=3.8
-RUN declare -A python_versions && \
-    python_versions=( \
-        ["3.5"]="/opt/python/cp35-cp35m" \
-        ["3.6"]="/opt/python/cp36-cp36m" \
-        ["3.7"]="/opt/python/cp37-cp37m" \
-        ["3.8"]="/opt/python/cp38-cp38" \
-        ["3.9"]="/opt/python/cp39-cp39" \
-        ) && \
-    if [ ${python_versions[$PYTHON_VERSION]} ] ; \
-        then \
-            ln -sf ${python_versions[$PYTHON_VERSION]}/bin/python /usr/bin/python ; \
-            export PATH="${python_versions[$PYTHON_VERSION]}/bin:${PATH}" ; \
-        else exit 1; \
-    fi && \
-    python -m pip install pep517 --no-warn-script-location
+RUN PYTHON=python3.8 && \
+    $PYTHON -m pip install pip --upgrade pip && \
+    $PYTHON -m pip install wheel && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir \
+        -r /tmp/requirements-ci.txt \
+        -r /tmp/requirements.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
+# ==============================================================================
+
+FROM base as PYTHON39_WHEEL_BUILDER
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt /tmp/
+
+# ==============================================================================
+
+RUN PYTHON=python3.9 && \
+    $PYTHON -m pip install pip --upgrade pip && \
+    $PYTHON -m pip install wheel && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir \
+        -r /tmp/requirements-ci.txt \
+        -r /tmp/requirements.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
+
+# ==============================================================================
+FROM base as conan_builder
+RUN pip3 install conan cmake
+ENV CONAN_USER_HOME=/conan
+COPY ci/docker/shared/conan/remotes.json  /conan/.conan/remotes.json
+COPY ci/docker/python/linux/package/conan/profile.ini  /conan/.conan/profiles/default
+COPY conanfile.py /tmp/conanfile.py
+RUN conan config home
+RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
+    conan remove "*" -b --src -f && \
+    conan remove --locks
+# ==============================================================================
+
+FROM base
+ENV PIP_FIND_LINKS=/wheels
+
+COPY --from=PYTHON36_WHEEL_BUILDER /wheels/* $PIP_FIND_LINKS/
+RUN python3.6 -m pip install pip --upgrade pip
+
+COPY --from=PYTHON37_WHEEL_BUILDER /wheels/* $PIP_FIND_LINKS/
+RUN python3.7 -m pip install pip --upgrade pip
+
+COPY --from=PYTHON38_WHEEL_BUILDER /wheels/* $PIP_FIND_LINKS/
+RUN python3.8 -m pip install pip --upgrade pip
+
+COPY --from=PYTHON39_WHEEL_BUILDER /wheels/* $PIP_FIND_LINKS/
+RUN python3.9 -m pip install pip --upgrade pip
+ENV CONAN_USER_HOME=/conan
+COPY ci/docker/python/linux/package/conan/profile.ini  /conan/.conan/profiles/default
+COPY ci/docker/shared/conan/remotes.json  /conan/.conan/remotes.json
+ADD conanfile.py /tmp/conanfile.py
+COPY --from=conan_builder /conan/ /conan/
+RUN conan config home
+RUN conan install /tmp --build missing --no-import  && \
+    conan remove "*" -b --src -f && \
+    conan remove --locks
+RUN chmod -R 777 /conan
