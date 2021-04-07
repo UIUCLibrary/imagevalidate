@@ -23,6 +23,7 @@ RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
+RUN $PYTHON -m pip wheel  -w /wheels --no-cache-dir wheel
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY37
 ARG PIP_EXTRA_INDEX_URL
@@ -34,6 +35,7 @@ RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
+RUN $PYTHON -m pip wheel  -w /wheels --no-cache-dir wheel
 
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY38
@@ -46,6 +48,7 @@ RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
+RUN $PYTHON -m pip wheel  -w /wheels --no-cache-dir wheel
 
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY39
@@ -57,7 +60,7 @@ RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
-
+RUN $PYTHON -m pip wheel  -w /wheels --no-cache-dir wheel
 # ==============================================================================
 FROM wheel_builder_base as conan_builder
 RUN pip3 install conan cmake
@@ -80,7 +83,8 @@ COPY --from=WHEEL_BUILDER_PY37 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY38 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY39 /wheels/* /wheels/
 ENV PIP_FIND_LINKS=/wheels
-RUN pip3 install tox conan
+RUN pip3 install wheel
+RUN pip3 install tox conan devpi_client
 COPY ci/docker/shared/conan/profile.ini  /home/user/.conan/profiles/default
 COPY ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
 ADD conanfile.py /tmp/conanfile.py
