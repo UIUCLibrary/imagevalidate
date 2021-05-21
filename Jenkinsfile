@@ -279,6 +279,27 @@ pipeline {
                                                            script: "cd build/cpp && ctest --output-on-failure --no-compress-output -T Test"
                                                         )
                                                     }
+                                                    post{
+                                                        always{
+                                                            xunit(
+                                                               testTimeMargin: '3000',
+                                                               thresholdMode: 1,
+                                                               thresholds: [
+                                                                   failed(),
+                                                                   skipped()
+                                                               ],
+                                                               tools: [
+                                                                   CTest(
+                                                                       deleteOutputFiles: true,
+                                                                       failIfNotNew: true,
+                                                                       pattern: 'build/Testing/**/*.xml',
+                                                                       skipNoTestFiles: true,
+                                                                       stopProcessingIfError: true
+                                                                   )
+                                                               ]
+                                                           )
+                                                        }
+                                                    }
 
                                                 }
                                                 stage('Run PyTest Unit Tests'){
@@ -423,23 +444,23 @@ pipeline {
 //                                     recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
                                     sh 'mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml'
                                     stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
-                                   xunit(
-                                       testTimeMargin: '3000',
-                                       thresholdMode: 1,
-                                       thresholds: [
-                                           failed(),
-                                           skipped()
-                                       ],
-                                       tools: [
-                                           CTest(
-                                               deleteOutputFiles: true,
-                                               failIfNotNew: true,
-                                               pattern: 'build/Testing/**/*.xml',
-                                               skipNoTestFiles: true,
-                                               stopProcessingIfError: true
-                                           )
-                                       ]
-                                   )
+//                                    xunit(
+//                                        testTimeMargin: '3000',
+//                                        thresholdMode: 1,
+//                                        thresholds: [
+//                                            failed(),
+//                                            skipped()
+//                                        ],
+//                                        tools: [
+//                                            CTest(
+//                                                deleteOutputFiles: true,
+//                                                failIfNotNew: true,
+//                                                pattern: 'build/Testing/**/*.xml',
+//                                                skipNoTestFiles: true,
+//                                                stopProcessingIfError: true
+//                                            )
+//                                        ]
+//                                    )
                                 }
                                 cleanup{
                                     cleanWs(
