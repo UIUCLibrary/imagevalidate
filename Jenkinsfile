@@ -246,7 +246,7 @@ pipeline {
                                             steps{
                                                 sh(
                                                     label: 'Building',
-                                                    script: 'CFLAGS="--coverage" python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
+                                                    script: 'CFLAGS="--coverage" python setup.py build -b build/python --build-lib build/python/lib -t build/python/temp build_ext --inplace'
                                                 )
                                             }
                                         }
