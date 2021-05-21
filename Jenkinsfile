@@ -240,69 +240,85 @@ pipeline {
                                 }
                             }
                             stages{
-                                stage('Run Python Testing'){
-                                    parallel {
-                                        stage('Run PyTest Unit Tests'){
+                                stage('Set up Tests'){
+                                    parallel{
+                                        stage("Build extension for Python"){
                                             steps{
-                                                unstash 'LINUX_BUILD_FILES'
-                                                catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: 'UNSTABLE') {
-                                                    sh(
-                                                        label: 'Running Pytest',
-                                                        script:'''mkdir -p reports/coverage
-                                                                  coverage run --parallel-mode --source=uiucprescon -m pytest --junitxml=reports/pytest.xml --integration
+                                                sh(
+                                                    label: 'Building',
+                                                    script: 'CFLAGS="--coverage" python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                stage('Run Tests'){
+                                    stages{
+                                        stage('Run Python Testing'){
+                                            parallel {
+                                                stage('Run PyTest Unit Tests'){
+                                                    steps{
+                                                        unstash 'LINUX_BUILD_FILES'
+                                                        catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: 'UNSTABLE') {
+                                                            sh(
+                                                                label: 'Running Pytest',
+                                                                script:'''mkdir -p reports/coverage
+                                                                          coverage run --parallel-mode --source=uiucprescon -m pytest --junitxml=reports/pytest.xml --integration
+                                                                          '''
+                                                           )
+                                                       }
+                                                    }
+                                                    post {
+                                                        always {
+                                                            junit 'reports/pytest.xml'
+                                                            stash includes: 'reports/pytest.xml', name: 'PYTEST_REPORT'
+                                                        }
+                                                    }
+                                                }
+                                                stage('Run Doctest Tests'){
+                                                   steps {
+                                                       catchError(buildResult: 'SUCCESS', message: 'Doctest found issues', stageResult: 'UNSTABLE') {
+                                                           sh( label: 'Running Doctest',
+                                                               script: '''coverage run --parallel-mode --source=uiucprescon -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v
+                                                                          mkdir -p reports
+                                                                          mv build/docs/output.txt reports/doctest.txt
+                                                                          '''
+                                                               )
+                                                       }
+                                                   }
+                                                }
+                                                stage('Run MyPy Static Analysis') {
+                                                    steps{
+                                                        catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
+                                                            sh(
+                                                                label: 'Running Mypy',
+                                                                script: '''mkdir -p logs
+                                                                           mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log
+                                                                           '''
+                                                           )
+                                                        }
+                                                    }
+                                                    post {
+                                                        always {
+                                                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                                                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                                        }
+                                                    }
+                                                }
+                                                stage('Run Flake8 Static Analysis') {
+                                                    steps{
+                                                        catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
+                                                            sh '''mkdir -p logs
+                                                                  flake8 uiucprescon --format=pylint --tee --output-file=logs/flake8.log
                                                                   '''
-                                                   )
-                                               }
-                                            }
-                                            post {
-                                                always {
-                                                    junit 'reports/pytest.xml'
-                                                    stash includes: 'reports/pytest.xml', name: 'PYTEST_REPORT'
-                                                }
-                                            }
-                                        }
-                                        stage('Run Doctest Tests'){
-                                           steps {
-                                               catchError(buildResult: 'SUCCESS', message: 'Doctest found issues', stageResult: 'UNSTABLE') {
-                                                   sh( label: 'Running Doctest',
-                                                       script: '''coverage run --parallel-mode --source=uiucprescon -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v
-                                                                  mkdir -p reports
-                                                                  mv build/docs/output.txt reports/doctest.txt
-                                                                  '''
-                                                       )
-                                               }
-                                           }
-                                        }
-                                        stage('Run MyPy Static Analysis') {
-                                            steps{
-                                                catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
-                                                    sh(
-                                                        label: 'Running Mypy',
-                                                        script: '''mkdir -p logs
-                                                                   mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log
-                                                                   '''
-                                                   )
-                                                }
-                                            }
-                                            post {
-                                                always {
-                                                    recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                                                }
-                                            }
-                                        }
-                                        stage('Run Flake8 Static Analysis') {
-                                            steps{
-                                                catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
-                                                    sh '''mkdir -p logs
-                                                          flake8 uiucprescon --format=pylint --tee --output-file=logs/flake8.log
-                                                          '''
-                                                }
-                                            }
-                                            post {
-                                                always {
-                                                    recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                                    stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
+                                                        }
+                                                    }
+                                                    post {
+                                                        always {
+                                                            recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                                                            stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
