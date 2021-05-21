@@ -250,6 +250,18 @@ pipeline {
                                                 )
                                             }
                                         }
+                                        stage('Build C++ Test'){
+                                            steps{
+                                                tee('logs/cmake-build.log'){
+                                                    sh(label: 'Testing CPP Code',
+                                                       script: '''conan install . -if build/cpp -o "*:shared=True"
+                                                                  cmake -B build/cpp -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
+                                                                  cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo)
+                                                                  '''
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                                 stage('Run Tests'){
