@@ -5,6 +5,6 @@
 
 std::string open_jpeg_version();
 std::string color_space(const std::string &file_path);
-
+int bitdepth(const std::string &file_path);
 
 #endif /*OPENJP2WRAP*/

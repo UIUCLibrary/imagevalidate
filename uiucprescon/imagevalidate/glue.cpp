@@ -16,3 +16,15 @@ std::string color_space(const std::string &file_path) {
     checker.setup();
     return checker.read();
 }
+
+int bitdepth(const std::string &file_path){
+    opj_codec_t* l_codec = opj_create_decompress(OPJ_CODEC_JP2);
+
+    opj_stream_t *l_stream = opj_stream_create_default_file_stream(file_path.c_str(), 1);
+    opj_image_t* image = nullptr;
+
+    opj_read_header(l_stream, l_codec, &image);
+//    TODO error check
+// TODO: manage memory
+    return image->comps->prec;
+}
