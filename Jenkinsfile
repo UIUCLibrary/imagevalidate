@@ -250,7 +250,7 @@ pipeline {
                                                 )
                                             }
                                         }
-                                        stage('Build C++ Test'){
+                                        stage('Build C++ Tests'){
                                             steps{
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Testing CPP Code',
@@ -259,6 +259,11 @@ pipeline {
                                                                   cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo)
                                                                   '''
                                                     )
+                                                }
+                                            }
+                                            post{
+                                                always{
+                                                    recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
                                                 }
                                             }
                                         }
@@ -274,6 +279,7 @@ pipeline {
                                                            script: "cd build/cpp && ctest --output-on-failure --no-compress-output -T Test"
                                                         )
                                                     }
+
                                                 }
                                                 stage('Run PyTest Unit Tests'){
                                                     steps{
@@ -414,7 +420,7 @@ pipeline {
                             }
                             post{
                                 always{
-                                    recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
+//                                     recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
                                     sh 'mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml'
                                     stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
                                    xunit(
