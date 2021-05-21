@@ -429,21 +429,21 @@ pipeline {
                                 }
                             }
                         }
-                        stage('Testing CPP code') {
-                            agent {
-                                dockerfile {
-                                    filename 'ci/docker/cpp/Dockerfile'
-                                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                                    label 'linux && docker'
-                                }
-                            }
-                            steps{
-                                test_cpp_code('build')
-                            }
-                            post{
-                                always{
+//                         stage('Testing CPP code') {
+//                             agent {
+//                                 dockerfile {
+//                                     filename 'ci/docker/cpp/Dockerfile'
+//                                     additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+//                                     label 'linux && docker'
+//                                 }
+//                             }
+//                             steps{
+//                                 test_cpp_code('build')
+//                             }
+//                             post{
+//                                 always{
 //                                     recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
-                                    sh 'mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml'
+//                                     sh 'mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml'
 //                                     stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
 //                                    xunit(
 //                                        testTimeMargin: '3000',
@@ -462,17 +462,17 @@ pipeline {
 //                                            )
 //                                        ]
 //                                    )
-                                }
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        patterns: [
-                                            [pattern: 'build/', type: 'INCLUDE'],
-                                        ]
-                                    )
-                                }
-                            }
-                        }
+//                                 }
+//                                 cleanup{
+//                                     cleanWs(
+//                                         deleteDirs: true,
+//                                         patterns: [
+//                                             [pattern: 'build/', type: 'INCLUDE'],
+//                                         ]
+//                                     )
+//                                 }
+//                             }
+//                         }
                     }
                     post{
                         always{
