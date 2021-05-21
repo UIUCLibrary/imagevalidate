@@ -258,7 +258,6 @@ pipeline {
                                             parallel {
                                                 stage('Run PyTest Unit Tests'){
                                                     steps{
-                                                        unstash 'LINUX_BUILD_FILES'
                                                         catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: 'UNSTABLE') {
                                                             sh(
                                                                 label: 'Running Pytest',
