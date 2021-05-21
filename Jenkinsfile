@@ -268,6 +268,13 @@ pipeline {
                                     stages{
                                         stage('Run Python Testing'){
                                             parallel {
+                                                stage('C++ Unit Tests'){
+                                                    steps{
+                                                        sh(label: 'Running CTest',
+                                                           script: "cd build/cpp && ctest --output-on-failure --no-compress-output -T Test"
+                                                        )
+                                                    }
+                                                }
                                                 stage('Run PyTest Unit Tests'){
                                                     steps{
                                                         catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: 'UNSTABLE') {
