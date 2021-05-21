@@ -292,15 +292,16 @@ pipeline {
                                                                    CTest(
                                                                        deleteOutputFiles: true,
                                                                        failIfNotNew: true,
-                                                                       pattern: 'build/Testing/**/*.xml',
+                                                                       pattern: 'build/cpp/Testing/**/*.xml',
                                                                        skipNoTestFiles: true,
                                                                        stopProcessingIfError: true
                                                                    )
                                                                ]
                                                            )
+                                                           sh 'mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml'
+                                                           stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
                                                         }
                                                     }
-
                                                 }
                                                 stage('Run PyTest Unit Tests'){
                                                     steps{
@@ -443,7 +444,7 @@ pipeline {
                                 always{
 //                                     recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
                                     sh 'mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml'
-                                    stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
+//                                     stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
 //                                    xunit(
 //                                        testTimeMargin: '3000',
 //                                        thresholdMode: 1,
