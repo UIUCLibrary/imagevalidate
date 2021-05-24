@@ -240,174 +240,156 @@ pipeline {
                                 }
                             }
                             stages{
-                                stage('Run Python Testing'){
-                                    parallel {
-                                        stage('Run PyTest Unit Tests'){
+                                stage('Set up Tests'){
+                                    parallel{
+                                        stage("Build extension for Python"){
                                             steps{
-                                                unstash 'LINUX_BUILD_FILES'
-                                                catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: 'UNSTABLE') {
-                                                    sh(
-                                                        label: 'Running Pytest',
-                                                        script:'''mkdir -p reports/coverage
-                                                                  coverage run --parallel-mode --source=uiucprescon -m pytest --junitxml=reports/pytest.xml --integration
-                                                                  '''
-                                                   )
-                                               }
-                                            }
-                                            post {
-                                                always {
-                                                    junit 'reports/pytest.xml'
-                                                    stash includes: 'reports/pytest.xml', name: 'PYTEST_REPORT'
-                                                }
-                                            }
-                                        }
-                                        stage('Run Doctest Tests'){
-                                           steps {
-                                               catchError(buildResult: 'SUCCESS', message: 'Doctest found issues', stageResult: 'UNSTABLE') {
-                                                   sh( label: 'Running Doctest',
-                                                       script: '''coverage run --parallel-mode --source=uiucprescon -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v
-                                                                  mkdir -p reports
-                                                                  mv build/docs/output.txt reports/doctest.txt
-                                                                  '''
-                                                       )
-                                               }
-                                           }
-                                        }
-                                        stage('Run MyPy Static Analysis') {
-                                            steps{
-                                                catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
-                                                    sh(
-                                                        label: 'Running Mypy',
-                                                        script: '''mkdir -p logs
-                                                                   mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log
-                                                                   '''
-                                                   )
-                                                }
-                                            }
-                                            post {
-                                                always {
-                                                    recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                                                }
-                                            }
-                                        }
-                                        stage('Run Flake8 Static Analysis') {
-                                            steps{
-                                                catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
-                                                    sh '''mkdir -p logs
-                                                          flake8 uiucprescon --format=pylint --tee --output-file=logs/flake8.log
-                                                          '''
-                                                }
-                                            }
-                                            post {
-                                                always {
-                                                    recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                                    stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            post{
-                                always{
-                                    sh(label: 'combining coverage data',
-                                       script: '''coverage combine
-                                                  coverage xml -o ./reports/coverage-python.xml
-                                                  gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
-                                                  '''
-                                    )
-                                    stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
-                                }
-                                cleanup{
-                                    cleanWs(
-                                        patterns: [
-                                            [pattern: 'logs/', type: 'INCLUDE'],
-                                            [pattern: 'reports/xml"', type: 'INCLUDE'],
-                                        ]
-                                    )
-                                }
-                            }
-                        }
-                        stage('Run Tox'){
-                            when{
-                                equals expected: true, actual: params.TEST_RUN_TOX
-                            }
-                            steps {
-                                script{
-                                    def tox
-                                    node(){
-                                        checkout scm
-                                        tox = load('ci/jenkins/scripts/tox.groovy')
-                                    }
-                                    def windowsJobs = [:]
-                                    def linuxJobs = [:]
-                                    stage('Scanning Tox Environments'){
-                                        parallel(
-                                            'Linux':{
-                                                linuxJobs = tox.getToxTestsParallel(
-                                                    envNamePrefix: 'Tox Linux',
-                                                    label: 'linux && docker',
-                                                    dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
-                                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                                sh(
+                                                    label: 'Building',
+                                                    script: 'CFLAGS="--coverage" python setup.py build -b build/python --build-lib build/python/lib -t build/python/temp build_ext --inplace'
                                                 )
-                                            },
-                                            'Windows':{
-                                                windowsJobs = tox.getToxTestsParallel(
-                                                    envNamePrefix: 'Tox Windows',
-                                                    label: 'windows && docker',
-                                                    dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
-                                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
-                                                )
-                                            },
-                                            failFast: true
-                                        )
+                                            }
+                                        }
+                                        stage('Build C++ Tests'){
+                                            steps{
+                                                tee('logs/cmake-build.log'){
+                                                    sh(label: 'Testing CPP Code',
+                                                       script: '''conan install . -if build/cpp -o "*:shared=True"
+                                                                  cmake -B build/cpp -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
+                                                                  cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo)
+                                                                  '''
+                                                    )
+                                                }
+                                            }
+                                            post{
+                                                always{
+                                                    recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
+                                                }
+                                            }
+                                        }
                                     }
-                                    parallel(windowsJobs + linuxJobs)
                                 }
-                            }
-                        }
-                        stage('Testing CPP code') {
-                            agent {
-                                dockerfile {
-                                    filename 'ci/docker/cpp/Dockerfile'
-                                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                                    label 'linux && docker'
-                                }
-                            }
-                            steps{
-                                test_cpp_code('build')
-                            }
-                            post{
-                                always{
-                                    recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
-                                    sh 'mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml'
-                                    stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
-                                   xunit(
-                                       testTimeMargin: '3000',
-                                       thresholdMode: 1,
-                                       thresholds: [
-                                           failed(),
-                                           skipped()
-                                       ],
-                                       tools: [
-                                           CTest(
-                                               deleteOutputFiles: true,
-                                               failIfNotNew: true,
-                                               pattern: 'build/Testing/**/*.xml',
-                                               skipNoTestFiles: true,
-                                               stopProcessingIfError: true
-                                           )
-                                       ]
-                                   )
-                                }
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        patterns: [
-                                            [pattern: 'build/', type: 'INCLUDE'],
-                                        ]
-                                    )
+                                stage('Run Tests'){
+                                    stages{
+                                        stage('Run Testing'){
+                                            parallel {
+                                                stage('C++ Unit Tests'){
+                                                    steps{
+                                                        sh(label: 'Running CTest',
+                                                           script: "cd build/cpp && ctest --output-on-failure --no-compress-output -T Test"
+                                                        )
+                                                    }
+                                                    post{
+                                                        always{
+                                                            xunit(
+                                                               testTimeMargin: '3000',
+                                                               thresholdMode: 1,
+                                                               thresholds: [
+                                                                   failed(),
+                                                                   skipped()
+                                                               ],
+                                                               tools: [
+                                                                   CTest(
+                                                                       deleteOutputFiles: true,
+                                                                       failIfNotNew: true,
+                                                                       pattern: 'build/cpp/Testing/**/*.xml',
+                                                                       skipNoTestFiles: true,
+                                                                       stopProcessingIfError: true
+                                                                   )
+                                                               ]
+                                                           )
+                                                           sh 'mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml'
+                                                           stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
+                                                        }
+                                                    }
+                                                }
+                                                stage('Run PyTest Unit Tests'){
+                                                    steps{
+                                                        catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: 'UNSTABLE') {
+                                                            sh(
+                                                                label: 'Running Pytest',
+                                                                script:'''mkdir -p reports/coverage
+                                                                          coverage run --parallel-mode --source=uiucprescon -m pytest --junitxml=reports/pytest.xml --integration
+                                                                          '''
+                                                           )
+                                                       }
+                                                    }
+                                                    post {
+                                                        always {
+                                                            junit 'reports/pytest.xml'
+                                                            stash includes: 'reports/pytest.xml', name: 'PYTEST_REPORT'
+                                                        }
+                                                    }
+                                                }
+                                                stage('Run Doctest Tests'){
+                                                   steps {
+                                                       catchError(buildResult: 'SUCCESS', message: 'Doctest found issues', stageResult: 'UNSTABLE') {
+                                                           sh( label: 'Running Doctest',
+                                                               script: '''coverage run --parallel-mode --source=uiucprescon -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v
+                                                                          mkdir -p reports
+                                                                          mv build/docs/output.txt reports/doctest.txt
+                                                                          '''
+                                                               )
+                                                       }
+                                                   }
+                                                }
+                                                stage('Run MyPy Static Analysis') {
+                                                    steps{
+                                                        catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
+                                                            sh(
+                                                                label: 'Running Mypy',
+                                                                script: '''mkdir -p logs
+                                                                           mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log
+                                                                           '''
+                                                           )
+                                                        }
+                                                    }
+                                                    post {
+                                                        always {
+                                                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                                                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                                        }
+                                                    }
+                                                }
+                                                stage('Run Flake8 Static Analysis') {
+                                                    steps{
+                                                        catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
+                                                            sh '''mkdir -p logs
+                                                                  flake8 uiucprescon --format=pylint --tee --output-file=logs/flake8.log
+                                                                  '''
+                                                        }
+                                                    }
+                                                    post {
+                                                        always {
+                                                            recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                                                            stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            post{
+                                                always{
+                                                    sh(label: 'combining coverage data',
+                                                       script: '''coverage combine
+                                                                  coverage xml -o ./reports/coverage-python.xml
+                                                                  gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
+                                                                  '''
+                                                    )
+                                                    stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
+                                                }
+                                            }
+                                        }
+                                    }
+                                    post{
+                                        cleanup{
+                                            cleanWs(
+                                                patterns: [
+                                                    [pattern: 'logs/', type: 'INCLUDE'],
+                                                    [pattern: 'reports"', type: 'INCLUDE'],
+                                                ]
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -463,7 +445,46 @@ pipeline {
                         }
                     }
                 }
+                stage('Run Tox'){
+                    when{
+                        equals expected: true, actual: params.TEST_RUN_TOX
+                    }
+                    steps {
+                        script{
+                            def tox
+                            node(){
+                                checkout scm
+                                tox = load('ci/jenkins/scripts/tox.groovy')
+                            }
+                            def windowsJobs = [:]
+                            def linuxJobs = [:]
+                            stage('Scanning Tox Environments'){
+                                parallel(
+                                    'Linux':{
+                                        linuxJobs = tox.getToxTestsParallel(
+                                            envNamePrefix: 'Tox Linux',
+                                            label: 'linux && docker',
+                                            dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
+                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                        )
+                                    },
+                                    'Windows':{
+                                        windowsJobs = tox.getToxTestsParallel(
+                                            envNamePrefix: 'Tox Windows',
+                                            label: 'windows && docker',
+                                            dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
+                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+                                        )
+                                    },
+                                    failFast: true
+                                )
+                            }
+                            parallel(windowsJobs + linuxJobs)
+                        }
+                    }
+                }
             }
+
         }
         stage('Python Packaging'){
             when{
