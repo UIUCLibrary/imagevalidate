@@ -29,7 +29,7 @@ int bitdepth(const std::string &file_path){
 // TODO: manage memory
     long int *j = new long;
     *j  = 8;
-    *j++;
+    (*j)++;
     std::cout << j << "\n";
     int bitDepth = image->comps->prec;
     return bitDepth;
