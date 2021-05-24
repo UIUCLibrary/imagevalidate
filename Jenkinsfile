@@ -329,7 +329,7 @@ pipeline {
                                                         always {
                                                             recordIssues(
                                                                 filters: [
-                                                                    excludeFile('dependencies/*'),
+                                                                     excludeType('unmatchedSuppression')
                                                                 ],
                                                                 tools: [
                                                                     cppCheck(pattern: 'logs/cppcheck_debug.xml')
