@@ -346,7 +346,7 @@ pipeline {
                                                         timeout(15){
                                                             sh(
                                                               label: 'Running memcheck',
-                                                              script: '(cd build/cpp && ctest -T memcheck -R glue -j $(grep -c ^processor /proc/cpuinfo) )'
+                                                              script: '(cd build/cpp && ctest -T memcheck -j $(grep -c ^processor /proc/cpuinfo) )'
                                                             )
                                                         }
                                                     }
