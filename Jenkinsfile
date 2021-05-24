@@ -256,7 +256,7 @@ pipeline {
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Compiling CPP Code',
                                                        script: '''conan install . -if build/cpp -o "*:shared=True"
-                                                                  cmake -B build/cpp -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
+                                                                  cmake -B build/cpp -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
                                                                   build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo)
                                                                   '''
                                                     )
@@ -301,6 +301,18 @@ pipeline {
                                                            )
                                                            sh 'mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml'
                                                            stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
+                                                        }
+                                                    }
+                                                }
+                                                stage('Clang Tidy Analysis') {
+                                                    steps{
+                                                        tee('logs/clang-tidy.log') {
+                                                            sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary clang-tidy -p ./build/cpp/')
+                                                        }
+                                                    }
+                                                    post{
+                                                        always {
+                                                            recordIssues(tools: [clangTidy(pattern: 'logs/clang-tidy.log')])
                                                         }
                                                     }
                                                 }
