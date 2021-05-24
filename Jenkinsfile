@@ -379,6 +379,41 @@ pipeline {
                                                 }
                                             }
                                         }
+                                        stage('Sonarcloud Analysis'){
+//                                             agent {
+//                                                 dockerfile {
+//                                                     filename 'ci/docker/sonarcloud/Dockerfile'
+//                                                     label 'linux && docker'
+//                                                     args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/home/user/.sonar/cache'
+//                                                 }
+//                                             }
+                                            options{
+                                                lock('uiucprescon.imagevalidate-sonarscanner')
+                                            }
+                                            when{
+                                                equals expected: true, actual: params.USE_SONARQUBE
+                                                beforeAgent true
+                                                beforeOptions true
+                                            }
+                                            steps{
+                                                unstash 'PYTHON_COVERAGE_REPORT'
+                                                unstash 'PYTEST_REPORT'
+                                                unstash 'FLAKE8_REPORT'
+                                                unstash 'DIST-INFO'
+                                                sonarcloudSubmit('uiucprescon.imagevalidate.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-uiucprescon.imagevalidate')
+                                            }
+                                            post {
+                                                always{
+                                                    script{
+                                                        if(fileExists('reports/sonar-report.json')){
+                                                            stash includes: 'reports/sonar-report.json', name: 'SONAR_REPORT'
+                                                            archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
+                                                            recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                     post{
                                         cleanup{
@@ -410,41 +445,7 @@ pipeline {
                         }
                     }
                 }
-                stage('Sonarcloud Analysis'){
-                    agent {
-                        dockerfile {
-                            filename 'ci/docker/sonarcloud/Dockerfile'
-                            label 'linux && docker'
-                            args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/home/user/.sonar/cache'
-                        }
-                    }
-                    options{
-                        lock('uiucprescon.imagevalidate-sonarscanner')
-                    }
-                    when{
-                        equals expected: true, actual: params.USE_SONARQUBE
-                        beforeAgent true
-                        beforeOptions true
-                    }
-                    steps{
-                        unstash 'PYTHON_COVERAGE_REPORT'
-                        unstash 'PYTEST_REPORT'
-                        unstash 'FLAKE8_REPORT'
-                        unstash 'DIST-INFO'
-                        sonarcloudSubmit('uiucprescon.imagevalidate.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-uiucprescon.imagevalidate')
-                    }
-                    post {
-                        always{
-                            script{
-                                if(fileExists('reports/sonar-report.json')){
-                                    stash includes: 'reports/sonar-report.json', name: 'SONAR_REPORT'
-                                    archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
-                                    recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
-                                }
-                            }
-                        }
-                    }
-                }
+
                 stage('Run Tox'){
                     when{
                         equals expected: true, actual: params.TEST_RUN_TOX
