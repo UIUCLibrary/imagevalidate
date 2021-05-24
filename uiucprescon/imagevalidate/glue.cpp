@@ -28,5 +28,6 @@ int bitdepth(const std::string &file_path){
 //    TODO error check
 // TODO: manage memory
     int bitDepth = image->comps->prec;
+    opj_destroy_codec(l_codec);
     return bitDepth;
 }
