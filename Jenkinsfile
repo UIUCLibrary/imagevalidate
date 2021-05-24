@@ -401,6 +401,13 @@ pipeline {
                                                 unstash 'PYTEST_REPORT'
                                                 unstash 'FLAKE8_REPORT'
                                                 unstash 'DIST-INFO'
+                                                sh(
+                                                label: 'Preparing c++ coverage data available for SonarQube',
+                                                script: """mkdir -p build/coverage
+                                                find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
+                                                mv *.gcov build/coverage/
+                                                """
+                                                )
                                                 sonarcloudSubmit('uiucprescon.imagevalidate.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-uiucprescon.imagevalidate')
                                             }
                                             post {
