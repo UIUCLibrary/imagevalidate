@@ -229,9 +229,11 @@ pipeline {
                                         stage('Build C++ Tests'){
                                             steps{
                                                 tee('logs/cmake-build.log'){
+//                                                 -DMEMORYCHECK_COMMAND_OPTIONS="-check_uninit_blacklist libopenjp2.so.7
                                                     sh(label: 'Compiling CPP Code',
                                                        script: '''conan install . -if build/cpp -o "*:shared=True"
-                                                                  cmake -B build/cpp -Wdev -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -fno-inline -fno-omit-frame-pointer -Wall -Wextra" -DCMAKE_C_FLAGS="-fno-inline -fno-omit-frame-pointer" -DMEMORYCHECK_COMMAND=$(which drmemory) -DMEMORYCHECK_COMMAND_OPTIONS="-check_uninit_blacklist libopenjp2.so.7"
+
+                                                                  cmake -B build/cpp -Wdev -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -fno-inline -fno-omit-frame-pointer -Wall -Wextra" -DCMAKE_C_FLAGS="-fno-inline -fno-omit-frame-pointer" -DMEMORYCHECK_COMMAND=$(which drmemory)
                                                                   build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo)
                                                                   '''
                                                     )
