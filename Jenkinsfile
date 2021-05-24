@@ -328,9 +328,9 @@ pipeline {
                                                     post{
                                                         always{
                                                             recordIssues(
-                                                                filters: [
-                                                                    excludeFile('/drmemory_package/*'),
-                                                                ],
+//                                                                 filters: [
+//                                                                     excludeFile('/drmemory_package/*'),
+//                                                                 ],
                                                                 tools: [
                                                                     drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
                                                                     ]
