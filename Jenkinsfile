@@ -28,24 +28,6 @@ def getMacDevpiName(pythonVersion, format){
         error "unknown format ${format}"
     }
 }
-// def test_cpp_code(buildPath){
-//     stage('Build CPP'){
-//         tee('logs/cmake-build.log'){
-//             sh(label: 'Testing CPP Code',
-//                script: """conan install . -if ${buildPath} -o "*:shared=True"
-//                           cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
-//                           cmake --build ${buildPath} -j \$(grep -c ^processor /proc/cpuinfo)
-//                           """
-//             )
-//         }
-//     }
-//     stage('CTest'){
-//         sh(label: 'Running CTest',
-//            script: "cd ${buildPath} && ctest --output-on-failure --no-compress-output -T Test"
-//         )
-//     }
-// }
-
 
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
@@ -82,9 +64,6 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
      }
 }
 
-// def get_devpi_doc_archive_name(pkgName, pkgVersion){
-//     return "${pkgName}-${pkgVersion}.doc.zip"
-// }
 
 def DEFAULT_DOCKER_FILENAME = 'ci/docker/python/linux/build/Dockerfile'
 def DEFAULT_DOCKER_LABEL = 'linux && docker'
@@ -436,13 +415,6 @@ pipeline {
                                             }
                                         }
                                         stage('Sonarcloud Analysis'){
-//                                             agent {
-//                                                 dockerfile {
-//                                                     filename 'ci/docker/sonarcloud/Dockerfile'
-//                                                     label 'linux && docker'
-//                                                     args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/home/user/.sonar/cache'
-//                                                 }
-//                                             }
                                             options{
                                                 lock('uiucprescon.imagevalidate-sonarscanner')
                                             }
