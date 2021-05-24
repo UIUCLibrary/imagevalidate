@@ -26,5 +26,7 @@ int bitdepth(const std::string &file_path){
     opj_read_header(l_stream, l_codec, &image);
 //    TODO error check
 // TODO: manage memory
-    return image->comps->prec;
+    long int *j = new long;
+    int bitDepth = image->comps->prec;
+    return bitDepth;
 }
