@@ -42,6 +42,6 @@ add_subdirectory(uiucprescon/imagevalidate)
 #    LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG}
 #
 #    )
-#include(CTest)
-enable_testing()
+include(CTest)
+#enable_testing()
 add_subdirectory(tests)
