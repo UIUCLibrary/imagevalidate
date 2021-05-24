@@ -257,22 +257,8 @@ pipeline {
                                                     file: 'memcheck_exclusions.txt',
                                                     text: '''UNINITIALIZED READ
                                                              name=Error #1 (update to meaningful name)
-                                                             libopenjp2.so.7!opj_alloc_tile_component_data
-                                                             libopenjp2.so.7!opj_tcd_decode_tile
-                                                             libopenjp2.so.7!opj_j2k_decode_tile
-                                                             libopenjp2.so.7!opj_j2k_decode_tiles
-                                                             libopenjp2.so.7!opj_j2k_decode
-                                                             libopenjp2.so.7!opj_jp2_decode
-                                                             tester-internal!Catch::TestInvokerAsFunction::invoke
-                                                             tester-internal!Catch::TestCase::invoke
-                                                             tester-internal!Catch::RunContext::invokeActiveTestCase
-                                                             tester-internal!Catch::RunContext::runCurrentTest
-                                                             tester-internal!Catch::RunContext::runTest
-                                                             tester-internal!Catch::(anonymous namespace)::runTests
-                                                             tester-internal!Catch::Session::runInternal
-                                                             tester-internal!Catch::Session::run
-                                                             tester-internal!Catch::Session::run
-                                                             tester-internal!main'''
+                                                             libopenjp2.so.7*
+                                                             '''
                                                     )
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Compiling CPP Code',
