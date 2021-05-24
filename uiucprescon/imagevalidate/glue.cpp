@@ -5,6 +5,7 @@ extern "C"{
 }
 
 #include "opj_colorspace_checker.h"
+#include <iostream>
 
 std::string open_jpeg_version(){
     return opj_version();
@@ -27,6 +28,9 @@ int bitdepth(const std::string &file_path){
 //    TODO error check
 // TODO: manage memory
     long int *j = new long;
+    *j  = 8;
+    *j++;
+    std::cout << j << "\n";
     int bitDepth = image->comps->prec;
     return bitDepth;
 }
