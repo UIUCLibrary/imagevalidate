@@ -106,9 +106,9 @@ ENV SONAR_SCANNER_OPTS="-server"
 
 ENV PIP_EXTRA_INDEX_URL="https://devpi.library.illinois.edu/production/release"
 
-RUN python -m pip install --upgrade pip && \
-    pip install --upgrade setuptools && \
-    pip install wheel
+#RUN python -m pip install --upgrade pip && \
+#    pip install --upgrade setuptools && \
+#    pip install wheel
 
 COPY --from=wheel_builder /wheels /wheels/
 
