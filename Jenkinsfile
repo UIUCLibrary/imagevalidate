@@ -253,10 +253,31 @@ pipeline {
                                         }
                                         stage('Build C++ Tests'){
                                             steps{
+                                                writeFile(
+                                                    file: 'memcheck_exclusions.txt',
+                                                    text: '''UNINITIALIZED READ
+                                                             name=Error #1 (update to meaningful name)
+                                                             libopenjp2.so.7!opj_alloc_tile_component_data
+                                                             libopenjp2.so.7!opj_tcd_decode_tile
+                                                             libopenjp2.so.7!opj_j2k_decode_tile
+                                                             libopenjp2.so.7!opj_j2k_decode_tiles
+                                                             libopenjp2.so.7!opj_j2k_decode
+                                                             libopenjp2.so.7!opj_jp2_decode
+                                                             tester-internal!Catch::TestInvokerAsFunction::invoke
+                                                             tester-internal!Catch::TestCase::invoke
+                                                             tester-internal!Catch::RunContext::invokeActiveTestCase
+                                                             tester-internal!Catch::RunContext::runCurrentTest
+                                                             tester-internal!Catch::RunContext::runTest
+                                                             tester-internal!Catch::(anonymous namespace)::runTests
+                                                             tester-internal!Catch::Session::runInternal
+                                                             tester-internal!Catch::Session::run
+                                                             tester-internal!Catch::Session::run
+                                                             tester-internal!main'''
+                                                    )
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Compiling CPP Code',
                                                        script: '''conan install . -if build/cpp -o "*:shared=True"
-                                                                  cmake -B build/cpp -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DMEMORYCHECK_COMMAND=$(which drmemory)
+                                                                  cmake -B build/cpp -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DMEMORYCHECK_COMMAND=$(which drmemory) -DMEMORYCHECK_SUPPRESSIONS_FILE=memcheck_exclusions.txt
                                                                   build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo)
                                                                   '''
                                                     )
