@@ -271,7 +271,7 @@ pipeline {
                                 }
                                 stage('Run Tests'){
                                     stages{
-                                        stage('Run Python Testing'){
+                                        stage('Run Testing'){
                                             parallel {
                                                 stage('C++ Unit Tests'){
                                                     steps{
@@ -367,68 +367,32 @@ pipeline {
                                                     }
                                                 }
                                             }
+                                            post{
+                                                always{
+                                                    sh(label: 'combining coverage data',
+                                                       script: '''coverage combine
+                                                                  coverage xml -o ./reports/coverage-python.xml
+                                                                  gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
+                                                                  '''
+                                                    )
+                                                    stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
+                                                }
+                                            }
+                                        }
+                                    }
+                                    post{
+                                        cleanup{
+                                            cleanWs(
+                                                patterns: [
+                                                    [pattern: 'logs/', type: 'INCLUDE'],
+                                                    [pattern: 'reports"', type: 'INCLUDE'],
+                                                ]
+                                            )
                                         }
                                     }
                                 }
                             }
-                            post{
-                                always{
-                                    sh(label: 'combining coverage data',
-                                       script: '''coverage combine
-                                                  coverage xml -o ./reports/coverage-python.xml
-                                                  gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
-                                                  '''
-                                    )
-                                    stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
-                                }
-                                cleanup{
-                                    cleanWs(
-                                        patterns: [
-                                            [pattern: 'logs/', type: 'INCLUDE'],
-                                            [pattern: 'reports/xml"', type: 'INCLUDE'],
-                                        ]
-                                    )
-                                }
-                            }
                         }
-//                         stage('Run Tox'){
-//                             when{
-//                                 equals expected: true, actual: params.TEST_RUN_TOX
-//                             }
-//                             steps {
-//                                 script{
-//                                     def tox
-//                                     node(){
-//                                         checkout scm
-//                                         tox = load('ci/jenkins/scripts/tox.groovy')
-//                                     }
-//                                     def windowsJobs = [:]
-//                                     def linuxJobs = [:]
-//                                     stage('Scanning Tox Environments'){
-//                                         parallel(
-//                                             'Linux':{
-//                                                 linuxJobs = tox.getToxTestsParallel(
-//                                                     envNamePrefix: 'Tox Linux',
-//                                                     label: 'linux && docker',
-//                                                     dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
-//                                                     dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-//                                                 )
-//                                             },
-//                                             'Windows':{
-//                                                 windowsJobs = tox.getToxTestsParallel(
-//                                                     envNamePrefix: 'Tox Windows',
-//                                                     label: 'windows && docker',
-//                                                     dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
-//                                                     dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
-//                                                 )
-//                                             },
-//                                             failFast: true
-//                                         )
-//                                     }
-//                                     parallel(windowsJobs + linuxJobs)
-//                                 }
-//                             }
-//                         }
                     }
                     post{
                         always{
