@@ -354,7 +354,7 @@ pipeline {
                                                         always{
                                                             recordIssues(
                                                                 filters: [
-//                                                                     excludeFile('/drmemory_package/common/*'),
+                                                                    excludeFile('/drmemory_package/*'),
 //                                                                             excludeFile('build/cpp/_deps/*'),
 //                                                                     excludeFile('-:0')
                                                                 ],
