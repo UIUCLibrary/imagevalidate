@@ -263,7 +263,7 @@ pipeline {
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Compiling CPP Code',
                                                        script: '''conan install . -if build/cpp -o "*:shared=True"
-                                                                  cmake -B build/cpp -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DMEMORYCHECK_COMMAND=$(which drmemory)
+                                                                  cmake -B build/cpp -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DMEMORYCHECK_COMMAND=$(which drmemory) -DMEMORYCHECK_COMMAND_OPTIONS="-check_uninit_blacklist libopenjp2.so.7"
                                                                   build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo)
                                                                   '''
                                                     )
@@ -353,8 +353,7 @@ pipeline {
                                                         timeout(15){
                                                             sh(
                                                               label: 'Running memcheck',
-                                                              script: 'drmemory -check_uninit_blacklist libopenjp2.so.7 -- ./build/cpp/tests/tester'
-//                                                               script: '(cd build/cpp && ctest -T memcheck -j $(grep -c ^processor /proc/cpuinfo) )'
+                                                              script: '(cd build/cpp && ctest -T memcheck -j $(grep -c ^processor /proc/cpuinfo) )'
                                                             )
                                                         }
                                                     }
@@ -370,8 +369,7 @@ pipeline {
 //                                                                     excludeFile('-:0')
                                                                 ],
                                                                 tools: [
-                                                                    drMemory(pattern: 'results.txt')
-//                                                                     drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
+                                                                    drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
                                                                     ]
                                                             )
                                                         }
