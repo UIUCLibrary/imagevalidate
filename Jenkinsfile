@@ -237,6 +237,7 @@ pipeline {
                                     filename DEFAULT_DOCKER_FILENAME
                                     label DEFAULT_DOCKER_LABEL
                                     additionalBuildArgs DEFAULT_DOCKER_BUILD_ARGS
+                                    args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/opt/sonar/.sonar/cache'
                                 }
                             }
                             stages{
