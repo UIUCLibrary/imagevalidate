@@ -88,7 +88,7 @@ def get_devpi_doc_archive_name(pkgName, pkgVersion){
 
 def DEFAULT_DOCKER_FILENAME = 'ci/docker/python/linux/build/Dockerfile'
 def DEFAULT_DOCKER_LABEL = 'linux && docker'
-def DEFAULT_DOCKER_BUILD_ARGS = '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+def DEFAULT_DOCKER_BUILD_ARGS = '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
 
 def startup(){
     node(){
