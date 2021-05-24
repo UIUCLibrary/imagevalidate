@@ -28,23 +28,23 @@ def getMacDevpiName(pythonVersion, format){
         error "unknown format ${format}"
     }
 }
-def test_cpp_code(buildPath){
-    stage('Build CPP'){
-        tee('logs/cmake-build.log'){
-            sh(label: 'Testing CPP Code',
-               script: """conan install . -if ${buildPath} -o "*:shared=True"
-                          cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
-                          cmake --build ${buildPath} -j \$(grep -c ^processor /proc/cpuinfo)
-                          """
-            )
-        }
-    }
-    stage('CTest'){
-        sh(label: 'Running CTest',
-           script: "cd ${buildPath} && ctest --output-on-failure --no-compress-output -T Test"
-        )
-    }
-}
+// def test_cpp_code(buildPath){
+//     stage('Build CPP'){
+//         tee('logs/cmake-build.log'){
+//             sh(label: 'Testing CPP Code',
+//                script: """conan install . -if ${buildPath} -o "*:shared=True"
+//                           cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
+//                           cmake --build ${buildPath} -j \$(grep -c ^processor /proc/cpuinfo)
+//                           """
+//             )
+//         }
+//     }
+//     stage('CTest'){
+//         sh(label: 'Running CTest',
+//            script: "cd ${buildPath} && ctest --output-on-failure --no-compress-output -T Test"
+//         )
+//     }
+// }
 
 
 def get_sonarqube_unresolved_issues(report_task_file){
@@ -82,9 +82,9 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
      }
 }
 
-def get_devpi_doc_archive_name(pkgName, pkgVersion){
-    return "${pkgName}-${pkgVersion}.doc.zip"
-}
+// def get_devpi_doc_archive_name(pkgName, pkgVersion){
+//     return "${pkgName}-${pkgVersion}.doc.zip"
+// }
 
 def DEFAULT_DOCKER_FILENAME = 'ci/docker/python/linux/build/Dockerfile'
 def DEFAULT_DOCKER_LABEL = 'linux && docker'
@@ -153,7 +153,7 @@ pipeline {
     }
     parameters {
         booleanParam(name: 'RUN_CHECKS', defaultValue: true, description: 'Run checks on code')
-        booleanParam(name: "RUN_MEMCHECK", defaultValue: false, description: "Run Memcheck. NOTE: This can be very slow.")
+        booleanParam(name: 'RUN_MEMCHECK', defaultValue: false, description: 'Run Memcheck. NOTE: This can be very slow.')
         booleanParam(name: 'TEST_RUN_TOX', defaultValue: false, description: 'Run Tox Tests')
         booleanParam(name: 'USE_SONARQUBE', defaultValue: true, description: 'Send data test data to SonarQube')
         booleanParam(name: 'BUILD_PACKAGES', defaultValue: false, description: 'Build Python packages')
@@ -180,11 +180,6 @@ pipeline {
                             script: 'CFLAGS="--coverage" python3 setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
                         )
                     }
-                    post{
-                        success{
-                            stash includes: 'build/**,uiucprescon/imagevalidate/*.dll,uiucprescon/imagevalidate/*.pyd,uiucprescon/imagevalidate/*.so', name: 'LINUX_BUILD_FILES'
-                        }
-                    }
                 }
                 stage('Sphinx Documentation'){
                     steps {
@@ -205,7 +200,7 @@ pipeline {
                                     reportTitles: ''
                                 ]
                             )
-                            zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${get_devpi_doc_archive_name(props.Name, props.Version)}"
+                            zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.Name}-${props.Version}.doc.zip"
                             stash includes: 'dist/*.doc.zip,build/docs/html/**', name: 'DOCS_ARCHIVE'
                         }
                    }
@@ -244,7 +239,7 @@ pipeline {
                             stages{
                                 stage('Set up Tests'){
                                     parallel{
-                                        stage("Build extension for Python"){
+                                        stage('Build extension for Python'){
                                             steps{
                                                 sh(
                                                     label: 'Building',
@@ -278,7 +273,7 @@ pipeline {
                                                 stage('C++ Unit Tests'){
                                                     steps{
                                                         sh(label: 'Running CTest',
-                                                           script: "cd build/cpp && ctest --output-on-failure --no-compress-output -T Test"
+                                                           script: 'cd build/cpp && ctest --output-on-failure --no-compress-output -T Test'
                                                         )
                                                     }
                                                     post{
@@ -317,12 +312,12 @@ pipeline {
                                                         }
                                                     }
                                                 }
-                                                stage("CPP Check"){
+                                                stage('CPP Check'){
                                                     steps{
                                                        writeFile file: 'cppcheck_exclusions.txt', text: "*:${WORKSPACE}/build/cpp/_deps/*"
                                                         catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
                                                             sh(label: 'Running cppcheck',
-                                                               script:"cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all -i build/cpp/_deps  --xml --output-file=logs/cppcheck_debug.xml --suppressions-list=cppcheck_exclusions.txt"
+                                                               script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all -i build/cpp/_deps  --xml --output-file=logs/cppcheck_debug.xml --suppressions-list=cppcheck_exclusions.txt'
                                                                )
                                                         }
                                                     }
@@ -339,7 +334,7 @@ pipeline {
                                                         }
                                                     }
                                                 }
-                                                stage("MemCheck"){
+                                                stage('MemCheck'){
                                                     when{
                                                         equals expected: true, actual: params.RUN_MEMCHECK
                                                     }
@@ -352,15 +347,10 @@ pipeline {
                                                         }
                                                     }
                                                     post{
-                                                        failure{
-                                                            sh 'drmemory -help'
-                                                        }
                                                         always{
                                                             recordIssues(
                                                                 filters: [
                                                                     excludeFile('/drmemory_package/*'),
-//                                                                             excludeFile('build/cpp/_deps/*'),
-//                                                                     excludeFile('-:0')
                                                                 ],
                                                                 tools: [
                                                                     drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
@@ -493,7 +483,7 @@ pipeline {
                                             cleanWs(
                                                 patterns: [
                                                     [pattern: 'logs/', type: 'INCLUDE'],
-                                                    [pattern: 'reports"', type: 'INCLUDE'],
+                                                    [pattern: 'reports', type: 'INCLUDE'],
                                                 ]
                                             )
                                         }
