@@ -335,6 +335,7 @@ pipeline {
                                                                     drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
                                                                     ]
                                                             )
+                                                            archiveArtifacts allowEmptyArchive: true, artifacts: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt'
                                                         }
                                                     }
                                                 }
