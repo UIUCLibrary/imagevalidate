@@ -77,7 +77,7 @@ ARG GROUP_ID=1000
 RUN groupadd -g $GROUP_ID user && \
     useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
 
-RUN apt update && apt install -y ninja-build ccache && \
+RUN apt update && apt install -y ninja-build ccache clang-tidy cppcheck && \
     rm -rf /var/lib/apt/lists/*
 
 # -----------------------------------------------------------------------------
