@@ -176,7 +176,7 @@ pipeline {
                     steps {
                         sh(
                             label: 'Building',
-                            script: 'CFLAGS="--coverage" python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
+                            script: 'CFLAGS="--coverage" python3 setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
                         )
                     }
                     post{
@@ -189,7 +189,7 @@ pipeline {
                     steps {
                         sh(
                             label: 'Building docs',
-                            script: 'python -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees'
+                            script: 'python3 -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees'
                         )
                     }
                     post{
@@ -247,7 +247,7 @@ pipeline {
                                             steps{
                                                 sh(
                                                     label: 'Building',
-                                                    script: 'CFLAGS="--coverage" python setup.py build -b build/python --build-lib build/python/lib -t build/python/temp build_ext --inplace'
+                                                    script: 'CFLAGS="--coverage" python3 setup.py build -b build/python --build-lib build/python/lib -t build/python/temp build_ext --inplace'
                                                 )
                                             }
                                         }
