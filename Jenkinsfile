@@ -353,7 +353,7 @@ pipeline {
                                                         timeout(15){
                                                             sh(
                                                               label: 'Running memcheck',
-                                                              script: 'drmemory -- ./build/cpp/tests/tester'
+                                                              script: 'drmemory -check_uninit_blocklist libopenjp2.so.7 -- ./build/cpp/tests/tester'
 //                                                               script: '(cd build/cpp && ctest -T memcheck -j $(grep -c ^processor /proc/cpuinfo) )'
                                                             )
                                                         }
