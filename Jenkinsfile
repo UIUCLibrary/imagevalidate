@@ -359,6 +359,9 @@ pipeline {
                                                         }
                                                     }
                                                     post{
+                                                        failure{
+                                                            sh 'drmemory -help'
+                                                        }
                                                         always{
                                                             recordIssues(
                                                                 filters: [
