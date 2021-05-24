@@ -88,7 +88,7 @@ def get_devpi_doc_archive_name(pkgName, pkgVersion){
 
 def DEFAULT_DOCKER_FILENAME = 'ci/docker/python/linux/build/Dockerfile'
 def DEFAULT_DOCKER_LABEL = 'linux && docker'
-def DEFAULT_DOCKER_BUILD_ARGS = '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+def DEFAULT_DOCKER_BUILD_ARGS = '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
 
 def startup(){
     node(){
@@ -176,7 +176,7 @@ pipeline {
                     steps {
                         sh(
                             label: 'Building',
-                            script: 'CFLAGS="--coverage" python setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
+                            script: 'CFLAGS="--coverage" python3 setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
                         )
                     }
                     post{
@@ -189,7 +189,7 @@ pipeline {
                     steps {
                         sh(
                             label: 'Building docs',
-                            script: 'python -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees'
+                            script: 'python3 -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees'
                         )
                     }
                     post{
@@ -247,7 +247,7 @@ pipeline {
                                             steps{
                                                 sh(
                                                     label: 'Building',
-                                                    script: 'CFLAGS="--coverage" python setup.py build -b build/python --build-lib build/python/lib -t build/python/temp build_ext --inplace'
+                                                    script: 'CFLAGS="--coverage" python3 setup.py build -b build/python --build-lib build/python/lib -t build/python/temp build_ext --inplace'
                                                 )
                                             }
                                         }
@@ -256,7 +256,7 @@ pipeline {
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Compiling CPP Code',
                                                        script: '''conan install . -if build/cpp -o "*:shared=True"
-                                                                  cmake -B build/cpp -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
+                                                                  cmake -B build/cpp -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
                                                                   build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo)
                                                                   '''
                                                     )
@@ -301,6 +301,40 @@ pipeline {
                                                            )
                                                            sh 'mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml'
                                                            stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
+                                                        }
+                                                    }
+                                                }
+                                                stage('Clang Tidy Analysis') {
+                                                    steps{
+                                                        tee('logs/clang-tidy.log') {
+                                                            sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary clang-tidy -p ./build/cpp/')
+                                                        }
+                                                    }
+                                                    post{
+                                                        always {
+                                                            recordIssues(tools: [clangTidy(pattern: 'logs/clang-tidy.log')])
+                                                        }
+                                                    }
+                                                }
+                                                stage("CPP Check"){
+                                                    steps{
+                                                       writeFile file: 'cppcheck_exclusions.txt', text: "*:${WORKSPACE}/build/cpp/_deps/*"
+                                                        catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
+                                                            sh(label: 'Running cppcheck',
+                                                               script:"cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all -i build/cpp/_deps  --xml --output-file=logs/cppcheck_debug.xml --suppressions-list=cppcheck_exclusions.txt"
+                                                               )
+                                                        }
+                                                    }
+                                                    post{
+                                                        always {
+                                                            recordIssues(
+                                                                filters: [
+                                                                     excludeType('unmatchedSuppression')
+                                                                ],
+                                                                tools: [
+                                                                    cppCheck(pattern: 'logs/cppcheck_debug.xml')
+                                                                ]
+                                                            )
                                                         }
                                                     }
                                                 }
