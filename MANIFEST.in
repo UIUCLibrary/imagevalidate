@@ -13,7 +13,7 @@ include conanfile.py
 recursive-include uiucprescon/imagevalidate CMakeLists.txt *.cpp *.h
 
 # Running requirements
-include requirements.txt Pipfile Pipfile.lock
+include requirements.txt
 
 # Tox configuration setting
 include tox.ini
@@ -27,8 +27,3 @@ include docs/Makefile
 include docs/make.bat
 recursive-include docs/source *
 prune docs/build
-
-# Exclude binary files from source distribution
-recursive-exclude * __pycache__
-recursive-exclude * *.pyc
-recursive-exclude * *.dll
