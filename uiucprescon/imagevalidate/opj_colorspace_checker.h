@@ -14,12 +14,12 @@ extern "C"{
 class opj_colorspace_checker {
     const std::string filename;
 public:
-    explicit opj_colorspace_checker(const std::string &filename);
+    explicit opj_colorspace_checker(std::string filename);
     static std::string convert_enum_to_string(COLOR_SPACE colorSpace);
 
 private:
-    opj_codec_t* l_codec;
-    opj_stream_t *l_stream;
+    opj_codec_t* l_codec = nullptr;
+    opj_stream_t *l_stream = nullptr;
 
 public:
     virtual ~opj_colorspace_checker();
