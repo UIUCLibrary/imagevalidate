@@ -6,7 +6,7 @@ extern "C"{
 
 #include "opj_colorspace_checker.h"
 #include "exceptions.h"
-#include <iostream>
+#include <memory>
 
 std::string open_jpeg_version(){
     return opj_version();
