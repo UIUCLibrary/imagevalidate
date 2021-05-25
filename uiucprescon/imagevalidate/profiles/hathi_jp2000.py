@@ -8,7 +8,7 @@ import typing
 from uiucprescon.imagevalidate import IssueCategory, common
 from uiucprescon.imagevalidate import Report
 from uiucprescon.imagevalidate.report import Result
-from uiucprescon.imagevalidate import openjp2wrap
+from uiucprescon.imagevalidate import openjp2wrap  # type: ignore
 from . import AbsProfile
 
 
