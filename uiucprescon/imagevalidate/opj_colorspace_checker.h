@@ -24,7 +24,7 @@ private:
     std::shared_ptr<opj_stream_t> l_stream;
 
 public:
-    std::string read();
+    std::string read() const;
     void setup();
 
 private:

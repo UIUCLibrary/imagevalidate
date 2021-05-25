@@ -59,7 +59,7 @@ void opj_colorspace_checker::setup_stream() {
 
 }
 
-std::string opj_colorspace_checker::read() {
+std::string opj_colorspace_checker::read() const{
     opj_image_t* image = nullptr;
     opj_codestream_info_v2_t *  info;
 
