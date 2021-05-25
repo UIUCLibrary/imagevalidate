@@ -29,7 +29,7 @@ if(BUILD_TESTING)
             FetchContent_Populate(test_images)
         endif()
 
-    add_executable(tester test-main.cpp test-basic.cpp)
+    add_executable(tester test-main.cpp test-basic.cpp test_exceptions.cpp)
     target_include_directories(tester PRIVATE ${PROJECT_SOURCE_DIR}/uiucprescon/imagevalidate)
 
     target_compile_definitions(tester PRIVATE TEST_IMAGE_PATH="${test_images_SOURCE_DIR}")
