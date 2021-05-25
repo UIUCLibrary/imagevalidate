@@ -5,6 +5,7 @@ extern "C"{
 }
 
 #include "opj_colorspace_checker.h"
+#include "exceptions.h"
 #include <iostream>
 
 std::string open_jpeg_version(){
@@ -19,17 +20,24 @@ std::string color_space(const std::string &file_path) {
 }
 
 int bitdepth(const std::string &file_path){
-    opj_codec_t* l_codec = opj_create_decompress(OPJ_CODEC_JP2);
+    std::shared_ptr<opj_codec_t> l_codec(
+            opj_create_decompress(OPJ_CODEC_JP2),
+            [](opj_codec_t *ptr){
+                opj_destroy_codec(ptr);
+            });
 
-    opj_stream_t *l_stream = opj_stream_create_default_file_stream(file_path.c_str(), 1);
+    std::shared_ptr<opj_stream_t> l_stream(
+            opj_stream_create_default_file_stream(file_path.c_str(), 1),
+            [](opj_stream_t *ptr){
+                opj_stream_destroy(ptr);
+            });
+
     opj_image_t* image = nullptr;
-
-    opj_read_header(l_stream, l_codec, &image);
-//    TODO error check
-// TODO: manage memory
-    int bitDepth = image->comps->prec;
-    opj_destroy_codec(l_codec);
-    opj_stream_destroy(l_stream);
+    opj_read_header(l_stream.get(), l_codec.get(), &image);
+    if(image == nullptr){
+        throw InvalidFileException(file_path);
+    }
+    const auto bitDepth = (int)image->comps->prec;
     opj_image_destroy(image);
     return bitDepth;
 }
