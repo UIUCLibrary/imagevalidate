@@ -9,25 +9,25 @@
 
 #include <exception>
 #include <sstream>
+#include <utility>
 
 class InvalidFileException: public std::exception{
-    const std::string filename;
-    std::string message;
+    std::string error_message_;
 
 public:
-    InvalidFileException(const std::string &filename):filename(filename){};
-    InvalidFileException(const std::string &filename, const std::string &msg):filename(filename), message(msg){};
-
-    virtual const char *what() const throw(){
+    explicit InvalidFileException(std::string filename): error_message_(std::move(filename)){};
+    InvalidFileException(const std::string &filename, const std::string &msg){
         std::ostringstream error_message;
 
         error_message << filename;
 
-        if (message.size() > 0){
-            error_message << ": " << message;
-        }
+        error_message << ": " << msg;
+        error_message_ = error_message.str();
+    };
 
-        return error_message.str().c_str();
+    const char *what() const noexcept override{
+
+        return error_message_.c_str();
     }
 
 };

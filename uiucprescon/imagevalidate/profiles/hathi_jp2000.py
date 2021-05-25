@@ -8,6 +8,7 @@ import typing
 from uiucprescon.imagevalidate import IssueCategory, common
 from uiucprescon.imagevalidate import Report
 from uiucprescon.imagevalidate.report import Result
+from uiucprescon.imagevalidate import openjp2wrap  # type: ignore
 from . import AbsProfile
 
 
@@ -39,7 +40,6 @@ class HathiJP2000(AbsProfile):
     expected_metadata_constants = {
         "Exif.Image.XResolution": "400/1",
         "Exif.Image.YResolution": "400/1",
-        'Exif.Image.BitsPerSample': "8 8 8",
     }
     valid_extensions = {".jp2"}
 
@@ -98,6 +98,11 @@ class HathiJP2000(AbsProfile):
         data['Pixel on longest angle'] = Result(
             expected="3000",
             actual=str(longest_side)
+        )
+
+        data['color bit depth'] = Result(
+            expected="8",
+            actual=str(openjp2wrap.get_bit_depth(filename))
         )
 
         return data
