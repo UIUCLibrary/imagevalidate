@@ -99,7 +99,12 @@ class HathiJP2000(AbsProfile):
             expected="3000",
             actual=str(longest_side)
         )
-        data['color bit depth'] = Result(expected="8", actual=str(openjp2wrap.get_bit_depth(filename)))
+
+        data['color bit depth'] = Result(
+            expected="8",
+            actual=str(openjp2wrap.get_bit_depth(filename))
+        )
+
         return data
 
     @staticmethod
