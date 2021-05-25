@@ -318,12 +318,12 @@ pipeline {
                                                         equals expected: true, actual: params.RUN_MEMCHECK
                                                     }
                                                     steps{
-                                                        timeout(15){
+//                                                         timeout(15){
                                                             sh(
                                                               label: 'Running memcheck',
                                                               script: '(cd build/cpp && ctest -T memcheck -j $(grep -c ^processor /proc/cpuinfo) )'
                                                             )
-                                                        }
+//                                                         }
                                                     }
                                                     post{
                                                         always{
