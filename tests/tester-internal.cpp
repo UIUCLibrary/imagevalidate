@@ -10,7 +10,7 @@ SCENARIO("opj_colorspace_checker"){
         auto checker = opj_colorspace_checker(TEST_IMAGE_PATH "/colorspace/0000001.jp2");
         checker.setup();
         WHEN("it calls the read method"){
-            auto s = checker.read();
+            checker.read();
         }
     }
 }
