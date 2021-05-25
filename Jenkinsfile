@@ -70,11 +70,6 @@ def DEFAULT_DOCKER_LABEL = 'linux && docker'
 def DEFAULT_DOCKER_BUILD_ARGS = '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
 
 def startup(){
-    node(){
-        checkout scm
-
-        mac = load('ci/jenkins/scripts/mac.groovy')
-    }
     node('linux && docker') {
         try{
             checkout scm
