@@ -7,7 +7,7 @@
 #include "opj_colorspace_checker.h"
 #include "exceptions.h"
 
-opj_colorspace_checker::opj_colorspace_checker(std::string filename):
+opj_colorspace_checker::opj_colorspace_checker(std::string filename) noexcept:
     filename(std::move(filename)){
 }
 
