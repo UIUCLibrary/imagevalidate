@@ -25,3 +25,19 @@ SCENARIO("Color space"){
     }
 
 }
+
+SCENARIO("Bitdepth")
+{
+    GIVEN("A jp2 file with 8 bit color depth") {
+        const std::string valid_srgb_jp2 = TEST_IMAGE_PATH "/colorspace/0000001.jp2";
+        WHEN("bit depth information is requested") {
+            int bit_depth = bitdepth(valid_srgb_jp2);
+            THEN("The value returned is 8"){
+                REQUIRE(bit_depth == 8);
+
+            }
+        }
+    }
+
+
+}

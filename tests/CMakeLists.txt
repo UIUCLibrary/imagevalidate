@@ -3,7 +3,7 @@ if(BUILD_TESTING)
 
     FetchContent_Declare(
         libcatch2
-        URL https://github.com/catchorg/Catch2/archive/v2.4.0.tar.gz
+        URL https://github.com/catchorg/Catch2/archive/v2.13.6.tar.gz
 #        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
 #        GIT_TAG 15cf3ca
     )
