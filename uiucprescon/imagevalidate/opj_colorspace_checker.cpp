@@ -33,28 +33,26 @@ std::string opj_colorspace_checker::convert_enum_to_string(COLOR_SPACE colorSpac
 }
 
 void opj_colorspace_checker::setup_codec() {
-    l_codec = opj_create_decompress(OPJ_CODEC_JP2);
-
+    l_codec = std::shared_ptr<opj_codec_t>(
+            opj_create_decompress(OPJ_CODEC_JP2),
+            [](opj_codec_t *ptr){
+                if(ptr != nullptr){
+                    opj_destroy_codec(ptr);
+                }
+            });
     if(!l_codec){
         throw std::bad_alloc();
     }
 }
 
 
-opj_colorspace_checker::~opj_colorspace_checker() {
-
-    if(l_codec){
-        opj_destroy_codec(l_codec);
-    }
-    if(l_stream){
-        opj_stream_destroy(l_stream);
-
-    }
-
-}
-
 void opj_colorspace_checker::setup_stream() {
-    l_stream = opj_stream_create_default_file_stream(filename.c_str(), 1);
+     l_stream = std::shared_ptr<opj_stream_t>(
+            opj_stream_create_default_file_stream(filename.c_str(), 1),
+            [](opj_stream_t *ptr){
+                opj_stream_destroy(ptr);
+            });
+
     if(!l_stream) {
         throw InvalidFileException(filename, "Unable to load file");
     }
@@ -65,11 +63,11 @@ std::string opj_colorspace_checker::read() {
     opj_image_t* image = nullptr;
     opj_codestream_info_v2_t *  info;
 
-    opj_read_header(l_stream, l_codec, &image);
+    opj_read_header(l_stream.get(), l_codec.get(), &image);
 
-    info = opj_get_cstr_info(l_codec);
+    info = opj_get_cstr_info(l_codec.get());
 
-    opj_decode(l_codec,l_stream, image );
+    opj_decode(l_codec.get(), l_stream.get(), image );
     std::string result = opj_colorspace_checker::convert_enum_to_string(image->color_space);
     opj_image_destroy(image);
     opj_destroy_cstr_info(&info);

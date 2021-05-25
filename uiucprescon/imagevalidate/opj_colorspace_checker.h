@@ -6,6 +6,8 @@
 #define OPENJPEGWRAPPER_OPJ_COLORSPACE_CHECKER_H
 
 #include <string>
+#include <memory>
+
 extern "C"{
 #include <openjpeg.h>
 }
@@ -18,11 +20,10 @@ public:
     static std::string convert_enum_to_string(COLOR_SPACE colorSpace);
 
 private:
-    opj_codec_t* l_codec = nullptr;
-    opj_stream_t *l_stream = nullptr;
+    std::shared_ptr<opj_codec_t> l_codec;
+    std::shared_ptr<opj_stream_t> l_stream;
 
 public:
-    virtual ~opj_colorspace_checker();
     std::string read();
     void setup();
 
