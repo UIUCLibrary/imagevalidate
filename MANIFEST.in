@@ -13,7 +13,7 @@ include conanfile.py
 recursive-include uiucprescon/imagevalidate CMakeLists.txt *.cpp *.h
 
 # Running requirements
-include requirements.txt Pipfile Pipfile.lock
+include requirements.txt
 
 # Tox configuration setting
 include tox.ini
