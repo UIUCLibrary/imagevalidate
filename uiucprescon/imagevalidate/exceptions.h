@@ -12,23 +12,22 @@
 #include <utility>
 
 class InvalidFileException: public std::exception{
-    const std::string filename;
-    std::string message;
+    std::string error_message_;
 
 public:
-    explicit InvalidFileException(std::string filename):filename(std::move(filename)){};
-    InvalidFileException(std::string filename, std::string msg):filename(std::move(filename)), message(std::move(msg)){};
-
-    const char *what() const throw() override{
+    explicit InvalidFileException(std::string filename): error_message_(std::move(filename)){};
+    InvalidFileException(const std::string &filename, const std::string &msg){
         std::ostringstream error_message;
 
         error_message << filename;
 
-        if (!message.empty()){
-            error_message << ": " << message;
-        }
+        error_message << ": " << msg;
+        error_message_ = error_message.str();
+    };
 
-        return error_message.str().c_str();
+    const char *what() const noexcept override{
+
+        return error_message_.c_str();
     }
 
 };

@@ -9,5 +9,6 @@ def test_get_colorspace_exists():
 
 def test_invalid_get_bitdeph_throws_exception():
     source = "fakefile.jp2"
-    with pytest.raises(openjp2wrap.InvalidFileException):
+    with pytest.raises(openjp2wrap.InvalidFileException) as excinfo:
         openjp2wrap.get_bitdeph(source)
+    assert source in str(excinfo.value)
