@@ -6,5 +6,8 @@ PYBIND11_MODULE(openjp2wrap, m){
     options.enable_function_signatures();
     m.def("open_jpeg_version", &open_jpeg_version, "Get the version of OpenJPEG built with");
     m.def("get_colorspace", &color_space, "get color space value from an image");
+    m.def("get_bitdeph", [](const std::string &file_name){
+        return bitdepth(file_name);
+        }, "get color bitdepth from an image");
 }
 
