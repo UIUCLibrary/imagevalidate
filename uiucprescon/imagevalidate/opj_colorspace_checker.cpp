@@ -7,9 +7,7 @@
 #include "exceptions.h"
 
 opj_colorspace_checker::opj_colorspace_checker(const std::string &filename):
-    filename(filename),
-    l_codec(nullptr),
-    l_stream(nullptr){
+    filename(filename){
 }
 
 std::string opj_colorspace_checker::convert_enum_to_string(COLOR_SPACE colorSpace) {

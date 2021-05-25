@@ -18,8 +18,8 @@ public:
     static std::string convert_enum_to_string(COLOR_SPACE colorSpace);
 
 private:
-    opj_codec_t* l_codec;
-    opj_stream_t *l_stream;
+    opj_codec_t* l_codec = nullptr;
+    opj_stream_t *l_stream = nullptr;
 
 public:
     virtual ~opj_colorspace_checker();
