@@ -14,7 +14,7 @@ std::string open_jpeg_version(){
 
 
 std::string color_space(const std::string &file_path) {
-    auto checker = opj_colorspace_checker(file_path);
+    opj_colorspace_checker checker(file_path);
     checker.setup();
     return checker.read();
 }
