@@ -1,11 +1,11 @@
 #include "glue.h"
+#include "exceptions.h"
+#include "opj_colorspace_checker.h"
 
 extern "C"{
 #include <openjpeg.h>
 }
 
-#include "opj_colorspace_checker.h"
-#include "exceptions.h"
 #include <memory>
 
 std::string open_jpeg_version(){

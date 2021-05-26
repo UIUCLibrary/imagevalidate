@@ -2,9 +2,10 @@
 // Created by Borchers, Henry Samuel on 9/7/18.
 //
 
-#include <utility>
 #include "opj_colorspace_checker.h"
 #include "exceptions.h"
+
+#include <utility>
 
 opj_colorspace_checker::opj_colorspace_checker(std::string filename) noexcept:
     filename(std::move(filename)){
