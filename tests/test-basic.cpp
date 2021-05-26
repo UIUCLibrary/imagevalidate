@@ -1,6 +1,6 @@
-#include "catch2/catch.hpp"
 #include "glue.h"
 #include "exceptions.h"
+#include <catch2/catch.hpp>
 
 
 TEST_CASE("utils"){
