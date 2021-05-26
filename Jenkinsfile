@@ -235,7 +235,6 @@ pipeline {
                                                                     -DBUILD_TESTING:BOOL=true \
                                                                     -DCMAKE_CXX_FLAGS="-fno-inline -fno-omit-frame-pointer -fprofile-arcs -ftest-coverage -Wall -Wextra" \
                                                                     -DMEMORYCHECK_COMMAND=$(which drmemory) \
-                                                                    -DCMAKE_CXX_CPPCHECK="$(which cppcheck);--enable=all;--xml" \
                                                                     -DMEMORYCHECK_COMMAND_OPTIONS="-check_uninit_blacklist libopenjp2.so.7"
                                                                   build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --config Debug
                                                                   '''
@@ -247,8 +246,6 @@ pipeline {
                                                     archiveArtifacts artifacts: 'logs/*'
                                                     recordIssues(
                                                         tools: [
-//                                                             cppCheck(pattern: 'logs/cppcheck_debug.xml'),
-                                                            cppCheck(pattern: 'logs/cmake-build.log'),
                                                             gcc(pattern: 'logs/cmake-build.log'),
                                                             [$class: 'Cmake', pattern: 'logs/cmake-build.log']
                                                         ]
@@ -304,28 +301,28 @@ pipeline {
                                                         }
                                                     }
                                                 }
-//                                                 stage('CPP Check'){
-//                                                     steps{
-//                                                        writeFile file: 'cppcheck_exclusions.txt', text: "*:${WORKSPACE}/build/cpp/_deps/*"
-//                                                         catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
-//                                                             sh(label: 'Running cppcheck',
-//                                                                script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all -i build/cpp/_deps  --inline-suppr --xml --output-file=logs/cppcheck_debug.xml --suppressions-list=cppcheck_exclusions.txt --check-config'
-//                                                                )
-//                                                         }
-//                                                     }
-//                                                     post{
-//                                                         always {
-//                                                             recordIssues(
-//                                                                 filters: [
-//                                                                      excludeType('unmatchedSuppression')
-//                                                                 ],
-//                                                                 tools: [
-//                                                                     cppCheck(pattern: 'logs/cppcheck_debug.xml')
-//                                                                 ]
-//                                                             )
-//                                                         }
-//                                                     }
-//                                                 }
+                                                stage('CPP Check'){
+                                                    steps{
+                                                       writeFile file: 'cppcheck_exclusions.txt', text: "*:${WORKSPACE}/build/cpp/_deps/*"
+                                                        catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
+                                                            sh(label: 'Running cppcheck',
+                                                               script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all -i build/cpp/_deps  --inline-suppr --xml --xml-version=2 --output-file=logs/cppcheck_debug.xml --suppressions-list=cppcheck_exclusions.txt --check-config'
+                                                               )
+                                                        }
+                                                    }
+                                                    post{
+                                                        always {
+                                                            recordIssues(
+                                                                filters: [
+                                                                     excludeType('unmatchedSuppression')
+                                                                ],
+                                                                tools: [
+                                                                    cppCheck(pattern: 'logs/cppcheck_debug.xml')
+                                                                ]
+                                                            )
+                                                        }
+                                                    }
+                                                }
                                                 stage('MemCheck'){
                                                     when{
                                                         equals expected: true, actual: params.RUN_MEMCHECK
