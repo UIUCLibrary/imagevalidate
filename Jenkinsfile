@@ -323,9 +323,6 @@ pipeline {
                                                     post{
                                                         always{
                                                             recordIssues(
-//                                                                 filters: [
-//                                                                     excludeFile('/drmemory_package/*'),
-//                                                                 ],
                                                                 tools: [
                                                                     drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
                                                                     ]
@@ -466,23 +463,7 @@ pipeline {
                             }
                         }
                     }
-//                     post{
-//                         always{
-//                             node(''){
-//                                 unstash 'PYTHON_COVERAGE_REPORT'
-//                                 unstash 'CPP_COVERAGE_REPORT'
-// //                                 publishCoverage(
-// //                                     adapters: [
-// //                                             coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
-// //                                         ],
-// //                                     sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-// //                                )
-//
-//                             }
-//                         }
-//                     }
                 }
-
                 stage('Run Tox'){
                     when{
                         equals expected: true, actual: params.TEST_RUN_TOX
