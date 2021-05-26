@@ -303,7 +303,12 @@ pipeline {
                                                 }
                                                 stage('CPP Check'){
                                                     steps{
-                                                       writeFile file: 'cppcheck_exclusions.txt', text: "*:${WORKSPACE}/build/cpp/_deps/*"
+                                                        writeFile(
+                                                            file: 'cppcheck_exclusions.txt',
+                                                            text: """*:${WORKSPACE}/build/cpp/_deps/*
+missingIncludeSystem
+                                                            """
+                                                        )
                                                         catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
                                                             sh(label: 'Running cppcheck',
                                                                script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all -i build/cpp/_deps  --inline-suppr --xml --xml-version=2 --output-file=logs/cppcheck_debug.xml --suppressions-list=cppcheck_exclusions.txt --check-config'
