@@ -407,6 +407,12 @@ pipeline {
                                                                   '''
                                                     )
                                                     stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
+                                                    publishCoverage(
+                                                        adapters: [
+                                                                coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+                                                            ],
+                                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                                                   )
                                                 }
                                             }
                                         }
@@ -460,21 +466,21 @@ pipeline {
                             }
                         }
                     }
-                    post{
-                        always{
-                            node(''){
-                                unstash 'PYTHON_COVERAGE_REPORT'
-                                unstash 'CPP_COVERAGE_REPORT'
-                                publishCoverage(
-                                    adapters: [
-                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
-                                        ],
-                                    sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                               )
-
-                            }
-                        }
-                    }
+//                     post{
+//                         always{
+//                             node(''){
+//                                 unstash 'PYTHON_COVERAGE_REPORT'
+//                                 unstash 'CPP_COVERAGE_REPORT'
+// //                                 publishCoverage(
+// //                                     adapters: [
+// //                                             coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+// //                                         ],
+// //                                     sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+// //                                )
+//
+//                             }
+//                         }
+//                     }
                 }
 
                 stage('Run Tox'){
