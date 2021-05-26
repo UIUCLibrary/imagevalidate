@@ -1,0 +1,10 @@
+Checks: "-*,\
+clang-analyzer-*,\
+cppcoreguidelines-*,\
+readability-*,\
+-readability-magic-numbers,\
+google-*,\
+-google-readability-todo,\
+-google-readability-casting,\
+bugprone-*,
+"
