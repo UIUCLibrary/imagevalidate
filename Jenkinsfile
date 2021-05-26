@@ -244,14 +244,14 @@ pipeline {
                                             }
                                             post{
                                                 always{
-
+                                                    archiveArtifacts artifacts: 'logs/*'
                                                     recordIssues(
                                                         tools: [
                                                             cppCheck(pattern: 'logs/cppcheck_debug.xml'),
                                                             gcc(pattern: 'logs/cmake-build.log'),
                                                             [$class: 'Cmake', pattern: 'logs/cmake-build.log']
                                                         ]
-                                                        )
+                                                    )
                                                 }
                                             }
                                         }
