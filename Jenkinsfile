@@ -235,7 +235,7 @@ pipeline {
                                                                     -DBUILD_TESTING:BOOL=true \
                                                                     -DCMAKE_CXX_FLAGS="-fno-inline -fno-omit-frame-pointer -fprofile-arcs -ftest-coverage -Wall -Wextra" \
                                                                     -DMEMORYCHECK_COMMAND=$(which drmemory) \
-                                                                    -DCMAKE_CXX_CPPCHECK="$(which cppcheck);--enable=all;--xml;--output-file=logs/cppcheck_debug.xml" \
+                                                                    -DCMAKE_CXX_CPPCHECK="$(which cppcheck);--enable=all;--xml;--output-file=$WORKSPACE/logs/cppcheck_debug.xml" \
                                                                     -DMEMORYCHECK_COMMAND_OPTIONS="-check_uninit_blacklist libopenjp2.so.7"
                                                                   build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --config Debug
                                                                   '''
@@ -303,15 +303,15 @@ pipeline {
                                                         }
                                                     }
                                                 }
-                                                stage('CPP Check'){
-                                                    steps{
-                                                       writeFile file: 'cppcheck_exclusions.txt', text: "*:${WORKSPACE}/build/cpp/_deps/*"
-                                                        catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
-                                                            sh(label: 'Running cppcheck',
-                                                               script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all -i build/cpp/_deps  --inline-suppr --xml --output-file=logs/cppcheck_debug.xml --suppressions-list=cppcheck_exclusions.txt --check-config'
-                                                               )
-                                                        }
-                                                    }
+//                                                 stage('CPP Check'){
+//                                                     steps{
+//                                                        writeFile file: 'cppcheck_exclusions.txt', text: "*:${WORKSPACE}/build/cpp/_deps/*"
+//                                                         catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
+//                                                             sh(label: 'Running cppcheck',
+//                                                                script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all -i build/cpp/_deps  --inline-suppr --xml --output-file=logs/cppcheck_debug.xml --suppressions-list=cppcheck_exclusions.txt --check-config'
+//                                                                )
+//                                                         }
+//                                                     }
 //                                                     post{
 //                                                         always {
 //                                                             recordIssues(
@@ -324,7 +324,7 @@ pipeline {
 //                                                             )
 //                                                         }
 //                                                     }
-                                                }
+//                                                 }
                                                 stage('MemCheck'){
                                                     when{
                                                         equals expected: true, actual: params.RUN_MEMCHECK
