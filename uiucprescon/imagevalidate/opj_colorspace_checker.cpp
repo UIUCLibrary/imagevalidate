@@ -2,7 +2,6 @@
 // Created by Borchers, Henry Samuel on 9/7/18.
 //
 
-#include <iostream>
 #include <utility>
 #include "opj_colorspace_checker.h"
 #include "exceptions.h"
