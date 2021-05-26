@@ -61,11 +61,10 @@ void opj_colorspace_checker::setup_stream() {
 
 std::string opj_colorspace_checker::read() const{
     opj_image_t* image = nullptr;
-    opj_codestream_info_v2_t *  info;
 
     opj_read_header(l_stream.get(), l_codec.get(), &image);
 
-    info = opj_get_cstr_info(l_codec.get());
+    opj_codestream_info_v2_t *info = opj_get_cstr_info(l_codec.get());
 
     opj_decode(l_codec.get(), l_stream.get(), image );
     std::string result = opj_colorspace_checker::convert_enum_to_string(image->color_space);
