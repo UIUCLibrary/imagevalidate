@@ -33,10 +33,9 @@ if(BUILD_TESTING)
     target_include_directories(tester PRIVATE ${PROJECT_SOURCE_DIR}/uiucprescon/imagevalidate)
 
     target_compile_definitions(tester PRIVATE TEST_IMAGE_PATH="${test_images_SOURCE_DIR}")
-
     if(CMAKE_CXX_CPPCHECK)
         set_property(TARGET tester PROPERTY
-                CXX_CPPCHECK ${CMAKE_CXX_CPPCHECK} --suppress=preprocessorErrorDirective:${libcatch2_SOURCE_DIR}/single_include/catch2/catch.hpp
+                CXX_CPPCHECK ${CMAKE_CXX_CPPCHECK};--suppress=*:${libcatch2_SOURCE_DIR}/single_include/catch2/catch.hpp
             )
     endif()
     set_target_properties(tester PROPERTIES
@@ -52,7 +51,11 @@ if(BUILD_TESTING)
     #############
 
     add_executable(tester-internal test-main.cpp tester-internal.cpp)
-
+    if(CMAKE_CXX_CPPCHECK)
+        set_property(TARGET tester-internal PROPERTY
+                CXX_CPPCHECK ${CMAKE_CXX_CPPCHECK};--suppress=*:${libcatch2_SOURCE_DIR}/single_include/catch2/catch.hpp
+                )
+    endif()
     target_compile_definitions(tester-internal
             PRIVATE TEST_IMAGE_PATH="${test_images_SOURCE_DIR}")
 
