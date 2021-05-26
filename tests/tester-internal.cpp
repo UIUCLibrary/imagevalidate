@@ -5,7 +5,8 @@
 #include "catch2/catch.hpp"
 #include "opj_colorspace_checker.h"
 
-SCENARIO("opj_colorspace_checker"){
+
+SCENARIO("opj_colorspace_checker"){  // cppcheck-suppress [unusedFunction]
     GIVEN("A opj_colorspace_checker object initialized with a image"){
         auto checker = opj_colorspace_checker(TEST_IMAGE_PATH "/colorspace/0000001.jp2");
         checker.setup();

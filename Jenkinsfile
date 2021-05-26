@@ -226,7 +226,16 @@ pipeline {
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Compiling CPP Code',
                                                        script: '''conan install . -if build/cpp -o "*:shared=True"
-                                                                  cmake -B build/cpp -Wdev -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fno-inline -fno-omit-frame-pointer -fprofile-arcs -ftest-coverage -Wall -Wextra" -DMEMORYCHECK_COMMAND=$(which drmemory) -DMEMORYCHECK_COMMAND_OPTIONS="-check_uninit_blacklist libopenjp2.so.7"
+                                                                  cmake -B build/cpp \
+                                                                    -Wdev \
+                                                                    -DCMAKE_BUILD_TYPE=Debug \
+                                                                    -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake \
+                                                                    -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON \
+                                                                    -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true \
+                                                                    -DBUILD_TESTING:BOOL=true \
+                                                                    -DCMAKE_CXX_FLAGS="-fno-inline -fno-omit-frame-pointer -fprofile-arcs -ftest-coverage -Wall -Wextra" \
+                                                                    -DMEMORYCHECK_COMMAND=$(which drmemory) \
+                                                                    -DMEMORYCHECK_COMMAND_OPTIONS="-check_uninit_blacklist libopenjp2.so.7"
                                                                   build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --config Debug
                                                                   '''
                                                     )
@@ -234,7 +243,13 @@ pipeline {
                                             }
                                             post{
                                                 always{
-                                                    recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
+                                                    archiveArtifacts artifacts: 'logs/*'
+                                                    recordIssues(
+                                                        tools: [
+                                                            gcc(pattern: 'logs/cmake-build.log'),
+                                                            [$class: 'Cmake', pattern: 'logs/cmake-build.log']
+                                                        ]
+                                                    )
                                                 }
                                             }
                                         }
@@ -277,7 +292,7 @@ pipeline {
                                                 stage('Clang Tidy Analysis') {
                                                     steps{
                                                         tee('logs/clang-tidy.log') {
-                                                            sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary clang-tidy -p ./build/cpp/')
+                                                            sh(label: 'Run Clang Tidy', script: "run-clang-tidy -clang-tidy-binary \$(which clang-tidy) -p ${WORKSPACE}/build/cpp/")
                                                         }
                                                     }
                                                     post{
@@ -288,10 +303,13 @@ pipeline {
                                                 }
                                                 stage('CPP Check'){
                                                     steps{
-                                                       writeFile file: 'cppcheck_exclusions.txt', text: "*:${WORKSPACE}/build/cpp/_deps/*"
+                                                        writeFile(
+                                                            file: 'cppcheck_exclusions.txt',
+                                                            text: """*:${WORKSPACE}/build/cpp/_deps/*"""
+                                                        )
                                                         catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
                                                             sh(label: 'Running cppcheck',
-                                                               script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all -i build/cpp/_deps  --xml --output-file=logs/cppcheck_debug.xml --suppressions-list=cppcheck_exclusions.txt'
+                                                               script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all -i build/cpp/_deps  --inline-suppr --xml --xml-version=2 --output-file=logs/cppcheck_debug.xml --suppress=missingIncludeSystem --suppressions-list=cppcheck_exclusions.txt --check-config'
                                                                )
                                                         }
                                                     }
@@ -323,9 +341,6 @@ pipeline {
                                                     post{
                                                         always{
                                                             recordIssues(
-//                                                                 filters: [
-//                                                                     excludeFile('/drmemory_package/*'),
-//                                                                 ],
                                                                 tools: [
                                                                     drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
                                                                     ]
@@ -407,6 +422,12 @@ pipeline {
                                                                   '''
                                                     )
                                                     stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
+                                                    publishCoverage(
+                                                        adapters: [
+                                                                coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+                                                            ],
+                                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                                                   )
                                                 }
                                             }
                                         }
@@ -460,23 +481,7 @@ pipeline {
                             }
                         }
                     }
-                    post{
-                        always{
-                            node(''){
-                                unstash 'PYTHON_COVERAGE_REPORT'
-                                unstash 'CPP_COVERAGE_REPORT'
-                                publishCoverage(
-                                    adapters: [
-                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
-                                        ],
-                                    sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                               )
-
-                            }
-                        }
-                    }
                 }
-
                 stage('Run Tox'){
                     when{
                         equals expected: true, actual: params.TEST_RUN_TOX

@@ -1,13 +1,12 @@
-#include "catch2/catch.hpp"
 #include "glue.h"
 #include "exceptions.h"
+#include <catch2/catch.hpp>
 
-#include <iostream>
 
 TEST_CASE("utils"){
     open_jpeg_version();
 }
-SCENARIO("Color space"){
+SCENARIO("Color space"){ // NOLINT
     GIVEN("I need to know the color space of an image"){
         WHEN("a valid jp2 file encoded in SRGB"){
             std::string valid_srgb_jp2 = TEST_IMAGE_PATH "/colorspace/0000001.jp2";
