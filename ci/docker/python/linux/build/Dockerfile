@@ -104,7 +104,7 @@ RUN apt update && apt install -y ninja-build ccache clang-tidy cppcheck && \
 
 COPY --from=SONAR_BUILDER /opt/sonar /opt/sonar/
 COPY --from=SONAR_BUILDER /opt/build-wrapper-linux-x86 /opt/build-wrapper-linux-x86/
-ARG SONAR_SCANNER_VERSION
+ARG SONAR_SCANNER_VERSION=4.6.2.2472
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 ENV SONAR_USER_HOME=/opt/sonar/.sonar
 
