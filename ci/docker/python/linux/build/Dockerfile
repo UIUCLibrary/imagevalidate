@@ -12,7 +12,7 @@ RUN apt update && \
         python3-venv \
         software-properties-common && \
     rm -rf /var/lib/apt/lists/*
-
+ARG SONAR_SCANNER_VERSION=4.6.2.2472
 #==============================================================================
 FROM base_image as DR_MEMORY_BUILDER
 RUN apt-get update && apt install -y wget
@@ -45,18 +45,18 @@ FROM base_image as SONAR_BUILDER
 RUN apt-get update && \
     apt-get install -y unzip curl && \
     rm -rf /var/lib/apt/lists/*
-
-ENV SONAR_SCANNER_VERSION=4.4.0.2170
+ARG SONAR_SCANNER_VERSION=4.6.2.2472
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 ENV SONAR_USER_HOME=/opt/sonar/.sonar
 
 RUN curl --create-dirs -sSLo /tmp/sonar-scanner.zip \
-        https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip && \
+        https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux.zip && \
+    ls -la /tmp/ && \
     unzip -o /tmp/sonar-scanner.zip -d /opt/sonar/ && \
     rm /tmp/sonar-scanner.zip && \
     mkdir -p $SONAR_USER_HOME/cache && \
     chmod -R 777 "${SONAR_USER_HOME}" &&\
-    ln -s /opt/sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
+    ln -s /opt/sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
     which sonar-scanner
 
 
@@ -104,7 +104,7 @@ RUN apt update && apt install -y ninja-build ccache clang-tidy cppcheck && \
 
 COPY --from=SONAR_BUILDER /opt/sonar /opt/sonar/
 COPY --from=SONAR_BUILDER /opt/build-wrapper-linux-x86 /opt/build-wrapper-linux-x86/
-ENV SONAR_SCANNER_VERSION=4.4.0.2170
+ARG SONAR_SCANNER_VERSION=4.6.2.2472
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 ENV SONAR_USER_HOME=/opt/sonar/.sonar
 
