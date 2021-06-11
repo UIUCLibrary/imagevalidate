@@ -5,13 +5,12 @@
 #ifndef OPENJPEGWRAPPER_OPJ_COLORSPACE_CHECKER_H
 #define OPENJPEGWRAPPER_OPJ_COLORSPACE_CHECKER_H
 
-#include <string>
-#include <memory>
-
 extern "C"{
 #include <openjpeg.h>
 }
 
+#include <string>
+#include <memory>
 
 class opj_colorspace_checker {
     std::string filename;
