@@ -292,7 +292,7 @@ pipeline {
                                                 stage('Clang Tidy Analysis') {
                                                     steps{
                                                         tee('logs/clang-tidy.log') {
-                                                            sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary $(which clang-tidy) -p $WORKSPACE/build/cpp/')
+                                                            sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary $(which clang-tidy) -p $WORKSPACE/build/cpp/ ./uiucprescon/imagevalidate' )
                                                         }
                                                     }
                                                     post{
