@@ -1478,6 +1478,7 @@ setup(
     zip_safe=False,
     ext_modules=[open_jpeg_extension],
     libraries=[],
+    package_data={"uiucprescon.imagevalidate": ["py.typed"]},
     # libraries=[openjpeg_library],
     cmdclass={
         "build_ext": BuildPybind11Extension,
