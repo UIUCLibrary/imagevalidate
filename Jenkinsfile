@@ -17,7 +17,7 @@ SUPPORTED_MAC_VERSIONS = ['3.8', '3.9']
 SUPPORTED_LINUX_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
 SUPPORTED_WINDOWS_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
 
-PYPI_SERVERS = [
+def PYPI_SERVERS = [
     'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_public/',
     'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_testing/'
     ]
@@ -38,7 +38,7 @@ def get_sonarqube_unresolved_issues(report_task_file){
     script{
 
         def props = readProperties  file: '.scannerwork/report-task.txt'
-        def response = httpRequest url : props['serverUrl'] + "/api/issues/search?componentKeys=" + props['projectKey'] + "&resolved=no"
+        def response = httpRequest url : props['serverUrl'] + '/api/issues/search?componentKeys=' + props['projectKey'] + "&resolved=no"
         def outstandingIssues = readJSON text: response.content
         return outstandingIssues
     }
@@ -70,9 +70,6 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
 }
 
 
-def DEFAULT_DOCKER_FILENAME = 'ci/docker/python/linux/build/Dockerfile'
-def DEFAULT_DOCKER_LABEL = 'linux && docker'
-def DEFAULT_DOCKER_BUILD_ARGS = '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
 
 def startup(){
     node('linux && docker') {
@@ -83,9 +80,9 @@ def startup(){
                     stage('Getting Distribution Info'){
                         sh(
                            label: 'Running setup.py with dist_info',
-                           script: """python --version
+                           script: '''python --version
                                       PIP_NO_CACHE_DIR=off python setup.py dist_info
-                                   """
+                                   '''
                         )
                         stash includes: '*.dist-info/**', name: 'DIST-INFO'
                         archiveArtifacts artifacts: '*.dist-info/**'
@@ -103,7 +100,79 @@ def startup(){
         }
     }
 }
-
+def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredentials, stagingIndex, supportedPythonVersions){
+    def devpi = load('ci/jenkins/scripts/devpi.groovy')
+    def macPackages = [:]
+    supportedPythonVersions.each{pythonVersion ->
+        macPackages["MacOS - Python ${pythonVersion}: wheel"] = {
+            devpi.testDevpiPackage(
+                agent: [
+                    label: "mac && python${pythonVersion}"
+                ],
+                devpi: [
+                    index: stagingIndex,
+                    server: devpiServer,
+                    credentialsId: devpiCredentials,
+                    devpiExec: 'venv/bin/devpi'
+                ],
+                package:[
+                    name: packageName,
+                    version: packageVersion,
+                    selector: getMacDevpiName(pythonVersion, 'wheel'),
+                ],
+                test:[
+                    setup: {
+                        sh(
+                            label: 'Installing Devpi client',
+                            script: '''python3 -m venv venv
+                                        venv/bin/python -m pip install pip --upgrade
+                                        venv/bin/python -m pip install devpi_client
+                                        '''
+                        )
+                    },
+                    toxEnv: "py${pythonVersion}".replace('.',''),
+                    teardown: {
+                        sh( label: 'Remove Devpi client', script: 'rm -r venv')
+                    }
+                ]
+            )
+        }
+        macPackages["MacOS - Python ${pythonVersion}: sdist"]= {
+            devpi.testDevpiPackage(
+                agent: [
+                    label: "mac && python${pythonVersion}"
+                ],
+                devpi: [
+                    index: stagingIndex,
+                    server: devpiServer,
+                    credentialsId: devpiCredentials,
+                    devpiExec: 'venv/bin/devpi'
+                ],
+                package:[
+                    name: packageName,
+                    version: packageVersion,
+                    selector: 'tar.gz'
+                ],
+                test:[
+                    setup: {
+                        sh(
+                            label: 'Installing Devpi client',
+                            script: '''python3 -m venv venv
+                                        venv/bin/python -m pip install pip --upgrade
+                                        venv/bin/python -m pip install devpi_client
+                                        '''
+                        )
+                    },
+                    toxEnv: "py${pythonVersion}".replace('.',''),
+                    teardown: {
+                        sh( label: 'Remove Devpi client', script: 'rm -r venv')
+                    }
+                ]
+            )
+        }
+    }
+    return macPackages
+}
 def get_props(){
     stage('Reading Package Metadata'){
         node() {
@@ -138,7 +207,7 @@ pipeline {
         booleanParam(name: 'BUILD_PACKAGES', defaultValue: false, description: 'Build Python packages')
         booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
         booleanParam(name: 'BUILD_MAC_PACKAGES', defaultValue: false, description: 'Test Python packages on Mac')
-        booleanParam(name: 'DEPLOY_PYPI', defaultValue: false, description: 'Deploy to pypi')
+//         booleanParam(name: 'DEPLOY_PYPI', defaultValue: false, description: 'Deploy to pypi')
         booleanParam(name: 'DEPLOY_DEVPI', defaultValue: false, description: "Deploy to devpi on https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: 'DEPLOY_DEVPI_PRODUCTION', defaultValue: false, description: 'Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Release Branch Only')
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: 'Update online documentation. Release Branch Only')
@@ -147,9 +216,9 @@ pipeline {
         stage('Building'){
             agent {
                 dockerfile {
-                    filename DEFAULT_DOCKER_FILENAME
-                    label DEFAULT_DOCKER_LABEL
-                    additionalBuildArgs DEFAULT_DOCKER_BUILD_ARGS
+                    filename 'ci/docker/python/linux/build/Dockerfile'
+                    label 'linux && docker'
+                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                 }
             }
             stages{
@@ -210,9 +279,9 @@ pipeline {
                         stage('Testing Python') {
                             agent {
                                 dockerfile {
-                                    filename DEFAULT_DOCKER_FILENAME
-                                    label DEFAULT_DOCKER_LABEL
-                                    additionalBuildArgs DEFAULT_DOCKER_BUILD_ARGS
+                                    filename 'ci/docker/python/linux/build/Dockerfile'
+                                    label 'linux && docker'
+                                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                     args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/opt/sonar/.sonar/cache'
                                 }
                             }
@@ -311,7 +380,7 @@ pipeline {
                                                     steps{
                                                         writeFile(
                                                             file: 'cppcheck_exclusions.txt',
-                                                            text: """*:${WORKSPACE}/build/cpp/_deps/*"""
+                                                            text: "*:${WORKSPACE}/build/cpp/_deps/*"
                                                         )
                                                         catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
                                                             sh(label: 'Running cppcheck',
@@ -369,7 +438,7 @@ pipeline {
                                                     post {
                                                         always {
                                                             junit 'reports/pytest.xml'
-                                                            stash includes: 'reports/pytest.xml', name: 'PYTEST_REPORT'
+//                                                             stash includes: 'reports/pytest.xml', name: 'PYTEST_REPORT'
                                                         }
                                                     }
                                                 }
@@ -414,7 +483,7 @@ pipeline {
                                                     post {
                                                         always {
                                                             recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                                            stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
+//                                                             stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
                                                         }
                                                     }
                                                 }
@@ -427,7 +496,7 @@ pipeline {
                                                                   gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
                                                                   '''
                                                     )
-                                                    stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
+//                                                     stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
                                                     publishCoverage(
                                                         adapters: [
                                                                 coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
@@ -447,16 +516,16 @@ pipeline {
                                                 beforeOptions true
                                             }
                                             steps{
-                                                unstash 'PYTHON_COVERAGE_REPORT'
-                                                unstash 'PYTEST_REPORT'
-                                                unstash 'FLAKE8_REPORT'
+//                                                 unstash 'PYTHON_COVERAGE_REPORT'
+//                                                 unstash 'PYTEST_REPORT'
+//                                                 unstash 'FLAKE8_REPORT'
                                                 unstash 'DIST-INFO'
                                                 sh(
                                                 label: 'Preparing c++ coverage data available for SonarQube',
                                                 script: """mkdir -p build/coverage
-                                                find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
-                                                mv *.gcov build/coverage/
-                                                """
+                                                        find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
+                                                        mv *.gcov build/coverage/
+                                                        """
                                                 )
                                                 sonarcloudSubmit('uiucprescon.imagevalidate.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-uiucprescon.imagevalidate')
                                             }
@@ -997,75 +1066,7 @@ pipeline {
                                 checkout scm
                                 devpi = load('ci/jenkins/scripts/devpi.groovy')
                             }
-                            def macPackages = [:]
-                            SUPPORTED_MAC_VERSIONS.each{pythonVersion ->
-                                macPackages["MacOS - Python ${pythonVersion}: wheel"] = {
-                                    devpi.testDevpiPackage(
-                                        agent: [
-                                            label: "mac && python${pythonVersion}"
-                                        ],
-                                        devpi: [
-                                            index: DEVPI_CONFIG.stagingIndex,
-                                            server: DEVPI_CONFIG.server,
-                                            credentialsId: DEVPI_CONFIG.credentialsId,
-                                            devpiExec: 'venv/bin/devpi'
-                                        ],
-                                        package:[
-                                            name: props.Name,
-                                            version: props.Version,
-                                            selector: getMacDevpiName(pythonVersion, 'wheel'),
-                                        ],
-                                        test:[
-                                            setup: {
-                                                sh(
-                                                    label:'Installing Devpi client',
-                                                    script: '''python3 -m venv venv
-                                                                venv/bin/python -m pip install pip --upgrade
-                                                                venv/bin/python -m pip install devpi_client
-                                                                '''
-                                                )
-                                            },
-                                            toxEnv: "py${pythonVersion}".replace('.',''),
-                                            teardown: {
-                                                sh( label: 'Remove Devpi client', script: 'rm -r venv')
-                                            }
-                                        ]
-                                    )
-                                }
-                                macPackages["MacOS - Python ${pythonVersion}: sdist"]= {
-                                    devpi.testDevpiPackage(
-                                        agent: [
-                                            label: "mac && python${pythonVersion}"
-                                        ],
-                                        devpi: [
-                                            index: DEVPI_CONFIG.stagingIndex,
-                                            server: DEVPI_CONFIG.server,
-                                            credentialsId: DEVPI_CONFIG.credentialsId,
-                                            devpiExec: 'venv/bin/devpi'
-                                        ],
-                                        package:[
-                                            name: props.Name,
-                                            version: props.Version,
-                                            selector: 'tar.gz'
-                                        ],
-                                        test:[
-                                            setup: {
-                                                sh(
-                                                    label:'Installing Devpi client',
-                                                    script: '''python3 -m venv venv
-                                                                venv/bin/python -m pip install pip --upgrade
-                                                                venv/bin/python -m pip install devpi_client
-                                                                '''
-                                                )
-                                            },
-                                            toxEnv: "py${pythonVersion}".replace('.',''),
-                                            teardown: {
-                                                sh( label: 'Remove Devpi client', script: 'rm -r venv')
-                                            }
-                                        ]
-                                    )
-                                }
-                            }
+                            def macPackages = get_mac_devpi_stages(props.Name, props.Version, DEVPI_CONFIG.credentialsId, DEVPI_CONFIG.stagingIndex, DEVPI_CONFIG.server, SUPPORTED_MAC_VERSIONS)
                             def windowsPackages = [:]
                             SUPPORTED_WINDOWS_VERSIONS.each{pythonVersion ->
                                 windowsPackages["Windows - Python ${pythonVersion}: sdist"] = {
@@ -1174,7 +1175,6 @@ pipeline {
                             if (params.BUILD_MAC_PACKAGES){
                                  devpiPackagesTesting = devpiPackagesTesting + macPackages
                             }
-
                             parallel(devpiPackagesTesting)
                         }
                     }
@@ -1207,7 +1207,7 @@ pipeline {
                     steps {
                         script{
                             def devpi = load('ci/jenkins/scripts/devpi.groovy')
-                            echo "Pushing to production/release index"
+                            echo 'Pushing to production/release index'
                             devpi.pushPackageToIndex(
                                 pkgName: props.Name,
                                 pkgVersion: props.Version,
@@ -1354,7 +1354,7 @@ pipeline {
                                                 makeEmptyDirs: false,
                                                 noDefaultExcludes: false,
                                                 patternSeparator: '[, ]+',
-                                                remoteDirectory: "${params.DEPLOY_DOCS_URL_SUBFOLDER}",
+                                                remoteDirectory: params.DEPLOY_DOCS_URL_SUBFOLDER,
                                                 remoteDirectorySDF: false,
                                                 removePrefix: '',
                                                 sourceFiles: '**'
