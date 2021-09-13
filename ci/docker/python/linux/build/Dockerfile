@@ -13,6 +13,20 @@ RUN apt update && \
         software-properties-common && \
     rm -rf /var/lib/apt/lists/*
 ARG SONAR_SCANNER_VERSION=4.6.2.2472
+
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
+RUN if id $USER_ID ; then \
+        echo 'Existing user id found: Creating an alias' ;\
+        groupadd --non-unique --gid $GROUP_ID user ; \
+        useradd  --non-unique --uid $USER_ID -s /bin/sh -m -d /home/user -g user user  ; \
+    else \
+        echo "Creating user id for $USER_ID" ;\
+        groupadd -g $GROUP_ID user ; \
+        echo "Create GROUP_ID $GROUP_ID" ;\
+        useradd  -u $USER_ID -s /bin/sh -m -d /home/user -g user user ;\
+    fi
 #==============================================================================
 FROM base_image as DR_MEMORY_BUILDER
 RUN apt-get update && apt install -y wget
@@ -70,12 +84,6 @@ FROM wheel_builder as conan_builder
 
 RUN python3 -m pip install conan cmake
 
-ARG USER_ID=1000
-ARG GROUP_ID=1000
-
-RUN groupadd -g $GROUP_ID user && \
-    useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
-
 COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
 COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/profiles/default
 USER user
@@ -88,12 +96,6 @@ RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
     conan remove --locks
 
 FROM base_image
-
-ARG USER_ID=1000
-ARG GROUP_ID=1000
-
-RUN groupadd -g $GROUP_ID user && \
-    useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
 
 RUN apt update && apt install -y ninja-build ccache clang-tidy cppcheck && \
     rm -rf /var/lib/apt/lists/*
@@ -130,17 +132,18 @@ RUN ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
 
 ENV PIP_EXTRA_INDEX_URL="https://devpi.library.illinois.edu/production/release"
 
-#RUN python -m pip install --upgrade pip && \
-#    pip install --upgrade setuptools && \
-#    pip install wheel
+
 
 COPY --from=wheel_builder /wheels /wheels/
 
 ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
-RUN python3 -m pip install --no-index --find-links=/wheels  \
-        -r /requirements/requirements.txt --pre && \
+#RUN python -m pip install --upgrade pip && \
+#    pip install --upgrade setuptools && \
+#    pip install wheel
+RUN python3 -m pip install --upgrade pip && \
+    python3 -m pip install --upgrade wheel && \
     python3 -m pip install --no-index --find-links=/wheels  \
-        -r /requirements/requirements-ci.txt
+            -r /requirements/requirements.txt -r /requirements/requirements-ci.txt
 
 ENV PIP_FIND_LINKS=/wheels
 ENV PIP_NO_CACHE_DIR=1
