@@ -10,3 +10,4 @@ pybind11
 pytest-cov
 sphinx
 tox
+twine
