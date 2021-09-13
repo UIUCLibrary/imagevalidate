@@ -101,7 +101,11 @@ def startup(){
     }
 }
 def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredentials, stagingIndex, supportedPythonVersions){
-    def devpi = load('ci/jenkins/scripts/devpi.groovy')
+    def devpi
+     node('') {
+        checkout scm
+        devpi = load('ci/jenkins/scripts/devpi.groovy')
+     }
     def macPackages = [:]
     supportedPythonVersions.each{pythonVersion ->
         macPackages["MacOS - Python ${pythonVersion}: wheel"] = {
