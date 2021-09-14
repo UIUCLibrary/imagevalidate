@@ -1070,7 +1070,7 @@ pipeline {
                                 checkout scm
                                 devpi = load('ci/jenkins/scripts/devpi.groovy')
                             }
-                            def macPackages = get_mac_devpi_stages(props.Name, props.Version, DEVPI_CONFIG.credentialsId, DEVPI_CONFIG.stagingIndex, DEVPI_CONFIG.server, SUPPORTED_MAC_VERSIONS)
+                            def macPackages = get_mac_devpi_stages(props.Name, props.Version, DEVPI_CONFIG.server, DEVPI_CONFIG.credentialsId, DEVPI_CONFIG.stagingIndex, SUPPORTED_MAC_VERSIONS)
                             def windowsPackages = [:]
                             SUPPORTED_WINDOWS_VERSIONS.each{pythonVersion ->
                                 windowsPackages["Windows - Python ${pythonVersion}: sdist"] = {
