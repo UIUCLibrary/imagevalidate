@@ -10,6 +10,7 @@ RUN apt update && \
         python3 \
         python3-pip \
         python3-venv \
+        ca-certificates \
         software-properties-common && \
     rm -rf /var/lib/apt/lists/*
 ARG SONAR_SCANNER_VERSION=4.6.2.2472
