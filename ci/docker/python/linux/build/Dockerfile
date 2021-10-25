@@ -85,7 +85,7 @@ FROM wheel_builder as conan_builder
 RUN python3 -m pip install conan cmake
 
 COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
-COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/profiles/default
+#COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/profiles/default
 USER user
 WORKDIR /home/user
 COPY conanfile.py /tmp/conanfile.py
@@ -149,7 +149,7 @@ ENV PIP_FIND_LINKS=/wheels
 ENV PIP_NO_CACHE_DIR=1
 COPY --from=conan_builder --chown=user:user /home/user/.conan/ /home/user/.conan/
 COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
-COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/profiles/default
+#COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/profiles/default
 USER user
 WORKDIR /home/user
 #COPY --chown=user:user ci/docker/shared/conan/remotes.json /home/user/.conan/remotes.json
