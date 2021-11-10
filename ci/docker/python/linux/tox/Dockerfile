@@ -62,6 +62,19 @@ RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
 RUN $PYTHON -m pip wheel  -w /wheels --no-cache-dir wheel
 # ==============================================================================
+FROM wheel_builder_base as WHEEL_BUILDER_PY310
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
+ENV PYTHON=python3.10
+RUN $PYTHON -m ensurepip --upgrade && \
+    $PYTHON -m pip install pip --upgrade pip && \
+    $PYTHON -m pip install wheel && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
+RUN $PYTHON -m pip wheel  -w /wheels --no-cache-dir wheel
+# ==============================================================================
+
 FROM wheel_builder_base as conan_builder
 RUN pip3 install conan cmake
 ENV CONAN_USER_HOME=/conan
@@ -82,6 +95,7 @@ COPY --from=WHEEL_BUILDER_PY36 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY37 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY38 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY39 /wheels/* /wheels/
+COPY --from=WHEEL_BUILDER_PY310 /wheels/* /wheels/
 ENV PIP_FIND_LINKS=/wheels
 RUN pip3 install wheel
 RUN pip3 install tox conan devpi_client
