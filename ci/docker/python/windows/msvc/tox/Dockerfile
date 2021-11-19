@@ -5,20 +5,20 @@ FROM ${FROM_IMAGE} as certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
 FROM ${FROM_IMAGE} as BASE_BUILDER
-
-SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
-COPY ci/docker/shared/startup.bat c:\temp\startup.bat
+COPY ci/docker/shared/startup.bat c:/startup/startup.bat
 RUN Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs_buildtools.exe ; `
-    $VS_INSTALL_PATH =  \"${Env:ProgramFiles(x86)}\" + '\Microsoft Visual Studio\2022\BuildTools' ; `
+    $VS_INSTALL_PATH = \"c:\BuildTools\" ; `
     Write-Host \"Installing Visual Studio Build Tools to ${VS_INSTALL_PATH}\" ; `
     $ARGS_LIST = @(`
         '--quiet', `
         '--wait', `
         '--norestart', `
         '--nocache', `
-        \"--installPath ${VS_INSTALL_PATH}\",`
+        '--installPath', `
+         ${VS_INSTALL_PATH},`
         '--add Microsoft.VisualStudio.Workload.VCTools', `
         '--add Microsoft.VisualStudio.Component.VC.CLI.Support', `
+        '--add Microsoft.VisualStudio.Component.VC.CoreBuildTools', `
         '--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64', `
         '--add Microsoft.VisualStudio.Component.Windows10SDK.18362', `
         '--remove Microsoft.VisualStudio.Component.Windows10SDK.10240',`
@@ -43,7 +43,7 @@ RUN Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs
         throw 'unable to continue' ; `
     } ; `
     Write-Host 'Testing for VsDevCmd.bat' ; `
-    if (! (Test-Path 'c:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat')) `
+    if (! (Test-Path 'C:\BuildTools\Common7\Tools\VsDevCmd.bat')) `
     { `
         Write-Host 'Testing for VsDevCmd.bat - Failed' ; `
         Start-Process -NoNewWindow -FilePath $Env:TEMP\\collect.exe -ArgumentList '-nologo -zip:${Env:TEMP}\\vslogs.zip' -Wait; `
@@ -56,6 +56,9 @@ RUN Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs
         throw 'VsDevCmd.bat not found' ; `
     } ; `
     Write-Host "Testing for VsDevCmd.bat - Found" ; `
+    Write-Host "Testing for CL" ; `
+    cmd /S /C where cl ; `
+    Write-Host "Testing for CL - Success"; `
     Write-Host "Setting up compiler environment to run every time a command is run from CMD" ; `
     Set-ItemProperty -Path 'HKLM:\Software\Microsoft\Command Processor' -Name 'AutoRun' -Value "c:\startup\startup.bat" ; `
     Write-Host "Removing build tools installer" ; `
@@ -78,7 +81,6 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
     choco feature disable -n=showDownloadProgress ; `
     Remove-Item C:\ProgramData\chocolatey\bin\cpack.exe ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\*
-
 
 
 ADD ci/docker/shared/chocolatey/packages.config choco/packages.config
