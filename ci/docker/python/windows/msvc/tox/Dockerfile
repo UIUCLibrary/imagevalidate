@@ -56,11 +56,11 @@ RUN Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs
         throw 'VsDevCmd.bat not found' ; `
     } ; `
     Write-Host "Testing for VsDevCmd.bat - Found" ; `
+    Write-Host "Setting up compiler environment to run every time a command is run from CMD" ; `
+    Set-ItemProperty -Path 'HKLM:\Software\Microsoft\Command Processor' -Name 'AutoRun' -Value "c:\startup\startup.bat" ; `
     Write-Host "Testing for CL" ; `
     cmd /S /C where cl ; `
     Write-Host "Testing for CL - Success"; `
-    Write-Host "Setting up compiler environment to run every time a command is run from CMD" ; `
-    Set-ItemProperty -Path 'HKLM:\Software\Microsoft\Command Processor' -Name 'AutoRun' -Value "c:\startup\startup.bat" ; `
     Write-Host "Removing build tools installer" ; `
     Remove-Item vs_buildtools.exe ; `
     Write-Host "Removing build tools installer - Done" ; `
@@ -84,6 +84,7 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
 
 
 ADD ci/docker/shared/chocolatey/packages.config choco/packages.config
+ADD ci/docker/shared/verifyenv.ps1 verifyenv.ps1
 RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose choco/packages.config ;`
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
@@ -93,8 +94,10 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     { `
         throw 'git.exe not found' ; `
     }; `
-    Write-Host "Finished install packages with Chocolatey"
-
+    Write-Host "Finished install packages with Chocolatey" ;`
+    Write-Host "Verifying installed packages" ;`
+    $env:Path = [System.Environment]::GetEnvironmentVariable(\"Path\",\"Machine\") + \";\" + [System.Environment]::GetEnvironmentVariable(\"Path\",\"User\") ; `
+    ./verifyenv.ps1
 ARG PYTHON_36_VERSION=3.6.8
 ARG PYTHON_37_VERSION=3.7.9
 ARG PYTHON_38_VERSION=3.8.10
