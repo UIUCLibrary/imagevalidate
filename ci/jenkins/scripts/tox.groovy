@@ -128,6 +128,10 @@ def getToxTestsParallel(args = [:]){
         def envs
         def originalNodeLabel
         def dockerImageName = "tox${currentBuild.fullProjectName}".replaceAll("-", "").replaceAll('/', "").replaceAll(' ', "").toLowerCase()
+
+        // ========
+        def dockerImageForTesting
+
         retry(retries){
             node(label){
                 originalNodeLabel = env.NODE_NAME
@@ -150,7 +154,7 @@ def getToxTestsParallel(args = [:]){
                 }
             }
             echo "Found tox environments for ${envs.join(', ')}"
-            def dockerImageForTesting
+
             node(originalNodeLabel){
                 checkout scm
                 dockerImageForTesting = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} . ")
