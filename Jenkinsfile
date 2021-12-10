@@ -1102,7 +1102,8 @@ pipeline {
                                         ],
                                         test:[
                                             toxEnv: "py${pythonVersion}".replace('.',''),
-                                        ]
+                                        ],
+                                        retry: 2
                                     )
                                 }
                                 windowsPackages["Test Python ${pythonVersion}: wheel Windows"] = {
@@ -1127,7 +1128,8 @@ pipeline {
                                         ],
                                         test:[
                                             toxEnv: "py${pythonVersion}".replace('.',''),
-                                        ]
+                                        ],
+                                        retry: 2
                                     )
                                 }
                             }
@@ -1154,7 +1156,8 @@ pipeline {
                                         ],
                                         test:[
                                             toxEnv: "py${pythonVersion}".replace('.',''),
-                                        ]
+                                        ],
+                                        retry: 2
                                     )
                                 }
                                 linuxPackages["Linux - Python ${pythonVersion}: wheel"] = {
@@ -1178,7 +1181,8 @@ pipeline {
                                         ],
                                         test:[
                                             toxEnv: "py${pythonVersion}".replace('.',''),
-                                        ]
+                                        ],
+                                        retry: 2
                                     )
                                 }
                             }
