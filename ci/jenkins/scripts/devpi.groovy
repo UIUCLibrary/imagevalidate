@@ -250,6 +250,9 @@ def testDevpiPackage2(args=[:]){
     def toxEnv = args.test.toxEnv
     def testSetup = args.test['setup'] ? args.test['setup'] : {}
     def testTeardown = args.test['teardown'] ? args.test['teardown'] : {}
+
+    def retries = args.containsKey('retry') ? args.retry : 1
+
     retry(retries){
         agent{
             testSetup()
