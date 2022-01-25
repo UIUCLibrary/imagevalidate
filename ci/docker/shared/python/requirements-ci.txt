@@ -5,6 +5,7 @@ flake8
 gcovr
 lxml
 mypy
+paramiko
 pep517
 pybind11
 pytest-cov
