@@ -1,6 +1,4 @@
 ca-certificates
-python3.6-dev
-python3.6-venv
 python3.7-dev
 python3.7-distutils
 python3-pip
