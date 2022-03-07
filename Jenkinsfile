@@ -635,7 +635,8 @@ pipeline {
                                                 label: "mac && python${pythonVersion}",
                                             ],
                                             buildCmd: {
-                                                sh """python${pythonVersion} -m venv venv --upgrade-deps
+                                                sh """python${pythonVersion} -m venv venv
+                                                      venv/bin/python -m pip install --upgrade pip
                                                       venv/bin/pip install wheel build
                                                       venv/bin/python -m build"""
                                             },
