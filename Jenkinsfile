@@ -635,12 +635,16 @@ pipeline {
                                                 label: "mac && python${pythonVersion}",
                                             ],
                                             buildCmd: {
-                                                sh "python${pythonVersion} -m pip wheel -v --no-deps -w ./dist ."
+                                                sh """python${pythonVersion} -m venv venv
+                                                      venv/bin/python -m pip install --upgrade pip
+                                                      venv/bin/pip install wheel build
+                                                      venv/bin/python -m build"""
                                             },
                                             post:[
                                                 cleanup: {
                                                     cleanWs(
                                                         patterns: [
+                                                                [pattern: 'venv/', type: 'INCLUDE'],
                                                                 [pattern: 'dist/', type: 'INCLUDE'],
                                                             ],
                                                         notFailBuild: true,
