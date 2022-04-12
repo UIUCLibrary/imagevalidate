@@ -14,8 +14,8 @@ def DEVPI_CONFIG = [
 ]
 
 SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10']
-SUPPORTED_LINUX_VERSIONS = ['3.6', '3.7', '3.8', '3.9', '3.10']
-SUPPORTED_WINDOWS_VERSIONS = ['3.6', '3.7', '3.8', '3.9', '3.10']
+SUPPORTED_LINUX_VERSIONS = ['3.7', '3.8', '3.9', '3.10']
+SUPPORTED_WINDOWS_VERSIONS = ['3.7', '3.8', '3.9', '3.10']
 
 def PYPI_SERVERS = [
     'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_public/',
