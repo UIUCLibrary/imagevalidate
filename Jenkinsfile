@@ -667,7 +667,7 @@ pipeline {
                                                 ]
                                             ],
                                             buildCmd: {
-                                                bat "py -${pythonVersion} -m pip wheel -v --no-deps -w ./dist ."
+                                                bat "py -${pythonVersion} -m build --wheel"
                                             },
                                             post:[
                                                 cleanup: {
