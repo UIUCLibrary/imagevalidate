@@ -6,7 +6,9 @@ add_library(glue OBJECT
         )
 
 target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-set_target_properties(glue PROPERTIES CXX_STANDARD 11)
+set_target_properties(glue PROPERTIES
+        CXX_STANDARD 11
+        )
 
 
 add_library(imagevalidate::glue ALIAS glue)
@@ -22,7 +24,9 @@ if(CONAN_OPENJPEG_ROOT)
         find_path(OPENJPEG_INCLUDE_DIRS
             NAMES openjpeg.h
             PATHS ${CONAN_OPENJPEG_ROOT}/include/
-            PATH_SUFFIXES openjpeg-2.3
+            PATH_SUFFIXES
+                openjpeg-2.3
+                openjpeg-2.4
             )
     target_include_directories(glue PUBLIC ${OPENJPEG_INCLUDE_DIRS})
     find_library(OPENJPEG_LIBRARIES
@@ -30,8 +34,9 @@ if(CONAN_OPENJPEG_ROOT)
                 openjpeg
                 openjpeg.so
                 libopenjp2
-                libopenjp2.a
+#                libopenjp2.a
                 libopenjp2.so
+                libopenjp2.dylib
             PATHS ${CONAN_OPENJPEG_ROOT}/lib
             )
     target_link_libraries(glue PUBLIC ${OPENJPEG_LIBRARIES})

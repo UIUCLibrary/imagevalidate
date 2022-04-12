@@ -668,13 +668,13 @@ pipeline {
                                         packages.buildPkg(
                                             agent: [
                                                 dockerfile: [
-                                                    label: 'windows && docker && x86',
+                                                    label: 'windows && docker',
                                                     filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                                 ]
                                             ],
                                             buildCmd: {
-                                                bat "py -${pythonVersion} -m build --wheel"
+                                                bat "py -${pythonVersion} -m pip wheel -v --no-deps -w ./dist ."
                                             },
                                             post:[
                                                 cleanup: {
@@ -700,7 +700,7 @@ pipeline {
                                         packages.buildPkg(
                                             agent: [
                                                 dockerfile: [
-                                                    label: 'linux && docker && x86',
+                                                    label: 'linux && docker',
                                                     filename: 'ci/docker/python/linux/package/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                                 ]
@@ -733,7 +733,7 @@ pipeline {
                                         packages.buildPkg(
                                             agent: [
                                                 dockerfile: [
-                                                    label: 'linux && docker && x86',
+                                                    label: 'linux && docker',
                                                     filename: 'ci/docker/python/linux/package/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                                 ]
@@ -864,7 +864,7 @@ pipeline {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
-                                                label: 'windows && docker && x86',
+                                                label: 'windows && docker',
                                                 filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                             ]
@@ -901,7 +901,7 @@ pipeline {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
-                                                label: 'windows && docker && x86',
+                                                label: 'windows && docker',
                                                 filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                             ]
@@ -937,7 +937,7 @@ pipeline {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
-                                                label: 'linux && docker && x86',
+                                                label: 'linux && docker',
                                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                             ]
@@ -977,7 +977,7 @@ pipeline {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
-                                                label: 'linux && docker && x86',
+                                                label: 'linux && docker',
                                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                             ]
@@ -1042,7 +1042,7 @@ pipeline {
                     agent {
                         dockerfile {
                             filename 'ci/docker/python/linux/tox/Dockerfile'
-                            label 'linux && docker && devpi-access'
+                            label 'linux && docker'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                           }
                     }
@@ -1093,7 +1093,7 @@ pipeline {
                                             dockerfile: [
                                                 filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
-                                                label: 'windows && docker && x86 && devpi-access'
+                                                label: 'windows && docker'
                                             ]
                                         ],
                                         dockerImageName:  "${currentBuild.fullProjectName}_devpi_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
@@ -1119,7 +1119,7 @@ pipeline {
                                             dockerfile: [
                                                 filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
-                                                label: 'windows && docker && x86 && devpi-access'
+                                                label: 'windows && docker'
                                             ]
                                         ],
                                         devpi: [
@@ -1148,7 +1148,7 @@ pipeline {
                                             dockerfile: [
                                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                                                label: 'linux && docker && x86 && devpi-access'
+                                                label: 'linux && docker'
                                             ]
                                         ],
                                         devpi: [
@@ -1173,7 +1173,7 @@ pipeline {
                                             dockerfile: [
                                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                                                label: 'linux && docker && x86 && devpi-access'
+                                                label: 'linux && docker'
                                             ]
                                         ],
                                         devpi: [
@@ -1222,7 +1222,7 @@ pipeline {
                     agent {
                         dockerfile {
                             filename 'ci/docker/python/linux/tox/Dockerfile'
-                            label 'linux && docker && x86'
+                            label 'linux && docker'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                         }
                     }
@@ -1244,7 +1244,7 @@ pipeline {
             }
             post{
                 success{
-                    node('linux && docker && devpi-access') {
+                    node('linux && docker') {
                         script{
                             if (!env.TAG_NAME?.trim()){
                                 checkout scm
@@ -1264,7 +1264,7 @@ pipeline {
                     }
                 }
                 cleanup{
-                    node('linux && docker && devpi-access') {
+                    node('linux && docker') {
                         script{
                             checkout scm
                             devpi = load 'ci/jenkins/scripts/devpi.groovy'
