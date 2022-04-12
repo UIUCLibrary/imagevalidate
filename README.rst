@@ -8,7 +8,7 @@ uiucprescon-imagevalidate
     :target: https://jenkins.library.illinois.edu/view/Henry/job/OpenSourceProjects/job/imagevalidate/job/master
 
 
-.. image:: https://img.shields.io/badge/License-UIUC%20License-green.svg?label="License"
+.. image:: https://img.shields.io/badge/License-UIUC%20License-green.svg?label=License
     :target: https://otm.illinois.edu/disclose-protect/illinois-open-source-license
 
 
