@@ -639,7 +639,7 @@ pipeline {
                                                       venv/bin/python -m pip install pip --upgrade
                                                       venv/bin/python -m pip install wheel
                                                       venv/bin/python -m pip install build
-                                                      venv/bin/python -m pip build --wheel
+                                                      venv/bin/python -m build --wheel
                                                       """
                                                 )
                                             },
