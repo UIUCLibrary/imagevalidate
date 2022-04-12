@@ -117,7 +117,7 @@ RUN $PYTHON_VERSIONS = @(${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${E
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
     py --list
- \
+
 
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY37
@@ -205,12 +205,19 @@ RUN conan install c:/temp/ --build outdated --no-import  ; `
     conan remove --locks
 
 COPY --from=WHEEL_BUilDER_PY37 c:/wheels/ c:/wheels/
+RUN py -3.7 -m pip install pip --upgrade ; pip install build
+
 COPY --from=WHEEL_BUilDER_PY38 c:/wheels/ c:/wheels/
+RUN py -3.8 -m pip install pip --upgrade ; pip install build
+
 COPY --from=WHEEL_BUilDER_PY39 c:/wheels/ c:/wheels/
+RUN py -3.9 -m pip install pip --upgrade ; pip install build
+
 COPY --from=WHEEL_BUilDER_PY310 c:/wheels/ c:/wheels/
+RUN py -3.10 -m pip install pip --upgrade ; pip install build
 
 ENV PIP_FIND_LINKS=c:\wheels
 
-RUN python -m pip install pip --upgrade ; pip install tox build
+RUN python -m pip install pip --upgrade ; pip install tox
 WORKDIR C:/src
 CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate -p=auto
