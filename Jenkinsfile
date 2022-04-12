@@ -632,7 +632,7 @@ pipeline {
                                     macBuildStages["MacOS - Python ${pythonVersion}: wheel"] = {
                                         packages.buildPkg(
                                             agent: [
-                                                label: "mac && python${pythonVersion}",
+                                                label: "mac && python${pythonVersion} && x86",
                                             ],
                                             buildCmd: {
                                                 sh("""python${pythonVersion} -m venv venv
@@ -668,7 +668,7 @@ pipeline {
                                         packages.buildPkg(
                                             agent: [
                                                 dockerfile: [
-                                                    label: 'windows && docker',
+                                                    label: 'windows && docker && x86',
                                                     filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                                 ]
@@ -700,7 +700,7 @@ pipeline {
                                         packages.buildPkg(
                                             agent: [
                                                 dockerfile: [
-                                                    label: 'linux && docker',
+                                                    label: 'linux && docker && x86',
                                                     filename: 'ci/docker/python/linux/package/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                                 ]
@@ -733,7 +733,7 @@ pipeline {
                                         packages.buildPkg(
                                             agent: [
                                                 dockerfile: [
-                                                    label: 'linux && docker',
+                                                    label: 'linux && docker && x86',
                                                     filename: 'ci/docker/python/linux/package/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                                 ]
@@ -788,7 +788,7 @@ pipeline {
                                 macTestStages["MacOS - Python ${pythonVersion}: wheel"] = {
                                     packages.testPkg2(
                                         agent: [
-                                            label: "mac && python${pythonVersion}",
+                                            label: "mac && python${pythonVersion} && x86",
                                         ],
                                         testSetup: {
                                             checkout scm
@@ -825,7 +825,7 @@ pipeline {
                                 macTestStages["MacOS - Python ${pythonVersion}: sdist"] = {
                                     packages.testPkg2(
                                         agent: [
-                                            label: "mac && python${pythonVersion}",
+                                            label: "mac && python${pythonVersion} && x86",
                                         ],
                                         testSetup: {
                                             checkout scm
@@ -864,7 +864,7 @@ pipeline {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
-                                                label: 'windows && docker',
+                                                label: 'windows && docker && x86',
                                                 filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                             ]
@@ -901,7 +901,7 @@ pipeline {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
-                                                label: 'windows && docker',
+                                                label: 'windows && docker && x86',
                                                 filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                             ]
@@ -937,7 +937,7 @@ pipeline {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
-                                                label: 'linux && docker',
+                                                label: 'linux && docker && x86',
                                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                             ]
@@ -977,7 +977,7 @@ pipeline {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
-                                                label: 'linux && docker',
+                                                label: 'linux && docker && x86',
                                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                             ]
