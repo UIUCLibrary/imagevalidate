@@ -221,7 +221,7 @@ pipeline {
             agent {
                 dockerfile {
                     filename 'ci/docker/python/linux/build/Dockerfile'
-                    label 'linux && docker'
+                    label 'linux && docker && x86'
                     additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                 }
             }
@@ -284,7 +284,7 @@ pipeline {
                             agent {
                                 dockerfile {
                                     filename 'ci/docker/python/linux/build/Dockerfile'
-                                    label 'linux && docker'
+                                    label 'linux && docker && x86'
                                     additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                     args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/opt/sonar/.sonar/cache'
                                 }
@@ -584,7 +584,7 @@ pipeline {
                                     'Linux':{
                                         linuxJobs = tox.getToxTestsParallel(
                                             envNamePrefix: 'Tox Linux',
-                                            label: 'linux && docker',
+                                            label: 'linux && docker && x86',
                                             dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
                                             dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
                                             retry: 2
@@ -593,7 +593,7 @@ pipeline {
                                     'Windows':{
                                         windowsJobs = tox.getToxTestsParallel(
                                             envNamePrefix: 'Tox Windows',
-                                            label: 'windows && docker',
+                                            label: 'windows && docker && x86',
                                             dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                             dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
                                             retry: 2
@@ -632,20 +632,23 @@ pipeline {
                                     macBuildStages["MacOS - Python ${pythonVersion}: wheel"] = {
                                         packages.buildPkg(
                                             agent: [
-                                                label: "mac && python${pythonVersion}",
+                                                label: "mac && python${pythonVersion} && x86",
                                             ],
                                             buildCmd: {
-                                                sh """python${pythonVersion} -m venv venv
-                                                      venv/bin/python -m pip install --upgrade pip
-                                                      venv/bin/pip install wheel build
-                                                      venv/bin/python -m build"""
+                                                sh("""python${pythonVersion} -m venv venv
+                                                      venv/bin/python -m pip install pip --upgrade
+                                                      venv/bin/python -m pip install wheel
+                                                      venv/bin/python -m pip install build
+                                                      venv/bin/python -m build --wheel
+                                                      """
+                                                )
                                             },
                                             post:[
                                                 cleanup: {
                                                     cleanWs(
                                                         patterns: [
-                                                                [pattern: 'venv/', type: 'INCLUDE'],
                                                                 [pattern: 'dist/', type: 'INCLUDE'],
+                                                                [pattern: 'venv/', type: 'INCLUDE'],
                                                             ],
                                                         notFailBuild: true,
                                                         deleteDirs: true
@@ -665,7 +668,7 @@ pipeline {
                                         packages.buildPkg(
                                             agent: [
                                                 dockerfile: [
-                                                    label: 'windows && docker',
+                                                    label: 'windows && docker && x86',
                                                     filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                                 ]
@@ -697,7 +700,7 @@ pipeline {
                                         packages.buildPkg(
                                             agent: [
                                                 dockerfile: [
-                                                    label: 'linux && docker',
+                                                    label: 'linux && docker && x86',
                                                     filename: 'ci/docker/python/linux/package/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                                 ]
@@ -730,7 +733,7 @@ pipeline {
                                         packages.buildPkg(
                                             agent: [
                                                 dockerfile: [
-                                                    label: 'linux && docker',
+                                                    label: 'linux && docker && x86',
                                                     filename: 'ci/docker/python/linux/package/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                                 ]
@@ -785,7 +788,7 @@ pipeline {
                                 macTestStages["MacOS - Python ${pythonVersion}: wheel"] = {
                                     packages.testPkg2(
                                         agent: [
-                                            label: "mac && python${pythonVersion}",
+                                            label: "mac && python${pythonVersion} && x86",
                                         ],
                                         testSetup: {
                                             checkout scm
@@ -822,7 +825,7 @@ pipeline {
                                 macTestStages["MacOS - Python ${pythonVersion}: sdist"] = {
                                     packages.testPkg2(
                                         agent: [
-                                            label: "mac && python${pythonVersion}",
+                                            label: "mac && python${pythonVersion} && x86",
                                         ],
                                         testSetup: {
                                             checkout scm
@@ -861,7 +864,7 @@ pipeline {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
-                                                label: 'windows && docker',
+                                                label: 'windows && docker && x86',
                                                 filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                             ]
@@ -898,7 +901,7 @@ pipeline {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
-                                                label: 'windows && docker',
+                                                label: 'windows && docker && x86',
                                                 filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                             ]
@@ -934,7 +937,7 @@ pipeline {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
-                                                label: 'linux && docker',
+                                                label: 'linux && docker && x86',
                                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                             ]
@@ -974,7 +977,7 @@ pipeline {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
-                                                label: 'linux && docker',
+                                                label: 'linux && docker && x86',
                                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                             ]
