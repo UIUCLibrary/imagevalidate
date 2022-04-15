@@ -1264,7 +1264,7 @@ pipeline {
                     }
                 }
                 cleanup{
-                    node('linux && docker') {
+                    node('linux && docker && devpi-access') {
                         script{
                             checkout scm
                             devpi = load 'ci/jenkins/scripts/devpi.groovy'
