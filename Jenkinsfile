@@ -179,7 +179,7 @@ def build_packages(){
             ]
             def linuxBuildStages = [:]
             SUPPORTED_LINUX_VERSIONS.each{ pythonVersion ->
-                linuxBuildStages["Linux - Python ${pythonVersion}: wheel"] = {
+                linuxBuildStages["Linux - Python ${pythonVersion} - x86: wheel"] = {
                     packages.buildPkg(
                         agent: [
                             dockerfile: [
