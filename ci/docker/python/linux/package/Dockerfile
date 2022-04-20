@@ -1,4 +1,6 @@
-FROM quay.io/pypa/manylinux2014_x86_64 as base
+ARG manylinux_image=quay.io/pypa/manylinux2014_x86_64
+FROM ${manylinux_image} as base
+
 RUN yum install -y openjpeg2-devel ca-certificates
 ENV PATH=/opt/python/cp39-cp39/bin:/opt/python/cp38-cp38/bin:/opt/python/cp37-cp37m/bin:/opt/python/cp35-cp35m/bin:$PATH
 RUN mkdir -p /.cache/pip && \
