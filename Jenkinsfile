@@ -763,6 +763,40 @@ pipeline {
                                             ]
                                         )
                                     }
+                                    linuxBuildStages["Linux - Python ${pythonVersion} - ARM64: wheel "] = {
+                                        packages.buildPkg(
+                                            agent: [
+                                                dockerfile: [
+                                                    label: 'linux && docker && arm',
+                                                    filename: 'ci/docker/python/linux/package/Dockerfile',
+                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg manylinux_image=quay.io/pypa/manylinux2014_aarch64'
+                                                ]
+                                            ],
+                                            buildCmd: {
+                                                sh(label: 'Building python wheel',
+                                                   script:"""python${pythonVersion} -m build --wheel .
+                                                             auditwheel repair ./dist/*.whl -w ./dist
+                                                             """
+                                                   )
+                                            },
+                                            post:[
+                                                cleanup: {
+                                                    cleanWs(
+                                                        patterns: [
+                                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                            ],
+                                                        notFailBuild: true,
+                                                        deleteDirs: true
+                                                    )
+                                                },
+                                                success: {
+                                                    stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux wheel"
+                                                    wheelStashes << "python${pythonVersion} linux wheel"
+                                                }
+                                            ]
+                                        )
+                                    }
                                 }
                                 buildStages = buildStages + windowsBuildStages + linuxBuildStages
                                 if(params.BUILD_MAC_PACKAGES == true){
