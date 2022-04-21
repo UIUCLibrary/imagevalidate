@@ -214,7 +214,7 @@ def build_packages(){
                     )
                 }
                 if(params.INCLUDE_ARM == true){
-                    linuxBuildStages["Linux - Python ${pythonVersion} - ARM64: wheel "] = {
+                    linuxBuildStages["Linux - Python ${pythonVersion} - ARM64: wheel"] = {
                         packages.buildPkg(
                             agent: [
                                 dockerfile: [
@@ -1301,7 +1301,7 @@ pipeline {
                                         package:[
                                             name: props.Name,
                                             version: props.Version,
-                                            selector: "(${pythonVersion.replace('.','')}).*(manylinux).*(\\.whl)"
+                                            selector: "(${pythonVersion.replace('.','')}).+(manylinux).+x86"
                                         ],
                                         test:[
                                             toxEnv: "py${pythonVersion}".replace('.',''),
