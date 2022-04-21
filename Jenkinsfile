@@ -207,9 +207,8 @@ def build_packages(){
                                 )
                             },
                             success: {
-
                                 stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux-x86 wheel"
-                                wheelStashes << "python${pythonVersion} linux-x86 wheel "
+                                wheelStashes << "python${pythonVersion} linux-x86 wheel"
                             }
                         ]
                     )
