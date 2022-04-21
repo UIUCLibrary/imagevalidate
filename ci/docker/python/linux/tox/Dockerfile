@@ -68,7 +68,6 @@ FROM wheel_builder_base as conan_builder
 RUN pip3 install conan cmake
 ENV CONAN_USER_HOME=/conan
 COPY ci/docker/shared/conan/remotes.json  /conan/.conan/remotes.json
-COPY ci/docker/python/linux/tox/conan/profile.ini  /conan/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config home
 RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
@@ -87,7 +86,6 @@ COPY --from=WHEEL_BUILDER_PY310 /wheels/* /wheels/
 ENV PIP_FIND_LINKS=/wheels
 RUN pip3 install wheel
 RUN pip3 install tox conan devpi_client
-COPY ci/docker/shared/conan/profile.ini  /home/user/.conan/profiles/default
 COPY ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
 ADD conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=/conan

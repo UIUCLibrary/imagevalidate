@@ -1,4 +1,6 @@
-FROM quay.io/pypa/manylinux2014_x86_64 as base
+ARG manylinux_image=quay.io/pypa/manylinux2014_x86_64
+FROM ${manylinux_image} as base
+
 RUN yum install -y openjpeg2-devel ca-certificates
 ENV PATH=/opt/python/cp39-cp39/bin:/opt/python/cp38-cp38/bin:/opt/python/cp37-cp37m/bin:/opt/python/cp35-cp35m/bin:$PATH
 RUN mkdir -p /.cache/pip && \
@@ -56,7 +58,6 @@ FROM base as conan_builder
 RUN pip3 install conan cmake
 ENV CONAN_USER_HOME=/conan
 COPY ci/docker/shared/conan/remotes.json  /conan/.conan/remotes.json
-COPY ci/docker/python/linux/package/conan/profile.ini  /conan/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config home
 RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
@@ -76,7 +77,6 @@ RUN python3.8 -m pip install pip --upgrade pip
 COPY --from=PYTHON39_WHEEL_BUILDER /wheels/* $PIP_FIND_LINKS/
 RUN python3.9 -m pip install pip --upgrade pip
 ENV CONAN_USER_HOME=/conan
-COPY ci/docker/python/linux/package/conan/profile.ini  /conan/.conan/profiles/default
 COPY ci/docker/shared/conan/remotes.json  /conan/.conan/remotes.json
 ADD conanfile.py /tmp/conanfile.py
 COPY --from=conan_builder /conan/ /conan/
