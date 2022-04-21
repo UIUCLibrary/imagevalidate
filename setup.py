@@ -1155,7 +1155,9 @@ class MacholibStrategy(AbsSoHandler):
     @classmethod
     def is_system_file(cls, filename) -> bool:
         if filename in [
-            "libsystem_malloc.dylib"
+            "libsystem_malloc.dylib",
+            "libc++.1.dylib",
+            "libSystem.B.dylib"
         ]:
             return True
 
@@ -1176,6 +1178,9 @@ class MacholibStrategy(AbsSoHandler):
             if self.is_system_file(dep):
                 continue
             found_dep = self.context.find_deps(dep, search_path)
+            print(f"found_dep = {found_dep}")
+            if found_dep is None:
+                raise FileNotFoundError(f"Dependency {dep} not found")
             c_dep = d.copy_dylib(found_dep)
             dep_file = d.mm.locate(c_dep)
             if dep_file is None:
@@ -1473,7 +1478,7 @@ setup(
     test_suite="tests",
     namespace_packages=["uiucprescon"],
     setup_requires=['pytest-runner'],
-    install_requires=['py3exiv2bind>=0.1.9b1'],
+    install_requires=['py3exiv2bind>=0.1.9b2'],
     tests_require=['pytest'],
     zip_safe=False,
     ext_modules=[open_jpeg_extension],
