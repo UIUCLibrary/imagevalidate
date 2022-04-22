@@ -207,15 +207,14 @@ def build_packages(){
                                 )
                             },
                             success: {
-
                                 stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux-x86 wheel"
-                                wheelStashes << "python${pythonVersion} linux-x86 wheel "
+                                wheelStashes << "python${pythonVersion} linux-x86 wheel"
                             }
                         ]
                     )
                 }
                 if(params.INCLUDE_ARM == true){
-                    linuxBuildStages["Linux - Python ${pythonVersion} - ARM64: wheel "] = {
+                    linuxBuildStages["Linux - Python ${pythonVersion} - ARM64: wheel"] = {
                         packages.buildPkg(
                             agent: [
                                 dockerfile: [
@@ -1302,7 +1301,7 @@ pipeline {
                                         package:[
                                             name: props.Name,
                                             version: props.Version,
-                                            selector: "(${pythonVersion.replace('.','')}).*(manylinux).*(\\.whl)"
+                                            selector: "(${pythonVersion.replace('.','')}).+(manylinux).+x86"
                                         ],
                                         test:[
                                             toxEnv: "py${pythonVersion}".replace('.',''),
