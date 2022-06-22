@@ -42,8 +42,8 @@ FROM base_image as wheel_builder
 RUN apt update && apt install -y ninja-build \
     && rm -rf /var/lib/apt/lists/*
 
-ARG PYTHON_INDEX=https://devpi.library.illinois.edu/production/release
-ENV PIP_EXTRA_INDEX_URL=${PYTHON_INDEX}
+ARG PYTHON_INDEX
+ARG PIP_EXTRA_INDEX_URL
 ENV PIP_NO_CACHE_DIR=1
 ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
 RUN python3 -m pip install --upgrade pip && \
@@ -51,8 +51,7 @@ RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install wheel && \
     python3 -m pip wheel --wheel-dir=/wheels  \
         -r /requirements/requirements.txt \
-        -r /requirements/requirements-ci.txt \
-         -i ${PYTHON_INDEX}
+        -r /requirements/requirements-ci.txt
 
 #==============================================================================
 
@@ -82,7 +81,8 @@ RUN curl --create-dirs -sSLo /tmp/build-wrapper-linux-x86.zip https://sonarcloud
 
 
 FROM wheel_builder as conan_builder
-
+ARG PYTHON_INDEX
+ARG PIP_EXTRA_INDEX_URL
 RUN python3 -m pip install conan cmake
 
 COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
@@ -131,7 +131,7 @@ COPY --from=DR_MEMORY_BUILDER /opt/drmemory /opt/drmemory/
 RUN ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
     drmemory -version
 
-ENV PIP_EXTRA_INDEX_URL="https://devpi.library.illinois.edu/production/release"
+ARG PIP_EXTRA_INDEX_URL
 
 
 
