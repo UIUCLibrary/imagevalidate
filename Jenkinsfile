@@ -151,6 +151,7 @@ def build_packages(){
                         script{
                             try{
                                 docker.image('python').inside {
+                                    checkout scm
                                     sh(
                                         label: 'Building sdist',
                                         script: '''python -m venv venv --upgrade-deps
