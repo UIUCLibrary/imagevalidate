@@ -159,9 +159,13 @@ def build_packages(){
                                     '''
                                     )
                             }
+                            stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
+                            wheelStashes << 'sdist'
+                            archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
                         } finally {
                           cleanWs(
                                 patterns: [
+                                    [pattern: 'dist/', type: 'INCLUDE'],
                                     [pattern: 'venv/', type: 'INCLUDE'],
                                     [pattern: '**/__pycache__/', type: 'INCLUDE'],
                                 ],
