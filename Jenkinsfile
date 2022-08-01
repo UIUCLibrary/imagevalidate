@@ -153,7 +153,10 @@ def build_packages(){
                             docker.image('python').inside {
                                 sh(
                                     label: 'Building sdist',
-                                    script: '''python -m venv venv --upgrade-deps'''
+                                    script: '''python -m venv venv --upgrade-deps
+                                               venv/bin/python -m pip install build
+                                               venv/bin/python -m build --sdist --outdir ./dist
+                                    '''
                                     )
                             }
                         } finally {
