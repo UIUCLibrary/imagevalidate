@@ -157,6 +157,14 @@ def build_packages(){
                                     )
                             }
                         } finally {
+                          cleanWs(
+                                patterns: [
+                                    [pattern: 'venv/', type: 'INCLUDE'],
+                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                ],
+                                notFailBuild: true,
+                                deleteDirs: true
+                            )
                             sh 'ls -la'
                         }
                     }
