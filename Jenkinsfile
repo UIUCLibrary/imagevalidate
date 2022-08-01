@@ -148,7 +148,18 @@ def build_packages(){
                failFast: true,
                 'Source Distribution': {
                 node('docker && linux') {
-                    sh 'ls -la'
+                    script{
+                        try{
+                            docker.image('python').inside {
+                                sh(
+                                    label: 'Building sdist',
+                                    script: '''python -m venv venv'''
+                                    )
+                            }
+                        } finally {
+                            sh 'ls -la'
+                        }
+                    }
                     // some block
                 }
 //                     packages.buildPkg(
