@@ -147,64 +147,34 @@ def build_packages(){
             def buildStages =  [
                failFast: true,
                 'Source Distribution': {
-                node('docker && linux') {
-                    script{
-                        try{
-                            docker.image('python').inside {
-                                sh(
-                                    label: 'Building sdist',
-                                    script: '''python -m venv venv --upgrade-deps
-                                               venv/bin/python -m pip install build
-                                               venv/bin/python -m build --sdist --outdir ./dist
-                                    '''
-                                    )
+                    node('docker && linux') {
+                        script{
+                            try{
+                                docker.image('python').inside {
+                                    sh(
+                                        label: 'Building sdist',
+                                        script: '''python -m venv venv --upgrade-deps
+                                                   venv/bin/python -m pip install build
+                                                   venv/bin/python -m build --sdist --outdir ./dist
+                                        '''
+                                        )
+                                }
+                                stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
+                                wheelStashes << 'sdist'
+                                archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
+                            } finally {
+                              cleanWs(
+                                    patterns: [
+                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                        [pattern: 'venv/', type: 'INCLUDE'],
+                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                    ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
                             }
-                            stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
-                            wheelStashes << 'sdist'
-                            archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
-                        } finally {
-                          cleanWs(
-                                patterns: [
-                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                    [pattern: 'venv/', type: 'INCLUDE'],
-                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
-                            sh 'ls -la'
                         }
                     }
-                    // some block
-                }
-//                     packages.buildPkg(
-//                         agent: [
-//                             dockerfile: [
-//                                 label: 'linux && docker && x86',
-//                                 filename: 'ci/docker/python/linux/package/Dockerfile',
-//                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-//                             ]
-//                         ],
-//                         buildCmd: {
-//                             sh 'python -m build --sdist .'
-//                         },
-//                         post:[
-//                             success: {
-//                                 stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
-//                                 wheelStashes << 'sdist'
-//                                 archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
-//                             },
-//                             cleanup: {
-//                                 cleanWs(
-//                                     patterns: [
-//                                             [pattern: 'dist/', type: 'INCLUDE'],
-//                                         ],
-//                                     notFailBuild: true,
-//                                     deleteDirs: true
-//                                 )
-//                             },
-//                         ]
-//                     )
                 }
             ]
             def linuxBuildStages = [:]
