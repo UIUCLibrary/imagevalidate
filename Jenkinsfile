@@ -147,64 +147,35 @@ def build_packages(){
             def buildStages =  [
                failFast: true,
                 'Source Distribution': {
-                node('docker && linux') {
-                    script{
-                        try{
-                            docker.image('python').inside {
-                                sh(
-                                    label: 'Building sdist',
-                                    script: '''python -m venv venv --upgrade-deps
-                                               venv/bin/python -m pip install build
-                                               venv/bin/python -m build --sdist --outdir ./dist
-                                    '''
-                                    )
+                    node('docker && linux') {
+                        script{
+                            try{
+                                docker.image('python').inside {
+                                    checkout scm
+                                    sh(
+                                        label: 'Building sdist',
+                                        script: '''python -m venv venv --upgrade-deps
+                                                   venv/bin/python -m pip install build
+                                                   venv/bin/python -m build --sdist --outdir ./dist
+                                        '''
+                                        )
+                                }
+                                stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
+                                wheelStashes << 'sdist'
+                                archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
+                            } finally {
+                              cleanWs(
+                                    patterns: [
+                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                        [pattern: 'venv/', type: 'INCLUDE'],
+                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                    ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
                             }
-                            stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
-                            wheelStashes << 'sdist'
-                            archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
-                        } finally {
-                          cleanWs(
-                                patterns: [
-                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                    [pattern: 'venv/', type: 'INCLUDE'],
-                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
-                            sh 'ls -la'
                         }
                     }
-                    // some block
-                }
-//                     packages.buildPkg(
-//                         agent: [
-//                             dockerfile: [
-//                                 label: 'linux && docker && x86',
-//                                 filename: 'ci/docker/python/linux/package/Dockerfile',
-//                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-//                             ]
-//                         ],
-//                         buildCmd: {
-//                             sh 'python -m build --sdist .'
-//                         },
-//                         post:[
-//                             success: {
-//                                 stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
-//                                 wheelStashes << 'sdist'
-//                                 archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
-//                             },
-//                             cleanup: {
-//                                 cleanWs(
-//                                     patterns: [
-//                                             [pattern: 'dist/', type: 'INCLUDE'],
-//                                         ],
-//                                     notFailBuild: true,
-//                                     deleteDirs: true
-//                                 )
-//                             },
-//                         ]
-//                     )
                 }
             ]
             def linuxBuildStages = [:]
@@ -326,70 +297,79 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
     def macPackages = [:]
     supportedPythonVersions.each{pythonVersion ->
         macPackages["MacOS - Python ${pythonVersion}: wheel"] = {
-            devpi.testDevpiPackage(
-                agent: [
-                    label: "mac && python${pythonVersion}"
-                ],
-                devpi: [
-                    index: stagingIndex,
-                    server: devpiServer,
-                    credentialsId: devpiCredentials,
-                    devpiExec: 'venv/bin/devpi'
-                ],
-                package:[
-                    name: packageName,
-                    version: packageVersion,
-                    selector: getMacDevpiName(pythonVersion, 'wheel'),
-                ],
-                test:[
-                    setup: {
-                        sh(
-                            label: 'Installing Devpi client',
-                            script: '''python3 -m venv venv
-                                        venv/bin/python -m pip install pip --upgrade
-                                        venv/bin/python -m pip install devpi_client
-                                        '''
-                        )
-                    },
-                    toxEnv: "py${pythonVersion}".replace('.',''),
-                    teardown: {
-                        sh( label: 'Remove Devpi client', script: 'rm -r venv')
-                    }
-                ]
-            )
+            withEnv([
+                'PATH+EXTRA=./venv/bin'
+            ]) {
+                devpi.testDevpiPackage(
+                    agent: [
+                        label: "mac && python${pythonVersion}"
+                    ],
+                    devpi: [
+                        index: stagingIndex,
+                        server: devpiServer,
+                        credentialsId: devpiCredentials,
+                        devpiExec: 'venv/bin/devpi'
+                    ],
+                    package:[
+                        name: packageName,
+                        version: packageVersion,
+                        selector: getMacDevpiName(pythonVersion, 'wheel'),
+                    ],
+                    test:[
+                        setup: {
+                            sh(
+                                label: 'Installing Devpi client',
+                                script: '''python3 -m venv venv
+                                            venv/bin/python -m pip install pip --upgrade
+                                            venv/bin/python -m pip install devpi_client tox
+                                            '''
+                            )
+                        },
+                        toxEnv: "py${pythonVersion}".replace('.',''),
+                        teardown: {
+                            sh( label: 'Remove Devpi client', script: 'rm -r venv')
+                        }
+                    ]
+                )
+            }
         }
         macPackages["MacOS - Python ${pythonVersion}: sdist"]= {
-            devpi.testDevpiPackage(
-                agent: [
-                    label: "mac && python${pythonVersion}"
-                ],
-                devpi: [
-                    index: stagingIndex,
-                    server: devpiServer,
-                    credentialsId: devpiCredentials,
-                    devpiExec: 'venv/bin/devpi'
-                ],
-                package:[
-                    name: packageName,
-                    version: packageVersion,
-                    selector: 'tar.gz'
-                ],
-                test:[
-                    setup: {
-                        sh(
-                            label: 'Installing Devpi client',
-                            script: '''python3 -m venv venv
-                                        venv/bin/python -m pip install pip --upgrade
-                                        venv/bin/python -m pip install devpi_client
-                                        '''
-                        )
-                    },
-                    toxEnv: "py${pythonVersion}".replace('.',''),
-                    teardown: {
-                        sh( label: 'Remove Devpi client', script: 'rm -r venv')
-                    }
-                ]
-            )
+            withEnv([
+                'PATH+EXTRA=./venv/bin'
+
+            ]) {
+                devpi.testDevpiPackage(
+                    agent: [
+                        label: "mac && python${pythonVersion}"
+                    ],
+                    devpi: [
+                        index: stagingIndex,
+                        server: devpiServer,
+                        credentialsId: devpiCredentials,
+                        devpiExec: 'venv/bin/devpi'
+                    ],
+                    package:[
+                        name: packageName,
+                        version: packageVersion,
+                        selector: 'tar.gz'
+                    ],
+                    test:[
+                        setup: {
+                            sh(
+                                label: 'Installing Devpi client',
+                                script: '''python3 -m venv venv
+                                            venv/bin/python -m pip install pip --upgrade
+                                            venv/bin/python -m pip install devpi_client tox
+                                            '''
+                            )
+                        },
+                        toxEnv: "py${pythonVersion}".replace('.',''),
+                        teardown: {
+                            sh( label: 'Remove Devpi client', script: 'rm -r venv')
+                        }
+                    ]
+                )
+            }
         }
     }
     return macPackages
