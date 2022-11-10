@@ -27,3 +27,6 @@ include docs/Makefile
 include docs/make.bat
 recursive-include docs/source *
 prune docs/build
+
+# Builder
+recursive-include builders *.py
