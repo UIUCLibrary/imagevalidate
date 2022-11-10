@@ -27,7 +27,7 @@ skip = [
     "*-manylinux_i686"
 ]
 build-verbosity = 1
-environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_USER_HOME"]
+environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_USER_HOME", "PIP_EXTRA_INDEX_URL"]
 
 [tool.cibuildwheel.windows]
 before-all = [
