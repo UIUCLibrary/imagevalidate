@@ -3,3 +3,4 @@ conan
 pytest
 pytest-runner
 py3exiv2bind>=0.1.9b3
+toml
