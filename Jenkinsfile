@@ -111,6 +111,56 @@ def build_packages(){
                         ]
                     )
                 }
+                macBuildStages["MacOS M1 - Python ${pythonVersion}: wheel"] = {
+                    packages.buildPkg(
+                        agent: [
+                            label: "mac && python${pythonVersion} && m1",
+                        ],
+                        buildCmd: {
+//                     Taken from cibuildwheel source code
+//                     https://github.com/pypa/cibuildwheel/blob/main/cibuildwheel/macos.py
+//
+//                     # macOS 11 is the first OS with arm64 support, so the wheels
+//                     # have that as a minimum.
+                            withEnv([
+                                '_PYTHON_HOST_PLATFORM=macosx-11.0-arm64',
+                                'ARCHFLAGS=-arch arm64'
+                                ]) {
+                                 sh(label: 'Building wheel',
+                                    script: """python${pythonVersion} -m venv venv
+                                               . ./venv/bin/activate
+                                               pip install --upgrade pip
+                                               pip install wheel==0.37
+                                               pip install build delocate
+                                               python -m build --wheel
+                                               """
+                                   )
+                                 findFiles(glob: 'dist/*.whl').each{
+                                    sh(label: 'Fixing up wheel',
+                                       script: """./venv/bin/delocate-listdeps --depending ${it.path}
+                                                  ./venv/bin/delocate-wheel -w fixed_wheels --require-archs arm64 --verbose ${it.path}
+                                               """
+                                 )
+                             }
+                            }
+                        },
+                        post:[
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
+                            },
+                            success: {
+                                stash includes: 'dist/*.whl', name: "python${pythonVersion} m1 mac wheel"
+                                wheelStashes << "python${pythonVersion} m1 mac wheel"
+                            }
+                        ]
+                    )
+                }
             }
             def windowsBuildStages = [:]
             SUPPORTED_WINDOWS_VERSIONS.each{ pythonVersion ->
@@ -881,6 +931,7 @@ pipeline {
                                         ]
                                     )
                                 }
+
                                 macTestStages["MacOS - Python ${pythonVersion}: sdist"] = {
                                     packages.testPkg2(
                                         agent: [
