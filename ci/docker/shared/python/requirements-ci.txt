@@ -1,7 +1,7 @@
 build
 coverage
 cmake
-devpi-client
+devpi-client<6.0
 flake8
 gcovr
 lxml

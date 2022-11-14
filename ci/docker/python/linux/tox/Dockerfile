@@ -85,7 +85,7 @@ COPY --from=WHEEL_BUILDER_PY39 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY310 /wheels/* /wheels/
 ENV PIP_FIND_LINKS=/wheels
 RUN pip3 install wheel
-RUN pip3 install tox conan devpi_client
+RUN pip3 install tox conan "devpi-client<6.0"
 COPY ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
 ADD conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=/conan
