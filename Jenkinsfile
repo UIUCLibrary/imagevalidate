@@ -85,13 +85,29 @@ def build_packages(){
                             label: "mac && python${pythonVersion} && x86",
                         ],
                         buildCmd: {
-                            sh("""python${pythonVersion} -m venv venv
-                                  venv/bin/python -m pip install pip --upgrade
-                                  venv/bin/python -m pip install wheel
-                                  venv/bin/python -m pip install build
-                                  venv/bin/python -m build --wheel
-                                  """
-                            )
+                            withEnv([
+                                '_PYTHON_HOST_PLATFORM=macosx-10.9-x86_64',
+                                'ARCHFLAGS=-arch x86_64'
+                            ]){
+                                 sh(label: 'Building wheel',
+                                    script: """python${pythonVersion} -m venv venv
+                                               . ./venv/bin/activate
+                                               python -m pip install --upgrade pip
+                                               pip install wheel==0.37
+                                               pip install build delocate
+                                               python -m build --wheel
+                                               """
+                                   )
+                                findFiles(glob: 'dist/*.whl').each{
+                                    sh(label: 'Fixing up wheel',
+                                           script: """. ./venv/bin/activate
+                                                      pip list
+                                                      delocate-listdeps --depending ${it.path}
+                                                      delocate-wheel -w fixed_wheels --require-archs x86_64 --verbose ${it.path}
+                                                   """
+                                     )
+                                 }
+                             }
                         },
                         post:[
                             cleanup: {
