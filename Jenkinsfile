@@ -279,12 +279,14 @@ def startup(){
             }
         } finally{
             cleanWs(
-               deleteDirs: true,
-               patterns: [
-                  [pattern: 'uiucprescon.imagevalidate.dist-info/', type: 'INCLUDE'],
-              ]
-
-           )
+                patterns: [
+                        [pattern: '*.dist-info/**', type: 'INCLUDE'],
+                        [pattern: '.eggs/', type: 'INCLUDE'],
+                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                    ],
+                notFailBuild: true,
+                deleteDirs: true
+            )
         }
     }
 }
@@ -379,7 +381,8 @@ def get_props(){
         node() {
             try{
                 unstash 'DIST-INFO'
-                def package_metadata = readProperties interpolate: true, file: 'uiucprescon.imagevalidate.dist-info/METADATA'
+                def metadataFile = findFiles(excludes: '', glob: '*.dist-info/METADATA')[0]
+                def package_metadata = readProperties interpolate: true, file: metadataFile.path
                 echo """Metadata:
 
 Name      ${package_metadata.Name}
@@ -387,7 +390,13 @@ Version   ${package_metadata.Version}
 """
                 return package_metadata
             } finally {
-                deleteDir()
+                cleanWs(
+                    patterns: [
+                            [pattern: '*.dist-info/**', type: 'INCLUDE'],
+                        ],
+                    notFailBuild: true,
+                    deleteDirs: true
+                )
             }
         }
     }
