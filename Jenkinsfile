@@ -79,7 +79,7 @@ def build_packages(){
         }
         def macBuildStages = [:]
             SUPPORTED_MAC_VERSIONS.each{ pythonVersion ->
-                macBuildStages["MacOS - Python ${pythonVersion}: wheel"] = {
+                macBuildStages["MacOS x86_64 - Python ${pythonVersion}: wheel"] = {
                     packages.buildPkg(
                         agent: [
                             label: "mac && python${pythonVersion} && x86",
@@ -105,8 +105,8 @@ def build_packages(){
                                 )
                             },
                             success: {
-                                stash includes: 'dist/*.whl', name: "python${pythonVersion} mac wheel"
-                                wheelStashes << "python${pythonVersion} mac wheel"
+                                stash includes: 'dist/*.whl', name: "python${pythonVersion} mac x86_64 wheel"
+                                wheelStashes << "python${pythonVersion} mac x86_64 wheel"
                             }
                         ]
                     )
@@ -835,14 +835,14 @@ pipeline {
                             }
                             def macTestStages = [:]
                             SUPPORTED_MAC_VERSIONS.each{ pythonVersion ->
-                                macTestStages["MacOS - Python ${pythonVersion}: wheel"] = {
+                                macTestStages["MacOS x86_64 - Python ${pythonVersion}: wheel"] = {
                                     packages.testPkg2(
                                         agent: [
                                             label: "mac && python${pythonVersion} && x86",
                                         ],
                                         testSetup: {
                                             checkout scm
-                                            unstash "python${pythonVersion} mac wheel"
+                                            unstash "python${pythonVersion} mac x86_64 wheel"
                                         },
                                         testCommand: {
                                             findFiles(glob: 'dist/*.whl').each{
