@@ -37,11 +37,13 @@ jobs:
           tox -e py
         env:
           CONAN_USER_HOME: "C:/Users/runneradmin"
+          PIP_EXTRA_INDEX_URL: https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_public/simple/
       - name: Run tox
         if: "!contains(matrix.os, 'windows')"
         run: cc --version &&  cc -dumpfullversion -dumpversion && tox -e py -vvv
         env:
           CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
           CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
+          PIP_EXTRA_INDEX_URL: https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_public/simple/
 
           
