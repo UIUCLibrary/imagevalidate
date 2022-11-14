@@ -15,5 +15,5 @@ class ImageValidate(ConanFile):
     #
     def imports(self):
         self.copy("*.dll", dst=".", src="bin")  # From bin to bin
-    #     self.copy("*.dylib", dst="lib", src="lib")  # From bin to bin
+        self.copy("*.dylib", dst=".", src="lib")  # From bin to bin
     #     self.copy("*.so", dst="lib", src="lib")  # From bin to bin
