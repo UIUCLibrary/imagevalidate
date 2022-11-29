@@ -14,7 +14,7 @@ def getDevpiConfig() {
     ]
 }
 def DEVPI_CONFIG = getDevpiConfig()
-
+echo "DEVPI_CONFIG = ${DEVPI_CONFIG}"
 DEVPI_CONFIG_STAGING_INDEX =  getDevPiStagingIndex()
 SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10']
 SUPPORTED_LINUX_VERSIONS = ['3.7', '3.8', '3.9', '3.10']
