@@ -1073,12 +1073,12 @@ pipeline {
                                                     post{
                                                         always{
                                                             archiveArtifacts artifacts: 'logs/*'
-        //                                                     recordIssues(
-        //                                                         tools: [
-        //                                                             gcc(pattern: 'logs/cmake-build.log'),
-        //                                                             [$class: 'Cmake', pattern: 'logs/cmake-build.log']
-        //                                                         ]
-        //                                                     )
+                                                        //  recordIssues(
+                                                        //      tools: [
+                                                        //          gcc(pattern: 'logs/cmake-build.log'),
+                                                        //          [$class: 'Cmake', pattern: 'logs/cmake-build.log']
+                                                        //      ]
+                                                        //  )
                                                         }
                                                     }
                                                 }
@@ -1192,7 +1192,7 @@ pipeline {
                                                             post {
                                                                 always {
                                                                     junit 'reports/pytest.xml'
-        //                                                             stash includes: 'reports/pytest.xml', name: 'PYTEST_REPORT'
+                                                                    // stash includes: 'reports/pytest.xml', name: 'PYTEST_REPORT'
                                                                 }
                                                             }
                                                         }
@@ -1242,7 +1242,7 @@ pipeline {
                                                             post {
                                                                 always {
                                                                     recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-        //                                                             stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
+                                                                    // stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
                                                                 }
                                                             }
                                                         }
@@ -1255,7 +1255,7 @@ pipeline {
                                                                           gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
                                                                           '''
                                                             )
-        //                                                     stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
+                                                            // stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
                                                             publishCoverage(
                                                                 adapters: [
                                                                         coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
@@ -1275,9 +1275,9 @@ pipeline {
                                                         beforeOptions true
                                                     }
                                                     steps{
-        //                                                 unstash 'PYTHON_COVERAGE_REPORT'
-        //                                                 unstash 'PYTEST_REPORT'
-        //                                                 unstash 'FLAKE8_REPORT'
+                                                        // unstash 'PYTHON_COVERAGE_REPORT'
+                                                        // unstash 'PYTEST_REPORT'
+                                                        // unstash 'FLAKE8_REPORT'
                                                         unstash 'DIST-INFO'
                                                         sh(
                                                         label: 'Preparing c++ coverage data available for SonarQube',
