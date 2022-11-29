@@ -7,12 +7,15 @@ def getDevPiStagingIndex(){
     }
 }
 
-def DEVPI_CONFIG = [
-    stagingIndex: getDevPiStagingIndex(),
-    server: 'https://devpi.library.illinois.edu',
-    credentialsId: 'DS_devpi',
-]
+def getDevpiConfig() {
+    return [
+        server: 'https://devpi.library.illinois.edu',
+        credentialsId: 'DS_devpi',
+    ]
+}
+def DEVPI_CONFIG = getDevpiConfig()
 
+DEVPI_CONFIG_STAGING_INDEX =  getDevPiStagingIndex()
 SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10']
 SUPPORTED_LINUX_VERSIONS = ['3.7', '3.8', '3.9', '3.10']
 SUPPORTED_WINDOWS_VERSIONS = ['3.7', '3.8', '3.9', '3.10']
@@ -1405,7 +1408,7 @@ pipeline {
                                 devpi.upload(
                                     server: DEVPI_CONFIG.server,
                                     credentialsId: DEVPI_CONFIG.credentialsId,
-                                    index: DEVPI_CONFIG.stagingIndex,
+                                    index: DEVPI_CONFIG_STAGING_INDEX,
                                 )
                             }
                         }
@@ -1429,7 +1432,7 @@ pipeline {
                                 checkout scm
                                 devpi = load('ci/jenkins/scripts/devpi.groovy')
                             }
-                            def macPackages = get_mac_devpi_stages(props.Name, props.Version, DEVPI_CONFIG.server, DEVPI_CONFIG.credentialsId, DEVPI_CONFIG.stagingIndex, SUPPORTED_MAC_VERSIONS)
+                            def macPackages = get_mac_devpi_stages(props.Name, props.Version, DEVPI_CONFIG.server, DEVPI_CONFIG.credentialsId, DEVPI_CONFIG_STAGING_INDEX, SUPPORTED_MAC_VERSIONS)
                             def windowsPackages = [:]
                             SUPPORTED_WINDOWS_VERSIONS.each{pythonVersion ->
                                 windowsPackages["Windows - Python ${pythonVersion}: sdist"] = {
@@ -1443,7 +1446,7 @@ pipeline {
                                         ],
                                         dockerImageName:  "${currentBuild.fullProjectName}_devpi_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                                         devpi: [
-                                            index: DEVPI_CONFIG.stagingIndex,
+                                            index: DEVPI_CONFIG_STAGING_INDEX,
                                             server: DEVPI_CONFIG.server,
                                             credentialsId: DEVPI_CONFIG.credentialsId,
                                         ],
@@ -1468,7 +1471,7 @@ pipeline {
                                             ]
                                         ],
                                         devpi: [
-                                            index: DEVPI_CONFIG.stagingIndex,
+                                            index: DEVPI_CONFIG_STAGING_INDEX,
                                             server: DEVPI_CONFIG.server,
                                             credentialsId: DEVPI_CONFIG.credentialsId,
                                         ],
@@ -1497,7 +1500,7 @@ pipeline {
                                             ]
                                         ],
                                         devpi: [
-                                            index: DEVPI_CONFIG.stagingIndex,
+                                            index: DEVPI_CONFIG_STAGING_INDEX,
                                             server: DEVPI_CONFIG.server,
                                             credentialsId: DEVPI_CONFIG.credentialsId,
                                         ],
@@ -1522,7 +1525,7 @@ pipeline {
                                             ]
                                         ],
                                         devpi: [
-                                            index: DEVPI_CONFIG.stagingIndex,
+                                            index: DEVPI_CONFIG_STAGING_INDEX,
                                             server: DEVPI_CONFIG.server,
                                             credentialsId: DEVPI_CONFIG.credentialsId,
                                         ],
@@ -1579,7 +1582,7 @@ pipeline {
                                 pkgName: props.Name,
                                 pkgVersion: props.Version,
                                 server: DEVPI_CONFIG.server,
-                                indexSource: "DS_Jenkins/${DEVPI_CONFIG.stagingIndex}",
+                                indexSource: "DS_Jenkins/${DEVPI_CONFIG_STAGING_INDEX}",
                                 indexDestination: 'production/release',
                                 credentialsId: DEVPI_CONFIG.credentialsId
                             )
@@ -1599,7 +1602,7 @@ pipeline {
                                         pkgName: props.Name,
                                         pkgVersion: props.Version,
                                         server: DEVPI_CONFIG.server,
-                                        indexSource: "DS_Jenkins/${DEVPI_CONFIG.stagingIndex}",
+                                        indexSource: "DS_Jenkins/${DEVPI_CONFIG_STAGING_INDEX}",
                                         indexDestination: "DS_Jenkins/${env.BRANCH_NAME}",
                                         credentialsId: DEVPI_CONFIG.credentialsId
                                     )
@@ -1617,7 +1620,7 @@ pipeline {
                                 devpi.removePackage(
                                     pkgName: props.Name,
                                     pkgVersion: props.Version,
-                                    index: "DS_Jenkins/${DEVPI_CONFIG.stagingIndex}",
+                                    index: "DS_Jenkins/${DEVPI_CONFIG_STAGING_INDEX}",
                                     server: DEVPI_CONFIG.server,
                                     credentialsId: DEVPI_CONFIG.credentialsId,
 
