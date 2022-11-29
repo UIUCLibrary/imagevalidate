@@ -650,7 +650,7 @@ pipeline {
                                             steps{
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Compiling CPP Code',
-                                                       script: '''conan install . -if build/cpp -o "*:shared=True"
+                                                       script: '''conan install . -if build/cpp -o "*:shared=True" --build=missing
                                                                   cmake -B build/cpp \
                                                                     -Wdev \
                                                                     -DCMAKE_BUILD_TYPE=Debug \
