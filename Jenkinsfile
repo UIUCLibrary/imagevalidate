@@ -1,12 +1,3 @@
-// def getDevPiStagingIndex(){
-//
-//     if (env.TAG_NAME?.trim()){
-//         return 'tag_staging'
-//     } else{
-//         return "${env.BRANCH_NAME}_staging"
-//     }
-// }
-
 def getDevpiConfig() {
     node(){
         configFileProvider([configFile(fileId: 'devpi_config', variable: 'CONFIG_FILE')]) {
@@ -18,7 +9,6 @@ def getDevpiConfig() {
                     return "${env.BRANCH_NAME}_staging"
                 }
             }()
-//             configProperties.stagingIndex = getDevPiStagingIndex()
             return configProperties
         }
     }
