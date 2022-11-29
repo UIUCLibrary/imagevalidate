@@ -959,6 +959,7 @@ pipeline {
                     equals expected: true, actual: params.RUN_CHECKS
                     equals expected: true, actual: params.TEST_RUN_TOX
                     equals expected: true, actual: params.DEPLOY_DEVPI
+                    equals expected: true, actual: params.DEPLOY_DOCS
                 }
             }
             stages{
@@ -970,23 +971,21 @@ pipeline {
                             additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                         }
                     }
+                    when{
+                        anyOf{
+                            equals expected: true, actual: params.RUN_CHECKS
+                            equals expected: true, actual: params.DEPLOY_DEVPI
+                            equals expected: true, actual: params.DEPLOY_DOCS
+                        }
+                        beforeAgent true
+                    }
                     stages{
-                        stage('Building Python Package'){
+                        stage('Sphinx Documentation'){
                             steps {
                                 sh(
                                     label: 'Building',
                                     script: 'python3 setup.py build -b build --build-lib build/lib -t build/temp build_ext --inplace'
                                 )
-                            }
-                        }
-                        stage('Sphinx Documentation'){
-                            when{
-                                anyOf{
-                                    equals expected: true, actual: params.RUN_CHECKS
-                                    equals expected: true, actual: params.DEPLOY_DEVPI
-                                }
-                            }
-                            steps {
                                 sh(
                                     label: 'Building docs',
                                     script: 'python3 -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees'
