@@ -81,18 +81,18 @@ RUN curl --create-dirs -sSLo /tmp/build-wrapper-linux-x86.zip https://sonarcloud
 
 
 FROM wheel_builder as conan_builder
-ARG PYTHON_INDEX
 ARG PIP_EXTRA_INDEX_URL
-RUN python3 -m pip install conan cmake
-
-COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
-COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/profiles/default
-USER user
-WORKDIR /home/user
+ARG PIP_INDEX_URL
+RUN pip install conan cmake
+ENV CONAN_USER_HOME=/conan
+COPY ci/docker/shared/conan/remotes.json $CONAN_USER_HOME/.conan/remotes.json
+COPY ci/docker/python/linux/build/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
-RUN python3 -m pip install conan
-RUN conan config home
-RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
+RUN conan config init
+
+# shared files are needed to run the Build C++ Tests stage
+RUN conan install /tmp --build outdated --no-import  && \
+    conan install /tmp --build outdated --no-import -o "*:shared=True" && \
     conan remove "*" -b --src -f && \
     conan remove --locks
 
@@ -148,15 +148,13 @@ RUN python3 -m pip install --upgrade pip && \
 
 ENV PIP_FIND_LINKS=/wheels
 ENV PIP_NO_CACHE_DIR=1
-COPY --from=conan_builder --chown=user:user /home/user/.conan/ /home/user/.conan/
-COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
-COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/profiles/default
-USER user
-WORKDIR /home/user
-#COPY --chown=user:user ci/docker/shared/conan/remotes.json /home/user/.conan/remotes.json
-ENV CONAN_USER_HOME=/home/user/
+ENV CONAN_USER_HOME=/conan
+COPY --from=conan_builder /conan/.conan/ $CONAN_USER_HOME/.conan/
+COPY ci/docker/shared/conan/remotes.json  $CONAN_USER_HOME/.conan/remotes.json
+COPY ci/docker/python/linux/build/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config home
 RUN conan install /tmp --build outdated --no-import  && \
     conan remove "*" -b --src -f && \
-    conan remove --locks
+    conan remove --locks && \
+    chmod -R 777 /conan

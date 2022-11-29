@@ -14,7 +14,6 @@ class BuildPybind11Extension(build_ext):
     ]
 
     def initialize_options(self):
-        self.cxx_standard = None
         super().initialize_options()
 
     def finalize_options(self):
@@ -23,7 +22,6 @@ class BuildPybind11Extension(build_ext):
         # self.inplace keeps getting reset by the time it is needed so
         # capture it here
         self._inplace = self.inplace
-        self.cxx_standard = self.cxx_standard or "14"
 
     def find_deps(self, lib, search_paths=None):
         search_paths = search_paths or os.environ['path'].split(";")
@@ -70,10 +68,6 @@ class BuildPybind11Extension(build_ext):
     def build_extension(self, ext: Pybind11Extension):
         self._add_conan_libs_to_ext(ext)
         self.compiler: CCompiler
-        if self.compiler.compiler_type == "unix":
-            ext.extra_compile_args.append(f"-std=c++{self.cxx_standard}")
-        else:
-            ext.extra_compile_args.append(f"/std:c++{self.cxx_standard}")
         super().build_extension(ext)
         fullname = self.get_ext_fullname(ext.name)
         created_extension = os.path.join(
@@ -96,7 +90,7 @@ class BuildPybind11Extension(build_ext):
         if not os.path.exists(conan_build_info):
             return
         # libraries must retain order and put after existing libs
-        for lib in _parse_conan_build_info(conan_build_info, "libs"):
+        for lib in parse_conan_build_info(conan_build_info, "libs"):
             if lib not in ext.libraries:
                 ext.libraries.append(lib)
 
@@ -114,9 +108,9 @@ class BuildPybind11Extension(build_ext):
             else:
                 ext.runtime_library_dirs.append(os.path.abspath(lib_output))
                 ext.library_dirs.insert(0, os.path.abspath(lib_output))
-        ext.library_dirs = list(_parse_conan_build_info(conan_build_info, "libdirs")) + ext.library_dirs
-        ext.include_dirs = list(_parse_conan_build_info(conan_build_info, "includedirs")) + ext.include_dirs
-        defines = _parse_conan_build_info(conan_build_info, "defines")
+        ext.library_dirs = list(parse_conan_build_info(conan_build_info, "libdirs")) + ext.library_dirs
+        ext.include_dirs = list(parse_conan_build_info(conan_build_info, "includedirs")) + ext.include_dirs
+        defines = parse_conan_build_info(conan_build_info, "defines")
         ext.define_macros = [(d, None) for d in defines] + ext.define_macros
 
 
@@ -145,11 +139,11 @@ class UseConanFileBuildInfo(AbsFindLibrary):
         conan_build_info = os.path.join(self.path, "conanbuildinfo.txt")
         if not os.path.exists(conan_build_info):
             return None
-        libs = _parse_conan_build_info(conan_build_info, "libs")
+        libs = parse_conan_build_info(conan_build_info, "libs")
         return library_name if library_name in libs else None
 
 
-def _parse_conan_build_info(conan_build_info_file, section):
+def parse_conan_build_info(conan_build_info_file, section):
     items = set()
     with open(conan_build_info_file, encoding="utf-8") as f:
         found = False
