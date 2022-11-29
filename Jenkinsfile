@@ -590,6 +590,12 @@ pipeline {
                             }
                         }
                         stage('Sphinx Documentation'){
+                            when{
+                                anyOf{
+                                    equals expected: true, actual: params.RUN_CHECKS
+                                    equals expected: true, actual: params.DEPLOY_DEVPI
+                                }
+                            }
                             steps {
                                 sh(
                                     label: 'Building docs',
