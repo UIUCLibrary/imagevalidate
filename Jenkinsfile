@@ -8,9 +8,11 @@ def getDevPiStagingIndex(){
 }
 
 def getDevpiConfig() {
-    configFileProvider([configFile(fileId: 'devpi_config', variable: 'CONFIG_FILE')]) {
-        def configProperties = readProperties(file: CONFIG_FILE)
-        echo "I have ${configProperties}"
+    node(){
+        configFileProvider([configFile(fileId: 'devpi_config', variable: 'CONFIG_FILE')]) {
+            def configProperties = readProperties(file: CONFIG_FILE)
+            echo "I have ${configProperties}"
+        }
     }
     return [
         server: 'https://devpi.library.illinois.edu',
