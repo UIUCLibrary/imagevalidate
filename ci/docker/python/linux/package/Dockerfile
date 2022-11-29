@@ -58,7 +58,8 @@ FROM base as conan_builder
 RUN pip3 install conan cmake
 ENV CONAN_USER_HOME=/conan
 COPY ci/docker/shared/conan/remotes.json  $CONAN_USER_HOME/.conan/remotes.json
-COPY ci/docker/python/linux/package/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
+ARG TARGETARCH
+COPY ci/docker/python/linux/package/conan/$TARGETARCH/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config home
 RUN conan install /tmp --build outdated --no-import  && \
@@ -77,9 +78,10 @@ RUN python3.8 -m pip install pip --upgrade pip
 
 COPY --from=PYTHON39_WHEEL_BUILDER /wheels/* $PIP_FIND_LINKS/
 RUN python3.9 -m pip install pip --upgrade pip
+ARG TARGETARCH
 ENV CONAN_USER_HOME=/conan
 COPY ci/docker/shared/conan/remotes.json  $CONAN_USER_HOME/.conan/remotes.json
-COPY ci/docker/python/linux/package/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
+COPY ci/docker/python/linux/package/conan/$TARGETARCH/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 ADD conanfile.py /tmp/conanfile.py
 COPY --from=conan_builder /conan/ /conan/
 RUN conan config home
