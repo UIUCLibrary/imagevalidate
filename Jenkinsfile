@@ -10,12 +10,15 @@ def getDevPiStagingIndex(){
 def getDevpiConfig() {
     node(){
         configFileProvider([configFile(fileId: 'devpi_config', variable: 'CONFIG_FILE')]) {
-            return readProperties(file: CONFIG_FILE)
+            def configProperties = readProperties(file: CONFIG_FILE)
+            configProperties.stagingIndex = getDevPiStagingIndex()
+            return configProperties
         }
     }
 }
 
 DEVPI_CONFIG = getDevpiConfig()
+echo "I got ${DEVPI_CONFIG}"
 DEVPI_CONFIG_STAGING_INDEX =  getDevPiStagingIndex()
 SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10']
 SUPPORTED_LINUX_VERSIONS = ['3.7', '3.8', '3.9', '3.10']
