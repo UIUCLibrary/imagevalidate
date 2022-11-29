@@ -1316,48 +1316,47 @@ pipeline {
                                 }
                             }
                         }
-                        stage('Run Tox'){
-                            when{
-                                equals expected: true, actual: params.TEST_RUN_TOX
+                    }
+                }
+                stage('Run Tox'){
+                    when{
+                        equals expected: true, actual: params.TEST_RUN_TOX
+                    }
+                    steps {
+                        script{
+                            def tox
+                            node(){
+                                checkout scm
+                                tox = load('ci/jenkins/scripts/tox.groovy')
                             }
-                            steps {
-                                script{
-                                    def tox
-                                    node(){
-                                        checkout scm
-                                        tox = load('ci/jenkins/scripts/tox.groovy')
-                                    }
-                                    def windowsJobs = [:]
-                                    def linuxJobs = [:]
-                                    stage('Scanning Tox Environments'){
-                                        parallel(
-                                            'Linux':{
-                                                linuxJobs = tox.getToxTestsParallel(
-                                                    envNamePrefix: 'Tox Linux',
-                                                    label: 'linux && docker && x86',
-                                                    dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
-                                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                                                    retry: 2
-                                                )
-                                            },
-                                            'Windows':{
-                                                windowsJobs = tox.getToxTestsParallel(
-                                                    envNamePrefix: 'Tox Windows',
-                                                    label: 'windows && docker && x86',
-                                                    dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
-                                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
-                                                    retry: 2
-                                                )
-                                            },
-                                            failFast: true
+                            def windowsJobs = [:]
+                            def linuxJobs = [:]
+                            stage('Scanning Tox Environments'){
+                                parallel(
+                                    'Linux':{
+                                        linuxJobs = tox.getToxTestsParallel(
+                                            envNamePrefix: 'Tox Linux',
+                                            label: 'linux && docker && x86',
+                                            dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
+                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
+                                            retry: 2
                                         )
-                                    }
-                                    parallel(windowsJobs + linuxJobs)
-                                }
+                                    },
+                                    'Windows':{
+                                        windowsJobs = tox.getToxTestsParallel(
+                                            envNamePrefix: 'Tox Windows',
+                                            label: 'windows && docker && x86',
+                                            dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
+                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
+                                            retry: 2
+                                        )
+                                    },
+                                    failFast: true
+                                )
                             }
+                            parallel(windowsJobs + linuxJobs)
                         }
                     }
-
                 }
             }
         }
