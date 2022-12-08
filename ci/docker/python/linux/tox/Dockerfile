@@ -19,6 +19,7 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
 COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
+COPY requirements /tmp/requirements
 ENV PYTHON=python3.7
 RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
@@ -32,6 +33,7 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
 COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
+COPY requirements /tmp/requirements
 ENV PYTHON=python3.8
 RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
@@ -44,6 +46,7 @@ FROM wheel_builder_base as WHEEL_BUILDER_PY39
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
+COPY requirements /tmp/requirements
 ENV PYTHON=python3.9
 RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
@@ -55,6 +58,7 @@ FROM wheel_builder_base as WHEEL_BUILDER_PY310
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
+COPY requirements /tmp/requirements
 ENV PYTHON=python3.10
 RUN $PYTHON -m ensurepip --upgrade && \
     $PYTHON -m pip install pip --upgrade pip && \
@@ -84,8 +88,9 @@ COPY --from=WHEEL_BUILDER_PY38 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY39 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY310 /wheels/* /wheels/
 ENV PIP_FIND_LINKS=/wheels
+COPY requirements/ /tmp/requirements
 RUN pip3 install wheel
-RUN pip3 install tox conan "devpi-client<6.0"
+RUN pip3 install -r /tmp/requirements/requirements_tox.txt conan "devpi-client<6.0"
 COPY ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
 ADD conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=/conan

@@ -46,6 +46,7 @@ ARG PYTHON_INDEX
 ARG PIP_EXTRA_INDEX_URL
 ENV PIP_NO_CACHE_DIR=1
 ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+COPY requirements/ /requirements/requirements/
 RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install --upgrade setuptools && \
     python3 -m pip install wheel && \
@@ -138,6 +139,7 @@ ARG PIP_EXTRA_INDEX_URL
 COPY --from=wheel_builder /wheels /wheels/
 
 ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+COPY requirements/ /requirements/requirements/
 #RUN python -m pip install --upgrade pip && \
 #    pip install --upgrade setuptools && \
 #    pip install wheel
