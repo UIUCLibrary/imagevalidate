@@ -59,6 +59,9 @@ def test_packages(){
                         }
                     },
                     post:[
+                        failure:{
+                            sh(script:'pip list')
+                        },
                         cleanup: {
                             cleanWs(
                                 patterns: [
@@ -97,6 +100,9 @@ def test_packages(){
 
                     },
                     post:[
+                        failure:{
+                            sh(script:'pip list')
+                        },
                         cleanup: {
                             cleanWs(
                                 patterns: [
@@ -135,6 +141,9 @@ def test_packages(){
 
                     },
                     post:[
+                        failure:{
+                            sh(script:'pip list')
+                        },
                         cleanup: {
                             cleanWs(
                                 patterns: [
@@ -170,6 +179,9 @@ def test_packages(){
 
                     },
                     post:[
+                        failure:{
+                            sh(script:'pip list')
+                        },
                         cleanup: {
                             cleanWs(
                                 patterns: [
@@ -208,6 +220,9 @@ def test_packages(){
 
                     },
                     post:[
+                        failure:{
+                            bat(script:'pip list')
+                        },
                         cleanup: {
                             cleanWs(
                                 patterns: [
@@ -244,6 +259,9 @@ def test_packages(){
                         }
                     },
                     post:[
+                        failure:{
+                            bat(script:'pip list')
+                        },
                         cleanup: {
                             cleanWs(
                                 patterns: [
@@ -284,6 +302,9 @@ def test_packages(){
                         }
                     },
                     post:[
+                        failure:{
+                            sh(script:'pip list')
+                        },
                         cleanup: {
                             cleanWs(
                                 patterns: [
@@ -322,6 +343,9 @@ def test_packages(){
                         }
                     },
                     post:[
+                        failure:{
+                            sh(script:'pip list')
+                        },
                         cleanup: {
                             cleanWs(
                                 patterns: [
@@ -360,6 +384,9 @@ def test_packages(){
                             }
                         },
                         post:[
+                            failure:{
+                                sh(script:'pip list')
+                            },
                             cleanup: {
                                 cleanWs(
                                     patterns: [
@@ -398,6 +425,9 @@ def test_packages(){
                             }
                         },
                         post:[
+                            failure:{
+                                sh(script:'pip list')
+                            },
                             cleanup: {
                                 cleanWs(
                                     patterns: [
