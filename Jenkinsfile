@@ -97,7 +97,7 @@ def test_packages(){
                               . ./venv/bin/activate
                               python -m pip install --upgrade pip
                               pip install -r requirements/requirements_tox.txt
-                               tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                              tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
                             )
                         }
 
@@ -857,7 +857,7 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                                 label:'Installing Devpi client',
                                 script: '''python3 -m venv venv
                                             venv/bin/python -m pip install pip --upgrade
-                                            venv/bin/python -m pip install devpi_client tox
+                                            venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
                                             '''
                             )
                         },
@@ -895,7 +895,7 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                                 label: 'Installing Devpi client',
                                 script: '''python3 -m venv venv
                                             venv/bin/python -m pip install pip --upgrade
-                                            venv/bin/python -m pip install devpi_client tox
+                                            venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
                                             '''
                             )
                         },
@@ -930,7 +930,7 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                                 label:'Installing Devpi client',
                                 script: '''python3 -m venv venv
                                             venv/bin/python -m pip install pip --upgrade
-                                            venv/bin/python -m pip install devpi_client tox
+                                            venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
                                             '''
                             )
                         },
