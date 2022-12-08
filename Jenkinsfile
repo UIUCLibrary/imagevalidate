@@ -52,9 +52,11 @@ def test_packages(){
                         findFiles(glob: 'dist/*.whl').each{
                             sh(label: 'Running Tox',
                                script: """python${pythonVersion} -m venv venv
-                               ./venv/bin/python -m pip install --upgrade pip
-                               ./venv/bin/pip install tox
-                               ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                                          . ./venv/bin/activate
+                                          python -m pip install --upgrade pip
+                                          pip install -r requirements/requirements_tox.txt
+                                          tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                      """
                             )
                         }
                     },
@@ -92,9 +94,10 @@ def test_packages(){
                         findFiles(glob: 'dist/*.whl').each{
                             sh(label: 'Running Tox',
                                script: """python${pythonVersion} -m venv venv
-                               ./venv/bin/python -m pip install --upgrade pip
-                               ./venv/bin/pip install tox
-                               ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                              . ./venv/bin/activate
+                              python -m pip install --upgrade pip
+                              pip install -r requirements/requirements_tox.txt
+                               tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
                             )
                         }
 
@@ -133,9 +136,10 @@ def test_packages(){
                         findFiles(glob: 'dist/*.tar.gz').each{
                             sh(label: 'Running Tox',
                                script: """python${pythonVersion} -m venv venv
-                               ./venv/bin/python -m pip install --upgrade pip
-                               ./venv/bin/pip install tox
-                               ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                               . ./venv/bin/activate
+                               python -m pip install --upgrade pip
+                               pip install -r requirements/requirements_tox.txt
+                               tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
                             )
                         }
 
@@ -171,9 +175,10 @@ def test_packages(){
                         findFiles(glob: 'dist/*.tar.gz').each{
                             sh(label: 'Running Tox',
                                script: """python${pythonVersion} -m venv venv
-                               ./venv/bin/python -m pip install --upgrade pip
-                               ./venv/bin/pip install tox
-                               ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                               . ./venv/bin/activate
+                               python -m pip install --upgrade pip
+                               pip install -r requirements/requirements_tox.txt
+                               tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
                             )
                         }
 
