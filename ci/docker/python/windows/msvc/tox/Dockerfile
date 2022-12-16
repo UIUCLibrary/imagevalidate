@@ -1,25 +1,28 @@
 # escape=`
-
+ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
+ARG VS_INSTALL_PATH="C:\BuildTools\"
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
 FROM ${FROM_IMAGE} as certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
 FROM ${FROM_IMAGE} as BASE_BUILDER
+
 COPY ci/docker/shared/startup.bat c:/startup/startup.bat
+ARG VS_INSTALL_PATH
 RUN Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs_buildtools.exe ; `
-    $VS_INSTALL_PATH = \"c:\BuildTools\" ; `
-    Write-Host \"Installing Visual Studio Build Tools to ${VS_INSTALL_PATH}\" ; `
+    Write-Host \"Installing Visual Studio Build Tools to ${Env:VS_INSTALL_PATH}\" ; `
     $ARGS_LIST = @(`
         '--quiet', `
         '--wait', `
         '--norestart', `
         '--nocache', `
         '--installPath', `
-         ${VS_INSTALL_PATH},`
+         ${Env:VS_INSTALL_PATH},`
         '--add Microsoft.VisualStudio.Workload.VCTools', `
         '--add Microsoft.VisualStudio.Component.VC.CLI.Support', `
         '--add Microsoft.VisualStudio.Component.VC.CoreBuildTools', `
         '--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64', `
+        '--add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64', `
         '--add Microsoft.VisualStudio.Component.Windows10SDK.18362', `
         '--remove Microsoft.VisualStudio.Component.Windows10SDK.10240',`
         '--remove Microsoft.VisualStudio.Component.Windows10SDK.10586', `
@@ -36,14 +39,14 @@ RUN Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs
     { `
         Get-ChildItem c:\\ ; `
         Get-ChildItem ${Env:ProgramFiles(x86)} ; `
-        Get-ChildItem ${VS_INSTALL_PATH} ; `
-        Get-ChildItem ${VS_INSTALL_PATH}\\Common7\\Tools ; `
+        Get-ChildItem ${Env:VS_INSTALL_PATH} ; `
+        Get-ChildItem ${Env:VS_INSTALL_PATH}\\Common7\\Tools ; `
         $message = \"Installing Visual Studio Build Tools exited with code $($process.ExitCode) \"; `
         Write-Host $message ;  `
         throw 'unable to continue' ; `
     } ; `
     Write-Host 'Testing for VsDevCmd.bat' ; `
-    if (! (Test-Path 'C:\BuildTools\Common7\Tools\VsDevCmd.bat')) `
+    if (! (Test-Path "${Env:VS_INSTALL_PATH}\Common7\Tools\VsDevCmd.bat")) `
     { `
         Write-Host 'Testing for VsDevCmd.bat - Failed' ; `
         Start-Process -NoNewWindow -FilePath $Env:TEMP\\collect.exe -ArgumentList '-nologo -zip:${Env:TEMP}\\vslogs.zip' -Wait; `
@@ -97,12 +100,14 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     Write-Host "Verifying installed packages" ;`
     $env:Path = [System.Environment]::GetEnvironmentVariable(\"Path\",\"Machine\") + \";\" + [System.Environment]::GetEnvironmentVariable(\"Path\",\"User\") ; `
     ./verifyenv.ps1
+
 ARG PYTHON_37_VERSION=3.7.9
 ARG PYTHON_38_VERSION=3.8.10
-ARG PYTHON_39_VERSION=3.9.7
-ARG PYTHON_310_VERSION=3.10.0
+ARG PYTHON_39_VERSION=3.9.13
+ARG PYTHON_310_VERSION=3.10.8
+ARG PYTHON_311_VERSION=3.11.0
 
-RUN $PYTHON_VERSIONS = @(${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${Env:PYTHON_39_VERSION}, ${Env:PYTHON_310_VERSION}) ; `
+RUN $PYTHON_VERSIONS = @(${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${Env:PYTHON_39_VERSION}, ${Env:PYTHON_310_VERSION}, ${Env:PYTHON_311_VERSION} ) ; `
     foreach( $PYTHON_VERSION in $PYTHON_VERSIONS ){ `
         Write-Host "Installing Python $PYTHON_VERSION with Chocolatey" ; `
         $process = start-process -NoNewWindow -PassThru -FilePath C:\ProgramData\chocolatey\bin\choco.exe -ArgumentList 'install -y --stoponfirstfailure --no-progress --verbose python3', "--version=$PYTHON_VERSION", "-my" -Wait ;`
@@ -115,7 +120,13 @@ RUN $PYTHON_VERSIONS = @(${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${E
     } ; `
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
-    py --list
+    py --list ;`
+    py -3.7 --version ;  `
+    py -3.8 --version ; `
+    py -3.9 --version ; `
+    py -3.10 --version ; `
+    py -3.11 --version ; `
+    Write-Host "Installing Python with Chocolatey - Done"
 
 
 # ==============================================================================
@@ -127,9 +138,10 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.7
 RUN py -m pip install --upgrade pip wheel && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extras.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt
+    py -m pip wheel -w c:\wheels\ --no-cache-dir `
+      -r c:/requirements/requirements-ci.txt `
+      -r c:/requirements/requirements-extras.txt `
+      -r c:/requirements/requirements.txt
 RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY38
@@ -140,9 +152,10 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.8
 RUN py -m pip install --upgrade pip wheel && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extras.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt
+    py -m pip wheel -w c:\wheels\ --no-cache-dir `
+      -r c:/requirements/requirements-ci.txt `
+      -r c:/requirements/requirements-extras.txt `
+      -r c:/requirements/requirements.txt
 RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
 
 # ==============================================================================
@@ -154,9 +167,10 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.9
 RUN py -m pip install --upgrade pip wheel && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extras.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt
+    py -m pip wheel -w c:\wheels\ --no-cache-dir `
+      -r c:/requirements/requirements-ci.txt `
+      -r c:/requirements/requirements-extras.txt `
+      -r c:/requirements/requirements.txt
 RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
 
 # ==============================================================================
@@ -168,21 +182,23 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.10
 RUN py -m pip install --upgrade pip wheel && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extras.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt
+    py -m pip wheel -w c:\wheels\ --no-cache-dir `
+      -r c:/requirements/requirements-ci.txt `
+      -r c:/requirements/requirements-extras.txt `
+      -r c:/requirements/requirements.txt
 RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
 # ==============================================================================
 
 FROM BASE_BUILDER as CONAN_BUILDER
+ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 RUN python -m pip install --upgrade pip ; `
     pip install wheel ; `
     pip install conan cmake
 COPY conanfile.py c:/temp/conanfile.py
-COPY ci/docker/shared/conan/remotes.json  C:/Users/ContainerAdministrator/.conan/remotes.json
-COPY ci/docker/python/windows/msvc/shared/profile.ini  C:/Users/ContainerAdministrator/.conan/profiles/default
+COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
+COPY ci/docker/python/windows/msvc/shared/profile.ini ${CONAN_USER_HOME}/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
 RUN conan config home
 RUN conan install c:/temp/ --build missing --build openjpeg --no-import  && `
@@ -198,12 +214,12 @@ RUN certutil -addstore -f root roots.sst ; `
 RUN python -m pip install pip --upgrade ; `
     pip install wheel ; `
     pip install conan devpi_client
-
-COPY --from=CONAN_BUILDER C:/Users/ContainerAdministrator/.conan/ C:/Users/ContainerAdministrator/.conan/
-ENV CONAN_USER_HOME=C:/Users/ContainerAdministrator
+ARG CONAN_USER_HOME
+COPY --from=CONAN_BUILDER ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
+ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY conanfile.py c:/temp/conanfile.py
 RUN conan config home
-RUN conan install c:/temp/ --build outdated --no-import  ; `
+RUN conan install c:/temp/ --build missing --no-import  ; `
     conan remove "*" -b --src -f ; `
     conan remove --locks
 
