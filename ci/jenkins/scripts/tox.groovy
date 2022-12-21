@@ -130,7 +130,7 @@ def getToxTestsParallel(args = [:]){
         def dockerImageName = "tox${currentBuild.fullProjectName}".replaceAll("-", "").replaceAll('/', "").replaceAll(' ', "").toLowerCase()
 
         // ========
-        def dockerImageForTesting
+
 
         retry(retries){
             node(label){
@@ -154,14 +154,7 @@ def getToxTestsParallel(args = [:]){
                 }
             }
             echo "Found tox environments for ${envs.join(', ')}"
-
-            node(originalNodeLabel){
-                checkout scm
-                dockerImageForTesting = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} . ")
-
-            }
         }
-        echo "Adding jobs to ${originalNodeLabel}"
         def jobs = envs.collectEntries({ tox_env ->
             def tox_result
             def githubChecksName = "Tox: ${tox_env} ${envNamePrefix}"
@@ -172,6 +165,7 @@ def getToxTestsParallel(args = [:]){
                     node(label){
                         ws{
                             checkout scm
+                            def dockerImageForTesting = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} . ")
                             dockerImageForTesting.inside{
                                 try{
                                     publishChecks(
