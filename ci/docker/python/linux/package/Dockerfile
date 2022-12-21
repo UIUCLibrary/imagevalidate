@@ -1,3 +1,5 @@
+ARG PIP_FIND_LINKS=/wheels
+ARG CONAN_USER_HOME=/conan
 ARG manylinux_image=quay.io/pypa/manylinux2014_x86_64
 FROM ${manylinux_image} as base
 
@@ -12,6 +14,7 @@ RUN python -m pip install pip --upgrade && python -m pip install wheel
 RUN python --version && python -m pip install conan cmake build
 # ==============================================================================
 FROM base as PYTHON37_WHEEL_BUILDER
+ARG PIP_FIND_LINKS
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt /tmp/
@@ -20,12 +23,14 @@ COPY requirements /tmp/requirements
 RUN PYTHON=python3.7 && \
     $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir \
+    $PYTHON -m pip wheel -w ${PIP_FIND_LINKS} --no-cache-dir \
         -r /tmp/requirements-ci.txt \
-        -r /tmp/requirements.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
+        -r /tmp/requirements.txt  \
+        -r /tmp/requirements-extras.txt
+
 # ==============================================================================
 FROM base as PYTHON38_WHEEL_BUILDER
+ARG PIP_FIND_LINKS
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt /tmp/
@@ -34,13 +39,13 @@ COPY requirements /tmp/requirements
 RUN PYTHON=python3.8 && \
     $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir \
+    $PYTHON -m pip wheel -w ${PIP_FIND_LINKS} --no-cache-dir \
         -r /tmp/requirements-ci.txt \
-        -r /tmp/requirements.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
-# ==============================================================================
+        -r /tmp/requirements.txt  \
+        -r /tmp/requirements-extras.txt
 
 FROM base as PYTHON39_WHEEL_BUILDER
+ARG PIP_FIND_LINKS
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt /tmp/
@@ -49,14 +54,15 @@ COPY requirements /tmp/requirements
 RUN PYTHON=python3.9 && \
     $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir \
+    $PYTHON -m pip wheel -w ${PIP_FIND_LINKS} --no-cache-dir \
         -r /tmp/requirements-ci.txt \
-        -r /tmp/requirements.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
+        -r /tmp/requirements.txt  \
+        -r /tmp/requirements-extras.txt
 
 # ==============================================================================
 
 FROM base as PYTHON310_WHEEL_BUILDER
+ARG PIP_FIND_LINKS
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt /tmp/
@@ -65,16 +71,16 @@ COPY requirements /tmp/requirements
 RUN PYTHON=python3.10 && \
     $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir \
+    $PYTHON -m pip wheel -w ${PIP_FIND_LINKS} --no-cache-dir \
         -r /tmp/requirements-ci.txt \
-        -r /tmp/requirements.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extras.txt
+        -r /tmp/requirements.txt  \
+        -r /tmp/requirements-extras.txt
 
 # ==============================================================================
 
 FROM base as conan_builder
 RUN pip3 install conan cmake
-ENV CONAN_USER_HOME=/conan
+ARG CONAN_USER_HOME
 COPY ci/docker/shared/conan/remotes.json  $CONAN_USER_HOME/.conan/remotes.json
 ARG TARGETARCH
 COPY ci/docker/python/linux/package/conan/$TARGETARCH/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
@@ -86,28 +92,29 @@ RUN conan install /tmp --build outdated --no-import  && \
 # ==============================================================================
 
 FROM base
-ENV PIP_FIND_LINKS=/wheels
+ARG PIP_FIND_LINKS
 
-COPY --from=PYTHON37_WHEEL_BUILDER /wheels/* $PIP_FIND_LINKS/
+COPY --from=PYTHON37_WHEEL_BUILDER ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
 RUN python3.7 -m pip install pip --upgrade pip
 
-COPY --from=PYTHON38_WHEEL_BUILDER /wheels/* $PIP_FIND_LINKS/
+COPY --from=PYTHON38_WHEEL_BUILDER ${PIP_FIND_LINKS}* ${PIP_FIND_LINKS}/
 RUN python3.8 -m pip install pip --upgrade pip
 
-COPY --from=PYTHON39_WHEEL_BUILDER /wheels/* $PIP_FIND_LINKS/
+COPY --from=PYTHON39_WHEEL_BUILDER ${PIP_FIND_LINKS}* ${PIP_FIND_LINKS}/
 RUN python3.9 -m pip install pip --upgrade pip
 
-COPY --from=PYTHON310_WHEEL_BUILDER /wheels/* $PIP_FIND_LINKS/
+COPY --from=PYTHON310_WHEEL_BUILDER ${PIP_FIND_LINKS}* ${PIP_FIND_LINKS}/
 RUN python3.10 -m pip install pip --upgrade pip
 
 ARG TARGETARCH
-ENV CONAN_USER_HOME=/conan
+ARG CONAN_USER_HOME
+ENV PIP_FIND_LINKS ${PIP_FIND_LINKS}
 COPY ci/docker/shared/conan/remotes.json  $CONAN_USER_HOME/.conan/remotes.json
 COPY ci/docker/python/linux/package/conan/$TARGETARCH/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 ADD conanfile.py /tmp/conanfile.py
-COPY --from=conan_builder /conan/ /conan/
+COPY --from=conan_builder ${CONAN_USER_HOME}/ ${CONAN_USER_HOME}/
 RUN conan config home
 RUN conan install /tmp --build missing --no-import  && \
     conan remove "*" -b --src -f && \
     conan remove --locks
-RUN chmod -R 777 /conan
+RUN chmod -R 777 ${CONAN_USER_HOME}
