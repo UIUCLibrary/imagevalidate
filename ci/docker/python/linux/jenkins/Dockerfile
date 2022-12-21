@@ -74,7 +74,7 @@ ARG PIP_INDEX_URL
 RUN pip install conan cmake
 ENV CONAN_USER_HOME=/conan
 COPY ci/docker/shared/conan/remotes.json $CONAN_USER_HOME/.conan/remotes.json
-COPY ci/docker/python/linux/build/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
+COPY ci/docker/python/linux/jenkins/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config init
 
@@ -140,7 +140,7 @@ ENV PIP_NO_CACHE_DIR=1
 ENV CONAN_USER_HOME=/conan
 COPY --from=conan_builder /conan/.conan/ $CONAN_USER_HOME/.conan/
 COPY ci/docker/shared/conan/remotes.json  $CONAN_USER_HOME/.conan/remotes.json
-COPY ci/docker/python/linux/build/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
+COPY ci/docker/python/linux/jenkins/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config home
 RUN conan install /tmp --build outdated --no-import -pr:b=default && \

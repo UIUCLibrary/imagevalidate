@@ -1008,7 +1008,7 @@ pipeline {
                 stage('Building'){
                     agent {
                         dockerfile {
-                            filename 'ci/docker/python/linux/build/Dockerfile'
+                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                         }
@@ -1075,7 +1075,7 @@ pipeline {
                                 stage('Testing Python') {
                                     agent {
                                         dockerfile {
-                                            filename 'ci/docker/python/linux/build/Dockerfile'
+                                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
                                             label 'linux && docker && x86'
                                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                                             args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/opt/sonar/.sonar/cache'
@@ -1694,7 +1694,7 @@ pipeline {
                 stage('Deploy to pypi') {
                     agent {
                         dockerfile {
-                            filename 'ci/docker/python/linux/build/Dockerfile'
+                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
                             label 'linux && docker'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                         }
@@ -1759,7 +1759,7 @@ pipeline {
 
                     agent {
                         dockerfile {
-                            filename 'ci/docker/python/linux/build/Dockerfile'
+                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
                             label 'linux && docker'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                         }
