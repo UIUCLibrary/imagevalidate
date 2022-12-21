@@ -15,19 +15,6 @@ RUN apt update && \
     rm -rf /var/lib/apt/lists/*
 ARG SONAR_SCANNER_VERSION=4.6.2.2472
 
-ARG USER_ID=1000
-ARG GROUP_ID=1000
-
-RUN if id $USER_ID ; then \
-        echo 'Existing user id found: Creating an alias' ;\
-        groupadd --non-unique --gid $GROUP_ID user ; \
-        useradd  --non-unique --uid $USER_ID -s /bin/sh -m -d /home/user -g user user  ; \
-    else \
-        echo "Creating user id for $USER_ID" ;\
-        groupadd -g $GROUP_ID user ; \
-        echo "Create GROUP_ID $GROUP_ID" ;\
-        useradd  -u $USER_ID -s /bin/sh -m -d /home/user -g user user ;\
-    fi
 #==============================================================================
 FROM base_image as DR_MEMORY_BUILDER
 RUN apt-get update && apt install -y wget

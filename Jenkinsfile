@@ -1010,7 +1010,7 @@ pipeline {
                         dockerfile {
                             filename 'ci/docker/python/linux/build/Dockerfile'
                             label 'linux && docker && x86'
-                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
+                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                         }
                     }
                     when{
@@ -1077,7 +1077,7 @@ pipeline {
                                         dockerfile {
                                             filename 'ci/docker/python/linux/build/Dockerfile'
                                             label 'linux && docker && x86'
-                                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
+                                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                                             args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/opt/sonar/.sonar/cache'
                                         }
                                     }
@@ -1696,7 +1696,7 @@ pipeline {
                         dockerfile {
                             filename 'ci/docker/python/linux/build/Dockerfile'
                             label 'linux && docker'
-                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
+                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                         }
                     }
                     when{
@@ -1761,7 +1761,7 @@ pipeline {
                         dockerfile {
                             filename 'ci/docker/python/linux/build/Dockerfile'
                             label 'linux && docker'
-                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
+                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                         }
                     }
                     options{
