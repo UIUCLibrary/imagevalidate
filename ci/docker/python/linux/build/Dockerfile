@@ -79,8 +79,8 @@ COPY conanfile.py /tmp/conanfile.py
 RUN conan config init
 
 # shared files are needed to run the Build C++ Tests stage
-RUN conan install /tmp --build outdated --no-import  && \
-    conan install /tmp --build outdated --no-import -o "*:shared=True" && \
+RUN conan install /tmp --build outdated --no-import -pr:b=default && \
+    conan install /tmp --build outdated --no-import -pr:b=default -o "*:shared=True" && \
     conan remove "*" -b --src -f && \
     conan remove --locks
 
@@ -143,7 +143,7 @@ COPY ci/docker/shared/conan/remotes.json  $CONAN_USER_HOME/.conan/remotes.json
 COPY ci/docker/python/linux/build/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config home
-RUN conan install /tmp --build outdated --no-import  && \
+RUN conan install /tmp --build outdated --no-import -pr:b=default && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
     chmod -R 777 /conan
