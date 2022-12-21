@@ -15,19 +15,6 @@ RUN apt update && \
     rm -rf /var/lib/apt/lists/*
 ARG SONAR_SCANNER_VERSION=4.6.2.2472
 
-ARG USER_ID=1000
-ARG GROUP_ID=1000
-
-RUN if id $USER_ID ; then \
-        echo 'Existing user id found: Creating an alias' ;\
-        groupadd --non-unique --gid $GROUP_ID user ; \
-        useradd  --non-unique --uid $USER_ID -s /bin/sh -m -d /home/user -g user user  ; \
-    else \
-        echo "Creating user id for $USER_ID" ;\
-        groupadd -g $GROUP_ID user ; \
-        echo "Create GROUP_ID $GROUP_ID" ;\
-        useradd  -u $USER_ID -s /bin/sh -m -d /home/user -g user user ;\
-    fi
 #==============================================================================
 FROM base_image as DR_MEMORY_BUILDER
 RUN apt-get update && apt install -y wget
@@ -87,13 +74,13 @@ ARG PIP_INDEX_URL
 RUN pip install conan cmake
 ENV CONAN_USER_HOME=/conan
 COPY ci/docker/shared/conan/remotes.json $CONAN_USER_HOME/.conan/remotes.json
-COPY ci/docker/python/linux/build/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
+COPY ci/docker/python/linux/jenkins/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config init
 
 # shared files are needed to run the Build C++ Tests stage
-RUN conan install /tmp --build outdated --no-import  && \
-    conan install /tmp --build outdated --no-import -o "*:shared=True" && \
+RUN conan install /tmp --build outdated --no-import -pr:b=default && \
+    conan install /tmp --build outdated --no-import -pr:b=default -o "*:shared=True" && \
     conan remove "*" -b --src -f && \
     conan remove --locks
 
@@ -153,10 +140,10 @@ ENV PIP_NO_CACHE_DIR=1
 ENV CONAN_USER_HOME=/conan
 COPY --from=conan_builder /conan/.conan/ $CONAN_USER_HOME/.conan/
 COPY ci/docker/shared/conan/remotes.json  $CONAN_USER_HOME/.conan/remotes.json
-COPY ci/docker/python/linux/build/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
+COPY ci/docker/python/linux/jenkins/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config home
-RUN conan install /tmp --build outdated --no-import  && \
+RUN conan install /tmp --build outdated --no-import -pr:b=default && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
     chmod -R 777 /conan
