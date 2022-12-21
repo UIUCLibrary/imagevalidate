@@ -169,7 +169,7 @@ def getToxTestsParallel(args = [:]){
 
             [jenkinsStageName,{
                 retry(retries){
-                    node(originalNodeLabel){
+                    node(label){
                         ws{
                             checkout scm
                             dockerImageForTesting.inside{
