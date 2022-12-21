@@ -4,3 +4,4 @@ pytest
 pytest-runner
 py3exiv2bind>=0.1.9b4
 toml
+git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.0

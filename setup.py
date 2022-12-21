@@ -12,24 +12,27 @@ try:
 except ImportError:
     from setuptools import Extension as Pybind11Extension
 
-sys.path.insert(0, os.path.dirname(__file__))
+# sys.path.insert(0, os.path.dirname(__file__))
 
 PACKAGE_NAME = "uiucprescon.imagevalidate"
 
 cmd_class = {}
 try:
-    from builders import conan_libs
+    # from builders import conan_libs
+    from uiucprescon.build import conan_libs
     cmd_class["build_conan"] = conan_libs.BuildConan
 except ImportError:
     pass
 try:
-    from builders.pybind11_builder import BuildPybind11Extension, UseSetuptoolsCompilerFileLibrary
+    from uiucprescon.build.pybind11_builder import BuildPybind11Extension, UseSetuptoolsCompilerFileLibrary
+    # from builders.pybind11_builder import BuildPybind11Extension, UseSetuptoolsCompilerFileLibrary
 
     class BuildPybind11Extensions(BuildPybind11Extension):
 
         def run(self):
             super().run()
-            from builders.deps import get_win_deps
+            from uiucprescon.build.deps import get_win_deps
+            # from builders.deps import get_win_deps
 
             for e in self.extensions:
                 dll_name = \
@@ -57,7 +60,8 @@ try:
                         shutil.copy(dll, dest)
 
         def build_extension(self, ext: Pybind11Extension):
-            from builders import conan_libs
+            # from builders import conan_libs
+            from uiucprescon.build import conan_libs
             missing = self.find_missing_libraries(ext, strategies=[
                 UseSetuptoolsCompilerFileLibrary(
                     compiler=self.compiler,

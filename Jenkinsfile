@@ -574,7 +574,7 @@ def build_packages(){
 //                     # have that as a minimum.
                             withEnv([
                                 '_PYTHON_HOST_PLATFORM=macosx-11.0-arm64',
-                                'MACOSX_DEPLOYMENT_TARGET=11.0',,
+                                'MACOSX_DEPLOYMENT_TARGET=11.0',
                                 'ARCHFLAGS=-arch arm64'
                                 ]) {
                                  sh(label: 'Building wheel',

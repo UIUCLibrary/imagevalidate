@@ -7,6 +7,7 @@ RUN apt update && \
     apt install -y \
         ninja-build \
         ccache \
+        git \
         python3 \
         python3-pip \
         python3-venv \
