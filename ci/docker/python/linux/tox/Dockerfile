@@ -1,3 +1,4 @@
+ARG CONAN_USER_HOME=/conan
 FROM ubuntu:20.04 as wheel_builder_base
 COPY ci/docker/python/linux/tox/apt-packages.txt /tmp/
 RUN apt update && \
@@ -5,13 +6,6 @@ RUN apt update && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt update && \
     cat /tmp/apt-packages.txt | xargs apt-get -y install
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ARG USER_ID=1000
-ARG GROUP_ID=1000
-
-RUN groupadd -g $GROUP_ID user && \
-    useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
 
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY37
@@ -23,8 +17,10 @@ COPY requirements /tmp/requirements
 ENV PYTHON=python3.7
 RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir  \
+      -r /tmp/requirements.txt  \
+      -r /tmp/requirements-ci.txt  \
+      -r /tmp/requirements-extras.txt
 RUN $PYTHON -m pip wheel  -w /wheels --no-cache-dir wheel
 
 # ==============================================================================
@@ -37,8 +33,10 @@ COPY requirements /tmp/requirements
 ENV PYTHON=python3.8
 RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir  \
+      -r /tmp/requirements.txt  \
+      -r /tmp/requirements-ci.txt  \
+      -r /tmp/requirements-extras.txt
 RUN $PYTHON -m pip wheel  -w /wheels --no-cache-dir wheel
 
 # ==============================================================================
@@ -50,8 +48,10 @@ COPY requirements /tmp/requirements
 ENV PYTHON=python3.9
 RUN $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir  \
+      -r /tmp/requirements.txt  \
+      -r /tmp/requirements-ci.txt  \
+      -r /tmp/requirements-extras.txt
 RUN $PYTHON -m pip wheel  -w /wheels --no-cache-dir wheel
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY310
@@ -60,11 +60,13 @@ ARG PIP_INDEX_URL
 COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
 COPY requirements /tmp/requirements
 ENV PYTHON=python3.10
-RUN $PYTHON -m ensurepip --upgrade && \
+RUN $PYTHON -m ensurepip --upgrade &&  \
     $PYTHON -m pip install pip --upgrade pip && \
     $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-ci.txt && \
-    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-extras.txt
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir  \
+      -r /tmp/requirements.txt  \
+      -r /tmp/requirements-ci.txt  \
+      -r /tmp/requirements-extras.txt
 RUN $PYTHON -m pip wheel  -w /wheels --no-cache-dir wheel
 # ==============================================================================
 
@@ -81,6 +83,7 @@ RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
 
 FROM wheel_builder_base
 
+ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY --from=WHEEL_BUILDER_PY37 /wheels/* /wheels/
@@ -93,7 +96,7 @@ RUN pip3 install wheel
 RUN pip3 install -r /tmp/requirements/requirements_tox.txt conan "devpi-client<6.0"
 COPY ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
 ADD conanfile.py /tmp/conanfile.py
-ENV CONAN_USER_HOME=/conan
+ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY --from=conan_builder /conan/ /conan/
 RUN conan config home
 RUN conan install /tmp --build missing --no-import  && \
