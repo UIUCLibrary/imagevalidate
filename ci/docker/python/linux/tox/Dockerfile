@@ -74,6 +74,22 @@ RUN $PYTHON -m ensurepip --upgrade &&  \
       -r /tmp/requirements-extras.txt
 RUN $PYTHON -m pip wheel  -w ${PIP_FIND_LINKS} --no-cache-dir wheel
 # ==============================================================================
+FROM wheel_builder_base as WHEEL_BUILDER_PY311
+ARG PIP_FIND_LINKS
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
+COPY requirements /tmp/requirements
+ENV PYTHON=python3.11
+RUN $PYTHON -m ensurepip --upgrade &&  \
+    $PYTHON -m pip install pip --upgrade pip && \
+    $PYTHON -m pip install wheel && \
+    $PYTHON -m pip wheel -w ${PIP_FIND_LINKS} --no-cache-dir  \
+      -r /tmp/requirements.txt  \
+      -r /tmp/requirements-ci.txt  \
+      -r /tmp/requirements-extras.txt
+RUN $PYTHON -m pip wheel  -w ${PIP_FIND_LINKS} --no-cache-dir wheel
+# ==============================================================================
 
 FROM wheel_builder_base as conan_builder
 RUN pip3 install conan cmake
@@ -97,6 +113,7 @@ COPY --from=WHEEL_BUILDER_PY37 ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
 COPY --from=WHEEL_BUILDER_PY38 ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
 COPY --from=WHEEL_BUILDER_PY39 ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
 COPY --from=WHEEL_BUILDER_PY310 ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
+COPY --from=WHEEL_BUILDER_PY311 ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
 ENV PIP_FIND_LINKS=${PIP_FIND_LINKS}
 COPY requirements/ /tmp/requirements
 RUN pip3 install wheel
