@@ -1,4 +1,4 @@
-#ARG PYTHON_VERSION=3.8
+ARG CONAN_USER_HOME=/conan
 FROM ubuntu:20.04 as base_image
 ARG TZ=America/Chicago
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -70,12 +70,12 @@ RUN curl --create-dirs -sSLo /tmp/build-wrapper-linux-x86.zip https://sonarcloud
 
 
 FROM wheel_builder as conan_builder
+ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 RUN pip install conan cmake
-ENV CONAN_USER_HOME=/conan
-COPY ci/docker/shared/conan/remotes.json $CONAN_USER_HOME/.conan/remotes.json
-COPY ci/docker/python/linux/jenkins/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
+COPY ci/docker/shared/conan/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json
+COPY ci/docker/python/linux/jenkins/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config init
 
@@ -138,13 +138,12 @@ RUN python3 -m pip install --upgrade pip && \
 
 ENV PIP_FIND_LINKS=/wheels
 ENV PIP_NO_CACHE_DIR=1
-ENV CONAN_USER_HOME=/conan
-COPY --from=conan_builder /conan/.conan/ $CONAN_USER_HOME/.conan/
-COPY ci/docker/shared/conan/remotes.json  $CONAN_USER_HOME/.conan/remotes.json
-COPY ci/docker/python/linux/jenkins/conan/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
+ARG CONAN_USER_HOME
+ENV CONAN_USER_HOME=${CONAN_USER_HOME}
+COPY --from=conan_builder ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config home
 RUN conan install /tmp --build outdated --no-import -pr:b=default && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
-    chmod -R 777 /conan
+    chmod -R 777 ${CONAN_USER_HOME}
