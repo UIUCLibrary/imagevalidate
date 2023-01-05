@@ -23,7 +23,6 @@ build-frontend = "build"
 skip = [
     "cp36-*",
     "cp37-macosx_*",
-    "cp311-*",
     "pp*",
     "*-win32",
     "*-musllinux*",

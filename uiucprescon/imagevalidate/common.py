@@ -77,11 +77,11 @@ class ColorSpaceIccDeviceModelCheck(AbsColorSpaceExtractor):
         except py3exiv2bind.core.NoICCError:
             raise InvalidStrategy("Unable to get ICC profile.")
 
-        device_model = icc.get('device_model').value \
-            .decode("ascii").rstrip(' \0')
-        if not device_model:
+        device_model = icc.get('device_model')
+        if not device_model or \
+                device_model.value.decode("ascii").rstrip(' \0') == '':
             raise InvalidStrategy("No device_model key found in icc profile")
-        return str(device_model)
+        return str(device_model.value.decode("ascii").rstrip(' \0'))
 
 
 class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
@@ -105,10 +105,10 @@ class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
             raise InvalidStrategy("Unable to get ICC profile."
                                   "Reason: {}".format(error))
 
-        pref_ccm = icc.get("pref_ccm").value.decode("ascii").rstrip(' \0')
-        if not pref_ccm:
+        pref_ccm = icc.get("pref_ccm")
+        if not pref_ccm or pref_ccm.value.decode("ascii").rstrip(' \0') == '':
             raise InvalidStrategy("No pref_ccm key found in icc profile")
-        return str(pref_ccm)
+        return str(pref_ccm.value.decode("ascii").rstrip(' \0'))
 
 
 class ColorSpaceOJPCheck(AbsColorSpaceExtractor):

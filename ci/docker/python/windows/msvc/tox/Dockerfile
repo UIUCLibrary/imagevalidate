@@ -188,6 +188,20 @@ RUN py -m pip install --upgrade pip wheel && `
       -r c:/requirements/requirements.txt
 RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
 # ==============================================================================
+FROM BASE_BUILDER as WHEEL_BUilDER_PY311
+SHELL ["cmd", "/S", "/C" ]
+COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt c:/requirements/
+COPY requirements c:/requirements/requirements
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+ENV PY_PYTHON=3.11
+RUN py -m pip install --upgrade pip wheel && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir `
+      -r c:/requirements/requirements-ci.txt `
+      -r c:/requirements/requirements-extras.txt `
+      -r c:/requirements/requirements.txt
+RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
+# ==============================================================================
 
 FROM BASE_BUILDER as CONAN_BUILDER
 ARG CONAN_USER_HOME
@@ -233,6 +247,9 @@ COPY --from=WHEEL_BUilDER_PY39 c:/wheels/ c:/wheels/
 RUN py -3.9 -m pip install pip --upgrade ; py -3.9 -m pip install build
 
 COPY --from=WHEEL_BUilDER_PY310 c:/wheels/ c:/wheels/
+RUN py -3.10 -m pip install pip --upgrade ; py -3.10 -m pip install build
+
+COPY --from=WHEEL_BUilDER_PY311 c:/wheels/ c:/wheels/
 RUN py -3.10 -m pip install pip --upgrade ; py -3.10 -m pip install build
 
 ENV PIP_FIND_LINKS=c:\wheels

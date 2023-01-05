@@ -12,27 +12,22 @@ try:
 except ImportError:
     from setuptools import Extension as Pybind11Extension
 
-# sys.path.insert(0, os.path.dirname(__file__))
-
 PACKAGE_NAME = "uiucprescon.imagevalidate"
 
 cmd_class = {}
 try:
-    # from builders import conan_libs
     from uiucprescon.build import conan_libs
     cmd_class["build_conan"] = conan_libs.BuildConan
 except ImportError:
     pass
 try:
     from uiucprescon.build.pybind11_builder import BuildPybind11Extension, UseSetuptoolsCompilerFileLibrary
-    # from builders.pybind11_builder import BuildPybind11Extension, UseSetuptoolsCompilerFileLibrary
 
     class BuildPybind11Extensions(BuildPybind11Extension):
 
         def run(self):
             super().run()
             from uiucprescon.build.deps import get_win_deps
-            # from builders.deps import get_win_deps
 
             for e in self.extensions:
                 dll_name = \
@@ -60,7 +55,6 @@ try:
                         shutil.copy(dll, dest)
 
         def build_extension(self, ext: Pybind11Extension):
-            # from builders import conan_libs
             from uiucprescon.build import conan_libs
             missing = self.find_missing_libraries(ext, strategies=[
                 UseSetuptoolsCompilerFileLibrary(
@@ -107,7 +101,6 @@ open_jpeg_extension = Pybind11Extension(
     ],
     language="c++",
     libraries=["openjp2"],
-    # extra_compile_args=['-std=c++14'],
 )
 openjpeg_library = \
     ("openjp2",
@@ -126,16 +119,12 @@ setup(
         'uiucprescon.imagevalidate',
         "uiucprescon.imagevalidate.profiles"],
     test_suite="tests",
-    namespace_packages=["uiucprescon"],
     setup_requires=['pytest-runner'],
-    install_requires=['py3exiv2bind>=0.1.9b6'],
+    install_requires=['py3exiv2bind>=0.1.9b7'],
     tests_require=['pytest'],
     zip_safe=False,
     ext_modules=[open_jpeg_extension],
     libraries=[],
     package_data={"uiucprescon.imagevalidate": ["py.typed"]},
-    # libraries=[openjpeg_library],
     cmdclass=cmd_class
 )
-
-# TODO extension should try to find the include and librarys and if not try looking at the one clib version

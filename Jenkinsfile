@@ -15,9 +15,9 @@ def getDevpiConfig() {
 }
 
 def DEVPI_CONFIG = getDevpiConfig()
-SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10']
-SUPPORTED_LINUX_VERSIONS = ['3.7', '3.8', '3.9', '3.10']
-SUPPORTED_WINDOWS_VERSIONS = ['3.7', '3.8', '3.9', '3.10']
+SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
+SUPPORTED_LINUX_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11']
+SUPPORTED_WINDOWS_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11']
 
 def getPypiConfig() {
     node(){
@@ -457,15 +457,6 @@ def test_packages(){
         parallel(testingStages)
     }
 }
-// def getMacDevpiName(pythonVersion, format){
-//     if(format == 'wheel'){
-//         return "${pythonVersion.replace('.','')}-*macosx*.*whl"
-//     } else if(format == 'sdist'){
-//         return 'tar.gz'
-//     } else{
-//         error "unknown format ${format}"
-//     }
-// }
 
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
@@ -477,8 +468,7 @@ def get_sonarqube_unresolved_issues(report_task_file){
     }
 }
 
-def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
-    def props = readProperties interpolate: true, file: metadataFile
+def sonarcloudSubmit(props, outputJson, sonarCredentials){
     withSonarQubeEnv(installationName:'sonarcloud', credentialsId: sonarCredentials) {
         if (env.CHANGE_ID){
             sh(
@@ -820,6 +810,7 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                     ],
                     test:[
                         setup: {
+                            checkout scm
                             sh(
                                 label: 'Installing Devpi client',
                                 script: '''python3 -m venv venv
@@ -855,6 +846,7 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                     ],
                     test:[
                         setup: {
+                            checkout scm
                             sh(
                                 label:'Installing Devpi client',
                                 script: '''python3 -m venv venv
@@ -1115,12 +1107,12 @@ pipeline {
                                                     post{
                                                         always{
                                                             archiveArtifacts artifacts: 'logs/*'
-                                                        //  recordIssues(
-                                                        //      tools: [
-                                                        //          gcc(pattern: 'logs/cmake-build.log'),
-                                                        //          [$class: 'Cmake', pattern: 'logs/cmake-build.log']
-                                                        //      ]
-                                                        //  )
+                                                            recordIssues(
+                                                                 tools: [
+                                                                     gcc(pattern: 'logs/cmake-build.log'),
+                                                                     [$class: 'Cmake', pattern: 'logs/cmake-build.log']
+                                                                 ]
+                                                            )
                                                         }
                                                     }
                                                 }
@@ -1234,7 +1226,6 @@ pipeline {
                                                             post {
                                                                 always {
                                                                     junit 'reports/pytest.xml'
-                                                                    // stash includes: 'reports/pytest.xml', name: 'PYTEST_REPORT'
                                                                 }
                                                             }
                                                         }
@@ -1284,7 +1275,6 @@ pipeline {
                                                             post {
                                                                 always {
                                                                     recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                                                    // stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
                                                                 }
                                                             }
                                                         }
@@ -1297,7 +1287,6 @@ pipeline {
                                                                           gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
                                                                           '''
                                                             )
-                                                            // stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
                                                             publishCoverage(
                                                                 adapters: [
                                                                         coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
@@ -1317,9 +1306,6 @@ pipeline {
                                                         beforeOptions true
                                                     }
                                                     steps{
-                                                        // unstash 'PYTHON_COVERAGE_REPORT'
-                                                        // unstash 'PYTEST_REPORT'
-                                                        // unstash 'FLAKE8_REPORT'
                                                         unstash 'DIST-INFO'
                                                         sh(
                                                         label: 'Preparing c++ coverage data available for SonarQube',
@@ -1328,7 +1314,7 @@ pipeline {
                                                                 mv *.gcov build/coverage/
                                                                 """
                                                         )
-                                                        sonarcloudSubmit('uiucprescon.imagevalidate.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-uiucprescon.imagevalidate')
+                                                        sonarcloudSubmit(props, 'reports/sonar-report.json', 'sonarcloud-uiucprescon.imagevalidate')
                                                     }
                                                     post {
                                                         always{
