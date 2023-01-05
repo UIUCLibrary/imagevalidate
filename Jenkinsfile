@@ -468,8 +468,7 @@ def get_sonarqube_unresolved_issues(report_task_file){
     }
 }
 
-def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
-    def props = readProperties interpolate: true, file: metadataFile
+def sonarcloudSubmit(props, outputJson, sonarCredentials){
     withSonarQubeEnv(installationName:'sonarcloud', credentialsId: sonarCredentials) {
         if (env.CHANGE_ID){
             sh(
@@ -1313,7 +1312,7 @@ pipeline {
                                                                 mv *.gcov build/coverage/
                                                                 """
                                                         )
-                                                        sonarcloudSubmit('uiucprescon.imagevalidate.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-uiucprescon.imagevalidate')
+                                                        sonarcloudSubmit(props, 'reports/sonar-report.json', 'sonarcloud-uiucprescon.imagevalidate')
                                                     }
                                                     post {
                                                         always{
