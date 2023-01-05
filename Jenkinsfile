@@ -1105,12 +1105,12 @@ pipeline {
                                                     post{
                                                         always{
                                                             archiveArtifacts artifacts: 'logs/*'
-                                                        //  recordIssues(
-                                                        //      tools: [
-                                                        //          gcc(pattern: 'logs/cmake-build.log'),
-                                                        //          [$class: 'Cmake', pattern: 'logs/cmake-build.log']
-                                                        //      ]
-                                                        //  )
+                                                            recordIssues(
+                                                                 tools: [
+                                                                     gcc(pattern: 'logs/cmake-build.log'),
+                                                                     [$class: 'Cmake', pattern: 'logs/cmake-build.log']
+                                                                 ]
+                                                            )
                                                         }
                                                     }
                                                 }
