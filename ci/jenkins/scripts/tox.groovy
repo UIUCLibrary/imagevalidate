@@ -11,7 +11,7 @@ def getToxEnvs(){
                 label: "Getting Tox Environments",
                 returnStdout: true,
                 script: "@tox -l"
-            ).trim().split('\n')
+            ).trim().split('\r\n')
     }
     envs.collect{
         it.trim()
@@ -79,6 +79,9 @@ def getErrorToxMetadataReport(tox_env, toxResultFile){
     def tox_result = readJSON(file: toxResultFile)
     def testEnv = tox_result['testenvs'][tox_env]
     def errorMessages = []
+    if (testEnv == null){
+        return tox_result['testenvs']
+    }
     testEnv["test"].each{
         if (it['retcode'] != 0){
             echo "Found error ${it}"
@@ -124,14 +127,9 @@ def getToxTestsParallel(args = [:]){
     def dockerArgs = args['dockerArgs']
     def retries = args.containsKey('retry') ? args.retry : 1
     script{
-        def TOX_RESULT_FILE_NAME = "tox_result.json"
         def envs
         def originalNodeLabel
-        def dockerImageName = "tox${currentBuild.fullProjectName}".replaceAll("-", "").replaceAll('/', "").replaceAll(' ', "").toLowerCase()
-
-        // ========
-
-
+        def dockerImageName = "${currentBuild.fullProjectName}:tox".replaceAll("-", "").replaceAll('/', "").replaceAll(' ', "").toLowerCase()
         retry(retries){
             node(label){
                 originalNodeLabel = env.NODE_NAME
@@ -143,86 +141,80 @@ def getToxTestsParallel(args = [:]){
                 if(isUnix()){
                     sh(
                         label: "Removing Docker Image used to run tox",
-                        script: "docker image ls ${dockerImageName}"
+                        script: "docker image rm --no-prune ${dockerImageName}"
                     )
                 } else {
                     bat(
                         label: "Removing Docker Image used to run tox",
-                        script: """docker image ls ${dockerImageName}
+                        script: """docker image rm --no-prune ${dockerImageName}
                                    """
                     )
                 }
             }
-            echo "Found tox environments for ${envs.join(', ')}"
         }
+        echo "Found tox environments for ${envs.join(', ')}"
         def jobs = envs.collectEntries({ tox_env ->
             def tox_result
             def githubChecksName = "Tox: ${tox_env} ${envNamePrefix}"
             def jenkinsStageName = "${envNamePrefix} ${tox_env}"
-
+            def nodesUsed = []
             [jenkinsStageName,{
                 retry(retries){
                     node(label){
                         ws{
                             checkout scm
                             def dockerImageForTesting = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} . ")
-                            dockerImageForTesting.inside{
-                                try{
-                                    publishChecks(
-                                        conclusion: 'NONE',
-                                        name: githubChecksName,
-                                        status: 'IN_PROGRESS',
-                                        summary: 'Use Tox to test installed package',
-                                        title: 'Running Tox'
-                                    )
+                            try{
+                                dockerImageForTesting.inside{
                                     if(isUnix()){
                                         sh(
                                             label: "Running Tox with ${tox_env} environment",
-                                            script: "tox  -vv --parallel--safe-build --result-json=${TOX_RESULT_FILE_NAME} -e $tox_env"
+                                            script: "tox -v -e ${tox_env}"
                                         )
                                     } else {
                                         bat(
                                             label: "Running Tox with ${tox_env} environment",
-                                            script: "tox  -vv --parallel--safe-build --result-json=${TOX_RESULT_FILE_NAME} -e $tox_env "
+                                            script: "tox -v -e ${tox_env}"
                                         )
                                     }
-                                } catch (e){
-                                    def text
-                                    try{
-                                        text = generateToxReport(tox_env, 'tox_result.json')
-                                    }
-                                    catch (ex){
-                                        text = "No details given. Unable to read tox_result.json"
-                                    }
-                                    publishChecks(
-                                        name: githubChecksName,
-                                        summary: 'Use Tox to test installed package',
-                                        text: text,
-                                        conclusion: 'FAILURE',
-                                        title: 'Failed'
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: ".tox/", type: 'INCLUDE'],
+                                        ]
                                     )
-                                    throw e
                                 }
-                                def checksReportText = generateToxReport(tox_env, TOX_RESULT_FILE_NAME)
-                                publishChecks(
-                                        name: githubChecksName,
-                                        summary: 'Use Tox to test installed package',
-                                        text: "${checksReportText}",
-                                        title: 'Passed'
-                                    )
-                                cleanWs(
-                                    deleteDirs: true,
-                                    patterns: [
-                                        [pattern: TOX_RESULT_FILE_NAME, type: 'INCLUDE'],
-                                        [pattern: ".tox/", type: 'INCLUDE'],
-                                    ]
-                                )
+                            } finally {
+                                if(isUnix()){
+                                    def runningContainers = sh(
+                                                               script: "docker ps --no-trunc --filter ancestor=${dockerImageName} --format {{.Names}}",
+                                                               returnStdout: true,
+                                                               )
+                                    if (!runningContainers?.trim()) {
+                                        sh(
+                                            label: "Removing Docker Image used to run tox",
+                                            script: "docker image rm --no-prune ${dockerImageName}",
+                                        )
+                                    }
+                                    sh(script: "docker ps --no-trunc --filter ancestor=${dockerImageName} --format {{.Names}}")
+                                } else {
+                                    def runningContainers = bat(
+                                                    returnStdout: true,
+                                                    script: "docker ps --no-trunc --filter ancestor=${dockerImageName} --format {{.Names}}"
+                                                    )
+                                    if (!runningContainers?.trim()) {
+                                        bat(
+                                            label: "Removing Docker Image used to run tox",
+                                            script: "docker image rm --no-prune ${dockerImageName}",
+                                        )
+                                    }
+                                    bat(script: "docker ps --no-trunc --filter ancestor=${dockerImageName} --format {{.Names}}")
+                                }
                             }
                         }
                     }
                 }
             }]
-
         })
         return jobs
     }
