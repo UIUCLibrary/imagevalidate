@@ -194,21 +194,23 @@ def getToxTestsParallel(args = [:]){
                                         sh(
                                             label: "Removing Docker Image used to run tox",
                                             script: "docker image rm --no-prune ${dockerImageName}",
+                                            returnStatus: true
                                         )
                                     }
                                     sh(script: "docker ps --no-trunc --filter ancestor=${dockerImageName} --format {{.Names}}")
                                 } else {
-                                    def runningContainers = bat(
+                                    def runningContainers = powershell(
                                                     returnStdout: true,
-                                                    script: "docker ps --no-trunc --filter ancestor=${dockerImageName} --format {{.Names}}"
+                                                    script: "docker ps --no-trunc --filter \"ancestor=${dockerImageName}\" --format \"{{.Names}}\""
                                                     )
                                     if (!runningContainers?.trim()) {
-                                        bat(
+                                        powershell(
                                             label: "Removing Docker Image used to run tox",
                                             script: "docker image rm --no-prune ${dockerImageName}",
+                                            returnStatus: true
                                         )
                                     }
-                                    bat(script: "docker ps --no-trunc --filter ancestor=${dockerImageName} --format {{.Names}}")
+                                    powershell(script: "docker ps --no-trunc --filter \"ancestor=${dockerImageName}\" --format \"{{.Names}}\"")
                                 }
                             }
                         }
