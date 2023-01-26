@@ -2,6 +2,6 @@ pybind11
 conan
 pytest
 pytest-runner
-py3exiv2bind>=0.1.9.b7
+py3exiv2bind>=0.1.9
 toml
 git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.0
