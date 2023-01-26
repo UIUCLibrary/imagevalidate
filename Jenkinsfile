@@ -369,7 +369,7 @@ def test_packages(){
                     ]
                 )
             }
-            if(params.INCLUDE_ARM == true){
+            if(params.INCLUDE_ARM_LINUX == true){
                 linuxTestStages["Linux - Python ${pythonVersion} - ARM64: wheel"] = {
                     packages.testPkg2(
                         agent: [
@@ -986,6 +986,7 @@ pipeline {
         booleanParam(name: 'BUILD_PACKAGES', defaultValue: false, description: 'Build Python packages')
         booleanParam(name: 'INCLUDE_ARM', defaultValue: false, description: 'Include ARM architecture')
         booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
+        booleanParam(name: 'INCLUDE_ARM_LINUX', defaultValue: false, description: 'Include ARM architecture for Linux')
         booleanParam(name: 'INCLUDE_ARM_MACOS', defaultValue: false, description: 'Include ARM(m1) architecture for Mac')
         booleanParam(name: 'INCLUDE_X86_64_MACOS', defaultValue: false, description: 'Include x86_64 architecture for Mac')
         booleanParam(name: 'DEPLOY_PYPI', defaultValue: false, description: 'Deploy to pypi')
