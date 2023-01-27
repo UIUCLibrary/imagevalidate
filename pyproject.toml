@@ -14,6 +14,16 @@ source = [
     "uiucprescon/imagevalidate"
 ]
 
+[tool.mypy]
+ignore_missing_imports = true
+
+
+[tool.pytest.ini_options]
+testpaths = "tests"
+addopts = "--verbose"
+norecursedirs = "build"
+markers = "integration"
+junit_family="xunit2"
 
 [tool.cibuildwheel]
 test-requires = "pytest"
