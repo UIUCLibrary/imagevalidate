@@ -15,8 +15,12 @@
 import os
 import re
 import sys
-from setuptools.config import read_configuration
+try:
+    from setuptools.config.setupcfg import read_configuration
+except ImportError:
+    from setuptools.config import read_configuration
 sys.path.insert(0, os.path.abspath('../..'))
+
 
 def get_project_metadata():
     path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../setup.cfg"))
