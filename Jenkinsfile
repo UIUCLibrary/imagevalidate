@@ -464,7 +464,9 @@ def get_sonarqube_unresolved_issues(report_task_file){
     script{
 
         def props = readProperties  file: '.scannerwork/report-task.txt'
-        def response = httpRequest url : props['serverUrl'] + '/api/issues/search?componentKeys=' + props['projectKey'] + "&resolved=no"
+        def branch = props['branch']
+        def url = props['serverUrl'] + '/api/issues/search?componentKeys=' + props['projectKey'] + "&branch=" + branch +"&resolved=no"
+        def response = httpRequest(url : url)
         def outstandingIssues = readJSON text: response.content
         return outstandingIssues
     }
@@ -1313,13 +1315,12 @@ pipeline {
                                                         beforeOptions true
                                                     }
                                                     steps{
-                                                        unstash 'DIST-INFO'
                                                         sh(
-                                                        label: 'Preparing c++ coverage data available for SonarQube',
-                                                        script: """mkdir -p build/coverage
-                                                                find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
-                                                                mv *.gcov build/coverage/
-                                                                """
+                                                            label: 'Preparing c++ coverage data available for SonarQube',
+                                                            script: """mkdir -p build/coverage
+                                                                    find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
+                                                                    mv *.gcov build/coverage/
+                                                                    """
                                                         )
                                                         sonarcloudSubmit(props, 'reports/sonar-report.json', 'sonarcloud-uiucprescon.imagevalidate')
                                                     }
