@@ -1,13 +1,18 @@
 ARG CONAN_USER_HOME=/conan
 ARG PIP_FIND_LINKS=/wheels
 FROM ubuntu:20.04 as wheel_builder_base
-COPY ci/docker/python/linux/tox/apt-packages.txt /tmp/
-RUN apt update && \
-    apt-get install -y software-properties-common && \
+COPY ci/docker/python/linux/tox/apt-packages.txt /tmp/apt-packages.txt
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN apt-get update && \
+    apt-get install -y software-properties-common --no-install-recommends && \
     add-apt-repository ppa:deadsnakes/ppa && \
-    apt update && \
-    cat /tmp/apt-packages.txt | xargs apt-get -y install
+    apt-get update && \
+    < /tmp/apt-packages.txt xargs apt-get install -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /.cache/pip && \
+    chmod -R 777 /.cache
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY37
 ARG PIP_FIND_LINKS
@@ -17,13 +22,13 @@ ARG PIP_INDEX_URL
 COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
 COPY requirements /tmp/requirements
 ENV PYTHON=python3.7
-RUN $PYTHON -m pip install pip --upgrade pip && \
-    $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w ${PIP_FIND_LINKS} --no-cache-dir  \
+RUN $PYTHON -m venv venv && \
+    source ./venv/bin/activate --upgrade-deps && \
+    python -m pip install --no-cache-dir wheel==0.37.1 && \
+    python -m pip wheel --no-cache-dir -w ${PIP_FIND_LINKS} \
       -r /tmp/requirements.txt  \
       -r /tmp/requirements-ci.txt  \
       -r /tmp/requirements-extras.txt
-RUN $PYTHON -m pip wheel  -w ${PIP_FIND_LINKS} --no-cache-dir wheel
 
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY38
@@ -34,13 +39,13 @@ ARG PIP_INDEX_URL
 COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
 COPY requirements /tmp/requirements
 ENV PYTHON=python3.8
-RUN $PYTHON -m pip install pip --upgrade pip && \
-    $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w ${PIP_FIND_LINKS} --no-cache-dir  \
+RUN $PYTHON -m venv venv && \
+    source ./venv/bin/activate --upgrade-deps && \
+    python -m pip install --no-cache-dir wheel==0.37.1 && \
+    python -m pip wheel --no-cache-dir -w ${PIP_FIND_LINKS} \
       -r /tmp/requirements.txt  \
       -r /tmp/requirements-ci.txt  \
       -r /tmp/requirements-extras.txt
-RUN $PYTHON -m pip wheel  -w ${PIP_FIND_LINKS} --no-cache-dir wheel
 
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY39
@@ -50,13 +55,13 @@ ARG PIP_INDEX_URL
 COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
 COPY requirements /tmp/requirements
 ENV PYTHON=python3.9
-RUN $PYTHON -m pip install pip --upgrade pip && \
-    $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w ${PIP_FIND_LINKS} --no-cache-dir  \
+RUN $PYTHON -m venv venv && \
+    source ./venv/bin/activate --upgrade-deps && \
+    python -m pip install --no-cache-dir wheel==0.37.1 && \
+    python -m pip wheel --no-cache-dir -w ${PIP_FIND_LINKS} \
       -r /tmp/requirements.txt  \
       -r /tmp/requirements-ci.txt  \
       -r /tmp/requirements-extras.txt
-RUN $PYTHON -m pip wheel  -w ${PIP_FIND_LINKS} --no-cache-dir wheel
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY310
 ARG PIP_FIND_LINKS
@@ -65,14 +70,13 @@ ARG PIP_INDEX_URL
 COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
 COPY requirements /tmp/requirements
 ENV PYTHON=python3.10
-RUN $PYTHON -m ensurepip --upgrade &&  \
-    $PYTHON -m pip install pip --upgrade pip && \
-    $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w ${PIP_FIND_LINKS} --no-cache-dir  \
+RUN $PYTHON -m venv venv && \
+    source ./venv/bin/activate --upgrade-deps && \
+    python -m pip install --no-cache-dir wheel==0.37.1 && \
+    python -m pip wheel --no-cache-dir -w ${PIP_FIND_LINKS} \
       -r /tmp/requirements.txt  \
       -r /tmp/requirements-ci.txt  \
       -r /tmp/requirements-extras.txt
-RUN $PYTHON -m pip wheel  -w ${PIP_FIND_LINKS} --no-cache-dir wheel
 # ==============================================================================
 FROM wheel_builder_base as WHEEL_BUILDER_PY311
 ARG PIP_FIND_LINKS
@@ -81,14 +85,13 @@ ARG PIP_INDEX_URL
 COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt requirements.txt /tmp/
 COPY requirements /tmp/requirements
 ENV PYTHON=python3.11
-RUN $PYTHON -m ensurepip --upgrade &&  \
-    $PYTHON -m pip install pip --upgrade pip && \
-    $PYTHON -m pip install wheel && \
-    $PYTHON -m pip wheel -w ${PIP_FIND_LINKS} --no-cache-dir  \
+RUN $PYTHON -m venv venv && \
+    source ./venv/bin/activate --upgrade-deps && \
+    python -m pip install --no-cache-dir wheel==0.37.1 && \
+    python -m pip wheel --no-cache-dir -w ${PIP_FIND_LINKS} \
       -r /tmp/requirements.txt  \
       -r /tmp/requirements-ci.txt  \
       -r /tmp/requirements-extras.txt
-RUN $PYTHON -m pip wheel  -w ${PIP_FIND_LINKS} --no-cache-dir wheel
 # ==============================================================================
 
 FROM wheel_builder_base as conan_builder
