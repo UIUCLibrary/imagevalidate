@@ -4,7 +4,7 @@ FROM ubuntu:20.04 as wheel_builder_base
 COPY ci/docker/python/linux/tox/apt-packages.txt /tmp/apt-packages.txt
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update && \
-    apt-get install -y software-properties-common --no-install-recommends && \
+    apt-get install -y software-properties-common=0.99.9.10 --no-install-recommends && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     < /tmp/apt-packages.txt xargs apt-get install -y && \
@@ -95,7 +95,7 @@ RUN $PYTHON -m venv venv && \
 # ==============================================================================
 
 FROM wheel_builder_base as conan_builder
-RUN pip3 install conan cmake
+RUN pip3 install --no-cache-dir conan cmake
 ARG CONAN_USER_HOME
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
@@ -119,10 +119,10 @@ COPY --from=WHEEL_BUILDER_PY310 ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
 COPY --from=WHEEL_BUILDER_PY311 ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
 ENV PIP_FIND_LINKS=${PIP_FIND_LINKS}
 COPY requirements/ /tmp/requirements
-RUN pip3 install wheel
-RUN pip3 install -r /tmp/requirements/requirements_tox.txt conan "devpi-client<6.0"
+RUN pip3 install --no-cache-dir wheel==0.37.1 && \
+    pip3 install --no-cache-dir -r /tmp/requirements/requirements_tox.txt conan "devpi-client<6.0"
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
-ADD conanfile.py /tmp/conanfile.py
+COPY conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY --from=conan_builder ${CONAN_USER_HOME}/ ${CONAN_USER_HOME}/
 RUN conan config home
@@ -131,4 +131,4 @@ RUN conan install /tmp --build missing --no-import  && \
     conan remove --locks
 RUN chmod -R 777 ${CONAN_USER_HOME}
 WORKDIR /src
-CMD tox --workdir /tmp/tox --recreate
+CMD ["tox", "--workdir", "/tmp/tox", "--recreate"]

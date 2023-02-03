@@ -3,22 +3,26 @@ FROM ubuntu:20.04 as base_image
 ARG TZ=America/Chicago
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN apt update && \
-    apt install -y \
-        ninja-build \
-        ccache \
-        git \
-        python3 \
-        python3-pip \
-        python3-venv \
-        ca-certificates \
-        software-properties-common && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ninja-build=1.10.0-1build1 \
+        build-essential=12.8ubuntu1.1 \
+        ccache=3.7.7-1 \
+        git=1:2.25.1-1ubuntu3.8 \
+        python3=3.8.2-0ubuntu2 \
+        python3-dev=3.8.2-0ubuntu2 \
+        python3-pip=20.0.2-5ubuntu1.7 \
+        python3-venv=3.8.2-0ubuntu2 \
+        ca-certificates=20211016ubuntu0.20.04.1 \
+        software-properties-common=0.99.9.10 && \
     rm -rf /var/lib/apt/lists/*
 ARG SONAR_SCANNER_VERSION=4.6.2.2472
 
 #==============================================================================
 FROM base_image as DR_MEMORY_BUILDER
-RUN apt-get update && apt install -y wget
+RUN apt-get update &&  \
+    apt-get install -y --no-install-recommends wget=1.20.3-1ubuntu2
+
 WORKDIR /drmemory
 RUN wget --no-verbose https://github.com/DynamoRIO/drmemory/releases/download/release_2.3.0/DrMemory-Linux-2.3.0-1.tar.gz && \
     mkdir -p /opt/drmemory && tar xzf DrMemory-Linux-2.3.0-1.tar.gz -C /opt/drmemory --strip-components=1 && \
@@ -27,13 +31,15 @@ RUN wget --no-verbose https://github.com/DynamoRIO/drmemory/releases/download/re
 
 FROM base_image as wheel_builder
 
-RUN apt update && apt install -y ninja-build \
+RUN apt-get update &&  \
+    apt-get install -y --no-install-recommends  \
+      ninja-build=1.10.0-1build1 \
     && rm -rf /var/lib/apt/lists/*
 
 ARG PYTHON_INDEX
 ARG PIP_EXTRA_INDEX_URL
 ENV PIP_NO_CACHE_DIR=1
-ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+COPY requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
 COPY requirements/ /requirements/requirements/
 RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install --upgrade setuptools && \
@@ -46,7 +52,9 @@ RUN python3 -m pip install --upgrade pip && \
 
 FROM base_image as SONAR_BUILDER
 RUN apt-get update && \
-    apt-get install -y unzip curl && \
+    apt-get install -y --no-install-recommends  \
+      unzip=6.0-25ubuntu1.1  \
+      curl=7.68.0-1ubuntu2.15 && \
     rm -rf /var/lib/apt/lists/*
 ARG SONAR_SCANNER_VERSION=4.6.2.2472
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
@@ -87,7 +95,12 @@ RUN conan install /tmp --build outdated --no-import -pr:b=default && \
 
 FROM base_image
 
-RUN apt update && apt install -y ninja-build ccache clang-tidy cppcheck && \
+RUN apt-get update &&  \
+    apt-get install -y --no-install-recommends  \
+      ninja-build=1.10.0-1build1  \
+      ccache=3.7.7-1  \
+      clang-tidy=1:10.0-50~exp1  \
+      cppcheck=1.90-4build1 && \
     rm -rf /var/lib/apt/lists/*
 
 # -----------------------------------------------------------------------------
@@ -122,18 +135,16 @@ RUN ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
 
 ARG PIP_EXTRA_INDEX_URL
 
-
-
 COPY --from=wheel_builder /wheels /wheels/
 
-ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+COPY requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
 COPY requirements/ /requirements/requirements/
 #RUN python -m pip install --upgrade pip && \
 #    pip install --upgrade setuptools && \
 #    pip install wheel
-RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install --upgrade wheel && \
-    python3 -m pip install --no-index --find-links=/wheels  \
+RUN python3 -m pip install --no-cache-dir --upgrade pip && \
+    python3 -m pip install --no-cache-dir --upgrade wheel==0.37.1 && \
+    python3 -m pip install --no-cache-dir --no-index --find-links=/wheels  \
             -r /requirements/requirements.txt -r /requirements/requirements-ci.txt
 
 ENV PIP_FIND_LINKS=/wheels
