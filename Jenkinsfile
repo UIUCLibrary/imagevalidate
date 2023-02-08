@@ -854,6 +854,7 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                         ],
                         test:[
                             setup: {
+                                checkout scm
                                 sh(
                                     label: 'Installing Devpi client',
                                     script: '''python3 -m venv venv
