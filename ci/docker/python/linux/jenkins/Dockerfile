@@ -8,7 +8,7 @@ RUN apt-get update && \
         ninja-build=1.10.0-1build1 \
         build-essential=12.8ubuntu1.1 \
         ccache=3.7.7-1 \
-        git=1:2.25.1-1ubuntu3.8 \
+        git \
         python3=3.8.2-0ubuntu2 \
         python3-dev=3.8.2-0ubuntu2 \
         python3-pip=20.0.2-5ubuntu1.7 \
