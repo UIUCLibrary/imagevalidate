@@ -11,7 +11,8 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
 RUN python -m pip install pip --upgrade && python -m pip install wheel
-RUN python --version && python -m pip install conan cmake build
+COPY requirements/requirements_conan.txt /tmp/requirements_conan.txt
+RUN python --version && python -m pip install -r /tmp/requirements_conan.txt cmake build
 # ==============================================================================
 FROM base as PYTHON37_WHEEL_BUILDER
 ARG PIP_FIND_LINKS
@@ -79,7 +80,8 @@ RUN PYTHON=python3.10 && \
 # ==============================================================================
 
 FROM base as conan_builder
-RUN pip3 install conan cmake
+COPY requirements/requirements_conan.txt /tmp/requirements_conan.txt
+RUN pip3 install -r /tmp/requirements_conan.txt cmake
 ARG CONAN_USER_HOME
 COPY ci/docker/shared/conan/remotes.json  $CONAN_USER_HOME/.conan/remotes.json
 ARG TARGETARCH

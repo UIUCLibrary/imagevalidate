@@ -1,5 +1,5 @@
 pybind11
-conan
+-r requirements/requirements_conan.txt
 pytest
 pytest-runner
 py3exiv2bind>=0.1.9

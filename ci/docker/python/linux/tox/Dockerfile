@@ -95,13 +95,14 @@ RUN $PYTHON -m venv venv && \
 # ==============================================================================
 
 FROM wheel_builder_base as conan_builder
-RUN pip3 install --no-cache-dir conan cmake
+COPY requirements/requirements_conan.txt /tmp/requirements_conan.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements_conan.txt cmake
 ARG CONAN_USER_HOME
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config home
-RUN conan install /tmp --build outdated --build=openjpeg --no-import  && \
+RUN conan install /tmp --build outdated --build=openjpeg --no-import && \
     conan remove "*" -b --src -f && \
     conan remove --locks
 # ==============================================================================
@@ -120,7 +121,7 @@ COPY --from=WHEEL_BUILDER_PY311 ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
 ENV PIP_FIND_LINKS=${PIP_FIND_LINKS}
 COPY requirements/ /tmp/requirements
 RUN pip3 install --no-cache-dir wheel==0.37.1 && \
-    pip3 install --no-cache-dir -r /tmp/requirements/requirements_tox.txt conan "devpi-client<6.0"
+    pip3 install --no-cache-dir -r /tmp/requirements/requirements_tox.txt -r /tmp/requirements/requirements_conan.txt "devpi-client<6.0"
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}

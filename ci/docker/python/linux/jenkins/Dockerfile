@@ -81,7 +81,8 @@ FROM wheel_builder as conan_builder
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-RUN pip install conan cmake
+COPY requirements/requirements_conan.txt /tmp/requirements_conan.txt
+RUN pip install --no-cache-dir -r /tmp/requirements_conan.txt cmake
 COPY ci/docker/shared/conan/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json
 COPY ci/docker/python/linux/jenkins/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
