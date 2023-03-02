@@ -5,16 +5,16 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        ninja-build=1.10.0-1build1 \
-        build-essential=12.8ubuntu1.1 \
-        ccache=3.7.7-1 \
+        ninja-build \
+        build-essential \
+        ccache \
         git \
-        python3=3.8.2-0ubuntu2 \
-        python3-dev=3.8.2-0ubuntu2 \
-        python3-pip=20.0.2-5ubuntu1.7 \
-        python3-venv=3.8.2-0ubuntu2 \
-        ca-certificates=20211016ubuntu0.20.04.1 \
-        software-properties-common=0.99.9.10 && \
+        python3 \
+        python3-dev \
+        python3-pip \
+        python3-venv \
+        ca-certificates \
+        software-properties-common && \
     rm -rf /var/lib/apt/lists/*
 ARG SONAR_SCANNER_VERSION=4.6.2.2472
 
