@@ -53,8 +53,8 @@ RUN python3 -m pip install --upgrade pip && \
 FROM base_image as SONAR_BUILDER
 RUN apt-get update && \
     apt-get install -y --no-install-recommends  \
-      unzip=6.0-25ubuntu1.1  \
-      curl=7.68.0-1ubuntu2.15 && \
+      unzip \
+      curl && \
     rm -rf /var/lib/apt/lists/*
 ARG SONAR_SCANNER_VERSION=4.6.2.2472
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
@@ -98,10 +98,10 @@ FROM base_image
 
 RUN apt-get update &&  \
     apt-get install -y --no-install-recommends  \
-      ninja-build=1.10.0-1build1  \
-      ccache=3.7.7-1  \
-      clang-tidy=1:10.0-50~exp1  \
-      cppcheck=1.90-4build1 && \
+      ninja-build \
+      ccache \
+      clang-tidy \
+      cppcheck && \
     rm -rf /var/lib/apt/lists/*
 
 # -----------------------------------------------------------------------------
