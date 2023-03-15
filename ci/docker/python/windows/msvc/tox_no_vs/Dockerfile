@@ -1,5 +1,5 @@
 # escape=`
-
+ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8
 FROM ${FROM_IMAGE} as certsgen
 RUN certutil -generateSSTFromWU roots.sst
@@ -56,7 +56,7 @@ RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
 
 COPY requirements requirements
-RUN python -m pip install pip --upgrade ; pip install wheel; pip install -r requirements/requirements_tox.txt "devpi-client<6.0"
+RUN python -m pip install pip --upgrade ; pip install wheel; pip install -r requirements/requirements_tox.txt -r requirements/requirements_devpi.txt
 WORKDIR C:/src
 
 ARG PIP_DOWNLOAD_CACHE

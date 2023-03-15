@@ -32,7 +32,7 @@ ARG PIP_INDEX_URL
 
 COPY requirements/ /tmp/requirements
 RUN pip3 install --no-cache-dir wheel==0.37.1 && \
-    pip3 install --no-cache-dir -r /tmp/requirements/requirements_tox.txt -r /tmp/requirements/requirements_conan.txt "devpi-client<6.0"
+    pip3 install --no-cache-dir -r /tmp/requirements/requirements_tox.txt -r /tmp/requirements/requirements_conan.txt -r /tmp/requirements/requirements_devpi.txt
 
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY conanfile.py /tmp/conanfile.py

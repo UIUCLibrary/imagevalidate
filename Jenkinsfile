@@ -837,7 +837,8 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                             teardown: {
                                 sh( label: 'Remove Devpi client', script: 'rm -r venv')
                             }
-                        ]
+                        ],
+                        retries: 3
                     )
                 }
             }
@@ -876,7 +877,8 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                             teardown: {
                                 sh( label: 'Remove Devpi client', script: 'rm -r venv')
                             }
-                        ]
+                        ],
+                        retries: 3
                     )
                 }
             }
@@ -914,7 +916,8 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                             teardown: {
                                 sh( label: 'Remove Devpi client', script: 'rm -r venv')
                             }
-                        ]
+                        ],
+                        retries: 3
                     )
                 }
             }
@@ -949,7 +952,8 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                             teardown: {
                                 sh( label: 'Remove Devpi client', script: 'rm -r venv')
                             }
-                        ]
+                        ],
+                        retries: 3
                     )
                 }
             }
@@ -1524,7 +1528,7 @@ pipeline {
                                         test:[
                                             toxEnv: "py${pythonVersion}".replace('.',''),
                                         ],
-                                        retry: 2
+                                        retries: 3
                                     )
                                 }
                                 windowsPackages["Test Python ${pythonVersion}: wheel Windows"] = {
@@ -1550,7 +1554,7 @@ pipeline {
                                         test:[
                                             toxEnv: "py${pythonVersion}".replace('.',''),
                                         ],
-                                        retry: 2
+                                        retries: 3
                                     )
                                 }
                             }
@@ -1578,7 +1582,7 @@ pipeline {
                                         test:[
                                             toxEnv: "py${pythonVersion}".replace('.',''),
                                         ],
-                                        retry: 2
+                                        retries: 3
                                     )
                                 }
                                 linuxPackages["Linux - Python ${pythonVersion}: wheel"] = {
@@ -1603,7 +1607,7 @@ pipeline {
                                         test:[
                                             toxEnv: "py${pythonVersion}".replace('.',''),
                                         ],
-                                        retry: 2
+                                        retries: 3
                                     )
                                 }
                             }
