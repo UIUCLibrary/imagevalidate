@@ -58,4 +58,9 @@ RUN certutil -addstore -f root roots.sst ; `
 COPY requirements requirements
 RUN python -m pip install pip --upgrade ; pip install wheel; pip install -r requirements/requirements_tox.txt "devpi-client<6.0"
 WORKDIR C:/src
+
+ARG PIP_DOWNLOAD_CACHE
+RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force
+ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
+
 CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate -p=auto
