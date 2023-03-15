@@ -115,80 +115,6 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no
     Write-Host "Installing Python with Chocolatey - Done"
 
 
-# ==============================================================================
-FROM BASE_BUILDER as WHEEL_BUilDER_PY37
-SHELL ["cmd", "/S", "/C" ]
-COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt c:/requirements/
-COPY requirements c:/requirements/requirements
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ENV PY_PYTHON=3.7
-RUN py -m pip install --upgrade pip wheel && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir `
-      -r c:/requirements/requirements-ci.txt `
-      -r c:/requirements/requirements-extras.txt `
-      -r c:/requirements/requirements.txt
-RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
-# ==============================================================================
-FROM BASE_BUILDER as WHEEL_BUilDER_PY38
-SHELL ["cmd", "/S", "/C" ]
-COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt c:/requirements/
-COPY requirements c:/requirements/requirements
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ENV PY_PYTHON=3.8
-RUN py -m pip install --upgrade pip wheel && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir `
-      -r c:/requirements/requirements-ci.txt `
-      -r c:/requirements/requirements-extras.txt `
-      -r c:/requirements/requirements.txt
-RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
-
-# ==============================================================================
-FROM BASE_BUILDER as WHEEL_BUilDER_PY39
-SHELL ["cmd", "/S", "/C" ]
-COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt c:/requirements/
-COPY requirements c:/requirements/requirements
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ENV PY_PYTHON=3.9
-RUN py -m pip install --upgrade pip wheel && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir `
-      -r c:/requirements/requirements-ci.txt `
-      -r c:/requirements/requirements-extras.txt `
-      -r c:/requirements/requirements.txt
-RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
-
-# ==============================================================================
-FROM BASE_BUILDER as WHEEL_BUilDER_PY310
-SHELL ["cmd", "/S", "/C" ]
-COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt c:/requirements/
-COPY requirements c:/requirements/requirements
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ENV PY_PYTHON=3.10
-RUN py -m pip install --upgrade pip wheel && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir `
-      -r c:/requirements/requirements-ci.txt `
-      -r c:/requirements/requirements-extras.txt `
-      -r c:/requirements/requirements.txt
-RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
-# ==============================================================================
-FROM BASE_BUILDER as WHEEL_BUilDER_PY311
-SHELL ["cmd", "/S", "/C" ]
-COPY requirements.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extras.txt c:/requirements/
-COPY requirements c:/requirements/requirements
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ENV PY_PYTHON=3.11
-RUN py -m pip install --upgrade pip wheel && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir `
-      -r c:/requirements/requirements-ci.txt `
-      -r c:/requirements/requirements-extras.txt `
-      -r c:/requirements/requirements.txt
-RUN py -m pip wheel -w c:\wheels\ --no-cache-dir wheel
-# ==============================================================================
-
 FROM BASE_BUILDER as CONAN_BUILDER
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
@@ -223,22 +149,17 @@ RUN conan install c:/temp/ --build missing --no-import  ; `
     conan remove "*" -b --src -f ; `
     conan remove --locks
 
-COPY --from=WHEEL_BUilDER_PY37 c:/wheels/ c:/wheels/
-RUN py -3.7 -m pip install pip --upgrade ; py -3.7 -m pip install build
+RUN py -3.7 -m pip install --no-cache-dir pip --upgrade ;  `
+    py -3.7 -m pip install --no-cache-dir build; `
+    py -3.8 -m pip install --no-cache-dir pip --upgrade ; `
+    py -3.8 -m pip install --no-cache-dir build ; `
+    py -3.9 -m pip install --no-cache-dir pip --upgrade ;  `
+    py -3.9 -m pip install --no-cache-dir build; `
+    py -3.10 -m pip install --no-cache-dir pip --upgrade ;  `
+    py -3.10 -m pip install --no-cache-dir build; `
+    py -3.11 -m pip install --no-cache-dir pip --upgrade ;  `
+    py -3.11 -m pip install --no-cache-dir build
 
-COPY --from=WHEEL_BUilDER_PY38 c:/wheels/ c:/wheels/
-RUN py -3.8 -m pip install pip --upgrade ; py -3.8 -m pip install build
-
-COPY --from=WHEEL_BUilDER_PY39 c:/wheels/ c:/wheels/
-RUN py -3.9 -m pip install pip --upgrade ; py -3.9 -m pip install build
-
-COPY --from=WHEEL_BUilDER_PY310 c:/wheels/ c:/wheels/
-RUN py -3.10 -m pip install pip --upgrade ; py -3.10 -m pip install build
-
-COPY --from=WHEEL_BUilDER_PY311 c:/wheels/ c:/wheels/
-RUN py -3.10 -m pip install pip --upgrade ; py -3.10 -m pip install build
-
-ENV PIP_FIND_LINKS=c:\wheels
 COPY requirements requirements
 RUN python -m pip install pip --upgrade ; pip install -r requirements/requirements_tox.txt
 WORKDIR C:/src

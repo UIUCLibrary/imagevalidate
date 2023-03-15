@@ -294,7 +294,8 @@ def test_packages(){
                         dockerfile: [
                             label: 'linux && docker && x86',
                             filename: 'ci/docker/python/linux/tox/Dockerfile',
-                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
+                            args: '-v pipcache_imagevalidate:/.cache/pip',
                         ]
                     ],
                     testSetup: {
@@ -337,7 +338,8 @@ def test_packages(){
                         dockerfile: [
                             label: 'linux && docker && x86',
                             filename: 'ci/docker/python/linux/tox/Dockerfile',
-                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
+                            args: '-v pipcache_imagevalidate:/.cache/pip',
                         ]
                     ],
                     testSetup: {
@@ -1377,7 +1379,8 @@ pipeline {
                                             envNamePrefix: 'Tox Linux',
                                             label: 'linux && docker && x86',
                                             dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
-                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
+                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
+                                            dockerRunArgs: '-v pipcache_imagevalidate:/.cache/pip',
                                             retry: 2
                                         )
                                     },
@@ -1387,6 +1390,7 @@ pipeline {
                                             label: 'windows && docker && x86',
                                             dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                             dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
+                                            dockerRunArgs: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
                                             retry: 2
                                         )
                                     },

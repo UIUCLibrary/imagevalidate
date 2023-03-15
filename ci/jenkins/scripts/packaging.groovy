@@ -13,6 +13,15 @@ def getToxEnv(args){
         return "py"
     }
 }
+def getDockerRuntimeArgs(agent){
+    def args
+    if (agent.containsKey("dockerfile")){
+        if (agent.dockerfile.containsKey("args")){
+            return agent.dockerfile.args
+        }
+    }
+    return ""
+}
 
 def getAgent(args, dockerImageName=null){
     if (args.agent.containsKey("label")){
@@ -28,6 +37,7 @@ def getAgent(args, dockerImageName=null){
 
     if (args.agent.containsKey("dockerfile")){
         def nodeLabel = getNodeLabel(args.agent)
+        def dockerArgs = getDockerRuntimeArgs(args.agent)
         return { inner ->
             node(nodeLabel){
                 ws{
@@ -37,7 +47,7 @@ def getAgent(args, dockerImageName=null){
                     lock("docker build-${env.NODE_NAME}"){
                         dockerImage = docker.build(dockerImageName, "-f ${args.agent.dockerfile.filename} ${args.agent.dockerfile.additionalBuildArgs} .")
                     }
-                    dockerImage.inside(){
+                    dockerImage.inside(dockerArgs){
                         inner()
                     }
                 }
