@@ -120,9 +120,10 @@ FROM BASE_BUILDER as CONAN_BUILDER
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
+COPY requirements requirements
 RUN python -m pip install --upgrade pip ; `
     pip install wheel ; `
-    pip install conan cmake
+    pip install -r requirements/requirements_conan.txt cmake
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY ci/docker/python/windows/msvc/shared/profile.ini ${CONAN_USER_HOME}/.conan/profiles/default
