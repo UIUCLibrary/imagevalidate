@@ -42,168 +42,180 @@ def test_packages(){
             def architectures = []
             if(params.INCLUDE_MACOS_X86_64 == true){
                 macTestStages["MacOS x86_64 - Python ${pythonVersion}: wheel"] = {
-                    packages.testPkg2(
-                        agent: [
-                            label: "mac && python${pythonVersion} && x86",
-                        ],
-                        testSetup: {
-                            checkout scm
-                            unstash "python${pythonVersion} mac x86_64 wheel"
-                        },
-                        testCommand: {
-                            findFiles(glob: 'dist/*.whl').each{
-                                sh(label: 'Running Tox',
-                                   script: """python${pythonVersion} -m venv venv
-                                              . ./venv/bin/activate
-                                              python -m pip install --upgrade pip
-                                              pip install -r requirements/requirements_tox.txt
-                                              tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
-                                          """
-                                )
-                            }
-                        },
-                        post:[
-                            failure:{
-                                sh(script:'pip list')
+                    retry(2){
+                        
+                        packages.testPkg2(
+                            agent: [
+                                label: "mac && python${pythonVersion} && x86",
+                            ],
+                            testSetup: {
+                                checkout scm
+                                unstash "python${pythonVersion} mac x86_64 wheel"
                             },
-                            cleanup: {
-                                cleanWs(
-                                    patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                            [pattern: '.tox/', type: 'INCLUDE'],
-                                        ],
-                                    notFailBuild: true,
-                                    deleteDirs: true
-                                )
+                            testCommand: {
+                                findFiles(glob: 'dist/*.whl').each{
+                                    sh(label: 'Running Tox',
+                                       script: """python${pythonVersion} -m venv venv
+                                                  . ./venv/bin/activate
+                                                  python -m pip install --upgrade pip
+                                                  pip install -r requirements/requirements_tox.txt
+                                                  tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                              """
+                                    )
+                                }
                             },
-                            success: {
-                                 archiveArtifacts artifacts: 'dist/*.whl'
-                            }
-                        ]
-                    )
+                            post:[
+                                failure:{
+                                    sh(script:'pip list')
+                                },
+                                cleanup: {
+                                    cleanWs(
+                                        patterns: [
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                [pattern: 'venv/', type: 'INCLUDE'],
+                                                [pattern: '.tox/', type: 'INCLUDE'],
+                                            ],
+                                        notFailBuild: true,
+                                        deleteDirs: true
+                                    )
+                                },
+                                success: {
+                                     archiveArtifacts artifacts: 'dist/*.whl'
+                                }
+                            ]
+                        )
+                    }
                 }
                 macTestStages["MacOS x86_64 - Python ${pythonVersion}: sdist"] = {
-                    packages.testPkg2(
-                        agent: [
-                            label: "mac && python${pythonVersion} && x86",
-                        ],
-                        testSetup: {
-                            checkout scm
-                            unstash 'sdist'
-                        },
-                        testCommand: {
-                            findFiles(glob: 'dist/*.tar.gz').each{
-                                sh(label: 'Running Tox',
-                                   script: """python${pythonVersion} -m venv venv
-                                   . ./venv/bin/activate
-                                   python -m pip install --upgrade pip
-                                   pip install -r requirements/requirements_tox.txt
-                                   tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
-                                )
-                            }
+                    retry(2){
+                        
+                        packages.testPkg2(
+                            agent: [
+                                label: "mac && python${pythonVersion} && x86",
+                            ],
+                            testSetup: {
+                                checkout scm
+                                unstash 'sdist'
+                            },
+                            testCommand: {
+                                findFiles(glob: 'dist/*.tar.gz').each{
+                                    sh(label: 'Running Tox',
+                                       script: """python${pythonVersion} -m venv venv
+                                       . ./venv/bin/activate
+                                       python -m pip install --upgrade pip
+                                       pip install -r requirements/requirements_tox.txt
+                                       tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                                    )
+                                }
 
-                        },
-                        post:[
-                            failure:{
-                                sh(script:'pip list')
                             },
-                            cleanup: {
-                                cleanWs(
-                                    patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                            [pattern: '.tox/', type: 'INCLUDE'],
-                                        ],
-                                    notFailBuild: true,
-                                    deleteDirs: true
-                                )
-                            },
-                        ]
-                    )
+                            post:[
+                                failure:{
+                                    sh(script:'pip list')
+                                },
+                                cleanup: {
+                                    cleanWs(
+                                        patterns: [
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                [pattern: 'venv/', type: 'INCLUDE'],
+                                                [pattern: '.tox/', type: 'INCLUDE'],
+                                            ],
+                                        notFailBuild: true,
+                                        deleteDirs: true
+                                    )
+                                },
+                            ]
+                        )
+                    }
                 }
             }
             if(params.INCLUDE_MACOS_ARM == true){
                 macTestStages["MacOS m1 - Python ${pythonVersion}: wheel"] = {
-                    packages.testPkg2(
-                        agent: [
-                            label: "mac && python${pythonVersion} && m1",
-                        ],
-                        testSetup: {
-                            checkout scm
-                            unstash "python${pythonVersion} m1 mac wheel"
-                        },
-                        testCommand: {
-                            findFiles(glob: 'dist/*.whl').each{
-                                sh(label: 'Running Tox',
-                                   script: """python${pythonVersion} -m venv venv
-                                  . ./venv/bin/activate
-                                  python -m pip install --upgrade pip
-                                  pip install -r requirements/requirements_tox.txt
-                                  tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
-                                )
-                            }
+                    retry(2){
+                        
+                        packages.testPkg2(
+                            agent: [
+                                label: "mac && python${pythonVersion} && m1",
+                            ],
+                            testSetup: {
+                                checkout scm
+                                unstash "python${pythonVersion} m1 mac wheel"
+                            },
+                            testCommand: {
+                                findFiles(glob: 'dist/*.whl').each{
+                                    sh(label: 'Running Tox',
+                                       script: """python${pythonVersion} -m venv venv
+                                      . ./venv/bin/activate
+                                      python -m pip install --upgrade pip
+                                      pip install -r requirements/requirements_tox.txt
+                                      tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                                    )
+                                }
 
-                        },
-                        post:[
-                            failure:{
-                                sh(script:'pip list')
                             },
-                            cleanup: {
-                                cleanWs(
-                                    patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                            [pattern: '.tox/', type: 'INCLUDE'],
-                                        ],
-                                    notFailBuild: true,
-                                    deleteDirs: true
-                                )
-                            },
-                            success: {
-                                 archiveArtifacts artifacts: 'dist/*.whl'
-                            }
-                        ]
-                    )
+                            post:[
+                                failure:{
+                                    sh(script:'pip list')
+                                },
+                                cleanup: {
+                                    cleanWs(
+                                        patterns: [
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                [pattern: 'venv/', type: 'INCLUDE'],
+                                                [pattern: '.tox/', type: 'INCLUDE'],
+                                            ],
+                                        notFailBuild: true,
+                                        deleteDirs: true
+                                    )
+                                },
+                                success: {
+                                     archiveArtifacts artifacts: 'dist/*.whl'
+                                }
+                            ]
+                        )
+                    }
                 }
                 macTestStages["MacOS m1 - Python ${pythonVersion}: sdist"] = {
-                    packages.testPkg2(
-                        agent: [
-                            label: "mac && python${pythonVersion} && m1",
-                        ],
-                        testSetup: {
-                            checkout scm
-                            unstash 'sdist'
-                        },
-                        testCommand: {
-                            findFiles(glob: 'dist/*.tar.gz').each{
-                                sh(label: 'Running Tox',
-                                   script: """python${pythonVersion} -m venv venv
-                                   . ./venv/bin/activate
-                                   python -m pip install --upgrade pip
-                                   pip install -r requirements/requirements_tox.txt
-                                   tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
-                                )
-                            }
+                    retry(2){
+                        
+                        packages.testPkg2(
+                            agent: [
+                                label: "mac && python${pythonVersion} && m1",
+                            ],
+                            testSetup: {
+                                checkout scm
+                                unstash 'sdist'
+                            },
+                            testCommand: {
+                                findFiles(glob: 'dist/*.tar.gz').each{
+                                    sh(label: 'Running Tox',
+                                       script: """python${pythonVersion} -m venv venv
+                                       . ./venv/bin/activate
+                                       python -m pip install --upgrade pip
+                                       pip install -r requirements/requirements_tox.txt
+                                       tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                                    )
+                                }
 
-                        },
-                        post:[
-                            failure:{
-                                sh(script:'pip list')
                             },
-                            cleanup: {
-                                cleanWs(
-                                    patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                            [pattern: '.tox/', type: 'INCLUDE'],
-                                        ],
-                                    notFailBuild: true,
-                                    deleteDirs: true
-                                )
-                            },
-                        ]
-                    )
+                            post:[
+                                failure:{
+                                    sh(script:'pip list')
+                                },
+                                cleanup: {
+                                    cleanWs(
+                                        patterns: [
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                [pattern: 'venv/', type: 'INCLUDE'],
+                                                [pattern: '.tox/', type: 'INCLUDE'],
+                                            ],
+                                        notFailBuild: true,
+                                        deleteDirs: true
+                                    )
+                                },
+                            ]
+                        )
+                    }
                 }
             }
         }
@@ -211,82 +223,85 @@ def test_packages(){
         SUPPORTED_WINDOWS_VERSIONS.each{ pythonVersion ->
             if(params.INCLUDE_WINDOWS_X86_64 == true){
                 windowsTestStages["Windows - Python ${pythonVersion}: wheel"] = {
-                    packages.testPkg2(
-                        agent: [
-                            dockerfile: [
-                                label: 'windows && docker && x86',
-                                filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
-                                args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
-                            ]
-                        ],
-                        dockerImageName: "${currentBuild.fullProjectName}_test_no_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
-                        testSetup: {
-                             checkout scm
-                             unstash "python${pythonVersion} windows wheel"
-                        },
-                        testCommand: {
-                             findFiles(glob: 'dist/*.whl').each{
-                                 bat(label: 'Running Tox', script: "tox --installpkg ${it.path} --workdir %TEMP%\\tox  -e py${pythonVersion.replace('.', '')}")
-                             }
+                    retry(2){
+                        
+                        packages.testPkg2(
+                            agent: [
+                                dockerfile: [
+                                    label: 'windows && docker && x86',
+                                    filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
+                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                                    args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
+                                ]
+                            ],
+                            dockerImageName: "${currentBuild.fullProjectName}_test_no_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                            testSetup: {
+                                 checkout scm
+                                 unstash "python${pythonVersion} windows wheel"
+                            },
+                            testCommand: {
+                                 findFiles(glob: 'dist/*.whl').each{
+                                     bat(label: 'Running Tox', script: "tox --installpkg ${it.path} --workdir %TEMP%\\tox  -e py${pythonVersion.replace('.', '')}")
+                                 }
 
-                        },
-                        post:[
-                            failure:{
-                                bat(script:'pip list')
                             },
-                            cleanup: {
-                                cleanWs(
-                                    patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                        ],
-                                    notFailBuild: true,
-                                    deleteDirs: true
-                                )
-                            },
-                            success: {
-                                archiveArtifacts artifacts: 'dist/*.whl'
-                            }
-                        ]
-                    )
-                }
-                windowsTestStages["Windows - Python ${pythonVersion}: sdist"] = {
-                    packages.testPkg2(
-                        agent: [
-                            dockerfile: [
-                                label: 'windows && docker && x86',
-                                filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
-                                args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
+                            post:[
+                                failure:{
+                                    bat(script:'pip list')
+                                },
+                                cleanup: {
+                                    cleanWs(
+                                        patterns: [
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                            ],
+                                        notFailBuild: true,
+                                        deleteDirs: true
+                                    )
+                                },
+                                success: {
+                                    archiveArtifacts artifacts: 'dist/*.whl'
+                                }
                             ]
-                        ],
-                        dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
-                        testSetup: {
-                            checkout scm
-                            unstash 'sdist'
-                        },
-                        testCommand: {
-                            findFiles(glob: 'dist/*.tar.gz').each{
-                                bat(label: 'Running Tox', script: "tox --workdir %TEMP%\\tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}")
-                            }
-                        },
-                        post:[
-                            failure:{
-                                bat(script:'pip list')
+                        )
+                    }
+                    windowsTestStages["Windows - Python ${pythonVersion}: sdist"] = {
+                        packages.testPkg2(
+                            agent: [
+                                dockerfile: [
+                                    label: 'windows && docker && x86',
+                                    filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
+                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                                    args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
+                                ]
+                            ],
+                            dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                            testSetup: {
+                                checkout scm
+                                unstash 'sdist'
                             },
-                            cleanup: {
-                                cleanWs(
-                                    patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                        ],
-                                    notFailBuild: true,
-                                    deleteDirs: true
-                                )
+                            testCommand: {
+                                findFiles(glob: 'dist/*.tar.gz').each{
+                                    bat(label: 'Running Tox', script: "tox --workdir %TEMP%\\tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}")
+                                }
                             },
-                        ]
-                    )
+                            post:[
+                                failure:{
+                                    bat(script:'pip list')
+                                },
+                                cleanup: {
+                                    cleanWs(
+                                        patterns: [
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                            ],
+                                        notFailBuild: true,
+                                        deleteDirs: true
+                                    )
+                                },
+                            ]
+                        )
+                    }
                 }
             }
         }
@@ -294,173 +309,183 @@ def test_packages(){
         SUPPORTED_LINUX_VERSIONS.each{ pythonVersion ->
             if(params.INCLUDE_LINUX_X86_64 == true){
                 linuxTestStages["Linux - Python ${pythonVersion} - x86: wheel"] = {
-                    packages.testPkg2(
-                        agent: [
-                            dockerfile: [
-                                label: 'linux && docker && x86',
-                                filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
-                                args: '-v pipcache_imagevalidate:/.cache/pip',
+                    retry(2){
+                        
+                        packages.testPkg2(
+                            agent: [
+                                dockerfile: [
+                                    label: 'linux && docker && x86',
+                                    filename: 'ci/docker/python/linux/tox/Dockerfile',
+                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
+                                    args: '-v pipcache_imagevalidate:/.cache/pip',
+                                ]
+                            ],
+                            testSetup: {
+                                checkout scm
+                                unstash "python${pythonVersion} linux-x86 wheel"
+                            },
+                            testCommand: {
+                                findFiles(glob: 'dist/*.whl').each{
+                                    timeout(5){
+                                        sh(
+                                            label: 'Running Tox',
+                                            script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                                            )
+                                    }
+                                }
+                            },
+                            post:[
+                                failure:{
+                                    sh(script:'pip list')
+                                },
+                                cleanup: {
+                                    cleanWs(
+                                        patterns: [
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                            ],
+                                        notFailBuild: true,
+                                        deleteDirs: true
+                                    )
+                                },
+                                success: {
+                                    archiveArtifacts artifacts: 'dist/*.whl'
+                                },
                             ]
-                        ],
-                        testSetup: {
-                            checkout scm
-                            unstash "python${pythonVersion} linux-x86 wheel"
-                        },
-                        testCommand: {
-                            findFiles(glob: 'dist/*.whl').each{
-                                timeout(5){
+                        )
+                    }
+                }
+                linuxTestStages["Linux - Python ${pythonVersion} - x86: sdist"] = {
+                    retry(2){
+                        
+                        packages.testPkg2(
+                            agent: [
+                                dockerfile: [
+                                    label: 'linux && docker && x86',
+                                    filename: 'ci/docker/python/linux/tox/Dockerfile',
+                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
+                                    args: '-v pipcache_imagevalidate:/.cache/pip',
+                                ]
+                            ],
+                            testSetup: {
+                                checkout scm
+                                unstash 'sdist'
+                            },
+                            testCommand: {
+                                findFiles(glob: 'dist/*.tar.gz').each{
                                     sh(
                                         label: 'Running Tox',
                                         script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
                                         )
                                 }
-                            }
-                        },
-                        post:[
-                            failure:{
-                                sh(script:'pip list')
                             },
-                            cleanup: {
-                                cleanWs(
-                                    patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                        ],
-                                    notFailBuild: true,
-                                    deleteDirs: true
-                                )
-                            },
-                            success: {
-                                archiveArtifacts artifacts: 'dist/*.whl'
-                            },
-                        ]
-                    )
-                }
-                linuxTestStages["Linux - Python ${pythonVersion} - x86: sdist"] = {
-                    packages.testPkg2(
-                        agent: [
-                            dockerfile: [
-                                label: 'linux && docker && x86',
-                                filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
-                                args: '-v pipcache_imagevalidate:/.cache/pip',
-                            ]
-                        ],
-                        testSetup: {
-                            checkout scm
-                            unstash 'sdist'
-                        },
-                        testCommand: {
-                            findFiles(glob: 'dist/*.tar.gz').each{
-                                sh(
-                                    label: 'Running Tox',
-                                    script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                            post:[
+                                failure:{
+                                    sh(script:'pip list')
+                                },
+                                cleanup: {
+                                    cleanWs(
+                                        patterns: [
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                            ],
+                                        notFailBuild: true,
+                                        deleteDirs: true
                                     )
-                            }
-                        },
-                        post:[
-                            failure:{
-                                sh(script:'pip list')
-                            },
-                            cleanup: {
-                                cleanWs(
-                                    patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                        ],
-                                    notFailBuild: true,
-                                    deleteDirs: true
-                                )
-                            },
-                        ]
-                    )
+                                },
+                            ]
+                        )
+                    }
                 }
             }
             if(params.INCLUDE_LINUX_ARM == true){
                 linuxTestStages["Linux - Python ${pythonVersion} - ARM64: wheel"] = {
-                    packages.testPkg2(
-                        agent: [
-                            dockerfile: [
-                                label: 'linux && docker && arm',
-                                filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
-                                args: '-v pipcache_imagevalidate:/.cache/pip',
+                    retry(2){                        
+                        packages.testPkg2(
+                            agent: [
+                                dockerfile: [
+                                    label: 'linux && docker && arm',
+                                    filename: 'ci/docker/python/linux/tox/Dockerfile',
+                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
+                                    args: '-v pipcache_imagevalidate:/.cache/pip',
+                                ]
+                            ],
+                            testSetup: {
+                                checkout scm
+                                unstash "python${pythonVersion} linux-arm64 wheel"
+                            },
+                            testCommand: {
+                                findFiles(glob: 'dist/*.whl').each{
+                                    timeout(5){
+                                        sh(
+                                            label: 'Running Tox',
+                                            script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                                            )
+                                    }
+                                }
+                            },
+                            post:[
+                                failure:{
+                                    sh(script:'pip list')
+                                },
+                                cleanup: {
+                                    cleanWs(
+                                        patterns: [
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                            ],
+                                        notFailBuild: true,
+                                        deleteDirs: true
+                                    )
+                                },
+                                success: {
+                                    archiveArtifacts artifacts: 'dist/*.whl'
+                                },
                             ]
-                        ],
-                        testSetup: {
-                            checkout scm
-                            unstash "python${pythonVersion} linux-arm64 wheel"
-                        },
-                        testCommand: {
-                            findFiles(glob: 'dist/*.whl').each{
-                                timeout(5){
+                        )
+                    }
+                }
+                linuxTestStages["Linux - Python ${pythonVersion} - ARM64: sdist"] = {
+                    retry(2){
+                        packages.testPkg2(
+                            agent: [
+                                dockerfile: [
+                                    label: 'linux && docker && arm',
+                                    filename: 'ci/docker/python/linux/tox/Dockerfile',
+                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
+                                    args: '-v pipcache_imagevalidate:/.cache/pip',
+
+                                ]
+                            ],
+                            testSetup: {
+                                checkout scm
+                                unstash 'sdist'
+                            },
+                            testCommand: {
+                                findFiles(glob: 'dist/*.tar.gz').each{
                                     sh(
                                         label: 'Running Tox',
                                         script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
                                         )
                                 }
-                            }
-                        },
-                        post:[
-                            failure:{
-                                sh(script:'pip list')
                             },
-                            cleanup: {
-                                cleanWs(
-                                    patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                        ],
-                                    notFailBuild: true,
-                                    deleteDirs: true
-                                )
-                            },
-                            success: {
-                                archiveArtifacts artifacts: 'dist/*.whl'
-                            },
-                        ]
-                    )
-                }
-                linuxTestStages["Linux - Python ${pythonVersion} - ARM64: sdist"] = {
-                    packages.testPkg2(
-                        agent: [
-                            dockerfile: [
-                                label: 'linux && docker && arm',
-                                filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
-                                args: '-v pipcache_imagevalidate:/.cache/pip',
-
-                            ]
-                        ],
-                        testSetup: {
-                            checkout scm
-                            unstash 'sdist'
-                        },
-                        testCommand: {
-                            findFiles(glob: 'dist/*.tar.gz').each{
-                                sh(
-                                    label: 'Running Tox',
-                                    script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                            post:[
+                                failure:{
+                                    sh(script:'pip list')
+                                },
+                                cleanup: {
+                                    cleanWs(
+                                        patterns: [
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                            ],
+                                        notFailBuild: true,
+                                        deleteDirs: true
                                     )
-                            }
-                        },
-                        post:[
-                            failure:{
-                                sh(script:'pip list')
-                            },
-                            cleanup: {
-                                cleanWs(
-                                    patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                        ],
-                                    notFailBuild: true,
-                                    deleteDirs: true
-                                )
-                            },
-                        ]
-                    )
+                                },
+                            ]
+                        )
+                    }
                 }
             }
 
