@@ -16,8 +16,8 @@ def getDevpiConfig() {
 
 def DEVPI_CONFIG = getDevpiConfig()
 SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
-SUPPORTED_LINUX_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11']
-SUPPORTED_WINDOWS_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11']
+SUPPORTED_LINUX_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
+SUPPORTED_WINDOWS_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
 
 def getPypiConfig() {
     node(){
@@ -41,12 +41,12 @@ def test_packages(){
         SUPPORTED_MAC_VERSIONS.each{ pythonVersion ->
             def architectures = []
             if(params.INCLUDE_MACOS_X86_64 == true){
-                macTestStages["MacOS x86_64 - Python ${pythonVersion}: wheel"] = {
+                macTestStages["MacOS - Python ${pythonVersion} - x86_64: wheel"] = {
                     retry(2){
                         
                         packages.testPkg2(
                             agent: [
-                                label: "mac && python${pythonVersion} && x86",
+                                label: "mac && python${pythonVersion} && x86_64",
                             ],
                             testSetup: {
                                 checkout scm
@@ -86,12 +86,12 @@ def test_packages(){
                         )
                     }
                 }
-                macTestStages["MacOS x86_64 - Python ${pythonVersion}: sdist"] = {
+                macTestStages["MacOS - Python ${pythonVersion} - x86_64: sdist"] = {
                     retry(2){
                         
                         packages.testPkg2(
                             agent: [
-                                label: "mac && python${pythonVersion} && x86",
+                                label: "mac && python${pythonVersion} && x86_64",
                             ],
                             testSetup: {
                                 checkout scm
@@ -130,7 +130,7 @@ def test_packages(){
                 }
             }
             if(params.INCLUDE_MACOS_ARM == true){
-                macTestStages["MacOS m1 - Python ${pythonVersion}: wheel"] = {
+                macTestStages["MacOS - Python ${pythonVersion} - m1: wheel"] = {
                     retry(2){
                         
                         packages.testPkg2(
@@ -175,7 +175,7 @@ def test_packages(){
                         )
                     }
                 }
-                macTestStages["MacOS m1 - Python ${pythonVersion}: sdist"] = {
+                macTestStages["MacOS - Python ${pythonVersion} - m1 : sdist"] = {
                     retry(2){
                         
                         packages.testPkg2(
@@ -222,13 +222,13 @@ def test_packages(){
         def windowsTestStages = [:]
         SUPPORTED_WINDOWS_VERSIONS.each{ pythonVersion ->
             if(params.INCLUDE_WINDOWS_X86_64 == true){
-                windowsTestStages["Windows - Python ${pythonVersion}: wheel"] = {
+                windowsTestStages["Windows - Python ${pythonVersion} - x86_64: wheel"] = {
                     retry(2){
                         
                         packages.testPkg2(
                             agent: [
                                 dockerfile: [
-                                    label: 'windows && docker && x86',
+                                    label: 'windows && docker && x86_64',
                                     filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
                                     args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
@@ -265,7 +265,7 @@ def test_packages(){
                             ]
                         )
                     }
-                    windowsTestStages["Windows - Python ${pythonVersion}: sdist"] = {
+                    windowsTestStages["Windows - Python ${pythonVersion} - x86_64: sdist"] = {
                         packages.testPkg2(
                             agent: [
                                 dockerfile: [
@@ -308,13 +308,13 @@ def test_packages(){
         def linuxTestStages = [:]
         SUPPORTED_LINUX_VERSIONS.each{ pythonVersion ->
             if(params.INCLUDE_LINUX_X86_64 == true){
-                linuxTestStages["Linux - Python ${pythonVersion} - x86: wheel"] = {
+                linuxTestStages["Linux - Python ${pythonVersion} - x86_64: wheel"] = {
                     retry(2){
                         
                         packages.testPkg2(
                             agent: [
                                 dockerfile: [
-                                    label: 'linux && docker && x86',
+                                    label: 'linux && docker && x86_64',
                                     filename: 'ci/docker/python/linux/tox/Dockerfile',
                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
                                     args: '-v pipcache_imagevalidate:/.cache/pip',
@@ -322,7 +322,7 @@ def test_packages(){
                             ],
                             testSetup: {
                                 checkout scm
-                                unstash "python${pythonVersion} linux-x86 wheel"
+                                unstash "python${pythonVersion} linux-x86-64 wheel"
                             },
                             testCommand: {
                                 findFiles(glob: 'dist/*.whl').each{
@@ -361,7 +361,7 @@ def test_packages(){
                         packages.testPkg2(
                             agent: [
                                 dockerfile: [
-                                    label: 'linux && docker && x86',
+                                    label: 'linux && docker && x86_64',
                                     filename: 'ci/docker/python/linux/tox/Dockerfile',
                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
                                     args: '-v pipcache_imagevalidate:/.cache/pip',
@@ -543,10 +543,10 @@ def build_packages(){
         def macBuildStages = [:]
             SUPPORTED_MAC_VERSIONS.each{ pythonVersion ->
                 if(params.INCLUDE_MACOS_X86_64 == true){
-                    macBuildStages["MacOS x86_64 - Python ${pythonVersion}: wheel"] = {
+                    macBuildStages["MacOS - Python ${pythonVersion} - x86_64: wheel"] = {
                         packages.buildPkg(
                             agent: [
-                                label: "mac && python${pythonVersion} && x86",
+                                label: "mac && python${pythonVersion} && x86_64",
                             ],
                             buildCmd: {
                                 withEnv([
@@ -594,7 +594,7 @@ def build_packages(){
                     }
                 }
                 if(params.INCLUDE_MACOS_ARM == true){
-                    macBuildStages["MacOS M1 - Python ${pythonVersion}: wheel"] = {
+                    macBuildStages["MacOS - Python ${pythonVersion} - M1: wheel"] = {
                         packages.buildPkg(
                             agent: [
                                 label: "mac && python${pythonVersion} && m1",
@@ -650,11 +650,11 @@ def build_packages(){
             def windowsBuildStages = [:]
             SUPPORTED_WINDOWS_VERSIONS.each{ pythonVersion ->
                 if(params.INCLUDE_WINDOWS_X86_64 == true){
-                    windowsBuildStages["Windows - Python ${pythonVersion}: wheel"] = {
+                    windowsBuildStages["Windows - Python ${pythonVersion} - x86_64: wheel"] = {
                         packages.buildPkg(
                             agent: [
                                 dockerfile: [
-                                    label: 'windows && docker && x86',
+                                    label: 'windows && docker && x86_64',
                                     filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
                                     args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
@@ -718,11 +718,11 @@ def build_packages(){
             ]
             def linuxBuildStages = [:]
             SUPPORTED_LINUX_VERSIONS.each{ pythonVersion ->
-                linuxBuildStages["Linux - Python ${pythonVersion} - x86: wheel"] = {
+                linuxBuildStages["Linux - Python ${pythonVersion} - x86-64: wheel"] = {
                     packages.buildPkg(
                         agent: [
                             dockerfile: [
-                                label: 'linux && docker && x86',
+                                label: 'linux && docker && x86_64',
                                 filename: 'ci/docker/python/linux/package/Dockerfile',
                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg manylinux_image=quay.io/pypa/manylinux2014_x86_64',
                                 args: '-v pipcache_imagevalidate:/.cache/pip',
@@ -747,8 +747,8 @@ def build_packages(){
                                 )
                             },
                             success: {
-                                stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux-x86 wheel"
-                                wheelStashes << "python${pythonVersion} linux-x86 wheel"
+                                stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux-x86-64 wheel"
+                                wheelStashes << "python${pythonVersion} linux-x86-64 wheel"
                             }
                         ]
                     )
@@ -840,7 +840,7 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                 ]) {
                     devpi.testDevpiPackage(
                         agent: [
-                            label: "mac && python${pythonVersion} && x86 && devpi-access"
+                            label: "mac && python${pythonVersion} && x86_64 && devpi-access"
                         ],
                         devpi: [
                             index: stagingIndex,
@@ -880,7 +880,7 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                 ]) {
                     devpi.testDevpiPackage(
                         agent: [
-                            label: "mac && python${pythonVersion} && x86 && devpi-access"
+                            label: "mac && python${pythonVersion} && x86_64 && devpi-access"
                         ],
                         devpi: [
                             index: stagingIndex,
@@ -1057,7 +1057,7 @@ pipeline {
                     agent {
                         dockerfile {
                             filename 'ci/docker/python/linux/jenkins/Dockerfile'
-                            label 'linux && docker && x86'
+                            label 'linux && docker && x86_64'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                         }
                     }
@@ -1124,7 +1124,7 @@ pipeline {
                                     agent {
                                         dockerfile {
                                             filename 'ci/docker/python/linux/jenkins/Dockerfile'
-                                            label 'linux && docker && x86'
+                                            label 'linux && docker && x86_64'
                                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                                             args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/opt/sonar/.sonar/cache'
                                         }
@@ -1155,7 +1155,7 @@ pipeline {
                                                                             -DCMAKE_CXX_FLAGS="-fno-inline -fno-omit-frame-pointer -fprofile-arcs -ftest-coverage -Wall -Wextra" \
                                                                             -DMEMORYCHECK_COMMAND=$(which drmemory) \
                                                                             -DMEMORYCHECK_COMMAND_OPTIONS="-check_uninit_blacklist libopenjp2.so.7"
-                                                                          build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --config Debug
+                                                                          build-wrapper-linux-x86-64-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --config Debug
                                                                           '''
                                                             )
                                                         }
@@ -1421,7 +1421,7 @@ pipeline {
                                     'Linux':{
                                         linuxJobs = tox.getToxTestsParallel(
                                             envNamePrefix: 'Tox Linux',
-                                            label: 'linux && docker && x86',
+                                            label: 'linux && docker && x86_64',
                                             dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
                                             dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
                                             dockerRunArgs: '-v pipcache_imagevalidate:/.cache/pip',
@@ -1431,7 +1431,7 @@ pipeline {
                                     'Windows':{
                                         windowsJobs = tox.getToxTestsParallel(
                                             envNamePrefix: 'Tox Windows',
-                                            label: 'windows && docker && x86',
+                                            label: 'windows && docker && x86_64',
                                             dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                             dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
                                             dockerRunArgs: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
@@ -1545,7 +1545,7 @@ pipeline {
                                                 dockerfile: [
                                                     filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
-                                                    label: 'windows && docker && x86 && devpi-access',
+                                                    label: 'windows && docker && x86_64 && devpi-access',
                                                 ]
                                             ],
                                             dockerImageName:  "${currentBuild.fullProjectName}_devpi_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
@@ -1571,7 +1571,7 @@ pipeline {
                                                 dockerfile: [
                                                     filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
-                                                    label: 'windows && docker && x86 && devpi-access'
+                                                    label: 'windows && docker && x86_64 && devpi-access'
                                                 ]
                                             ],
                                             devpi: [
@@ -1602,7 +1602,7 @@ pipeline {
                                                 dockerfile: [
                                                     filename: 'ci/docker/python/linux/tox/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                                                    label: 'linux && docker && x86 && devpi-access'
+                                                    label: 'linux && docker && x86_64 && devpi-access'
                                                 ]
                                             ],
                                             devpi: [
@@ -1627,7 +1627,7 @@ pipeline {
                                                 dockerfile: [
                                                     filename: 'ci/docker/python/linux/tox/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                                                    label: 'linux && docker && x86 && devpi-access'
+                                                    label: 'linux && docker && x86_64 && devpi-access'
                                                 ]
                                             ],
                                             devpi: [
