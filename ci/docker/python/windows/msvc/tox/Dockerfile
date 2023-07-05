@@ -108,7 +108,6 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no
     refreshenv ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
     py --list ;`
-    py -3.7 --version ;  `
     py -3.8 --version ; `
     py -3.9 --version ; `
     py -3.10 --version ; `
@@ -149,10 +148,7 @@ COPY conanfile.py c:/temp/conanfile.py
 RUN conan config home
 RUN conan install c:/temp/ --build missing --no-import  ; `
     conan remove "*" -b --src -f ; `
-    conan remove --locks
-
-RUN py -3.7 -m pip install --no-cache-dir pip --upgrade ;  `
-    py -3.7 -m pip install --no-cache-dir build; `
+    conan remove --locks  ; `
     py -3.8 -m pip install --no-cache-dir pip --upgrade ; `
     py -3.8 -m pip install --no-cache-dir build ; `
     py -3.9 -m pip install --no-cache-dir pip --upgrade ;  `

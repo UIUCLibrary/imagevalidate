@@ -122,7 +122,7 @@ setup(
     setup_requires=['pytest-runner'],
     install_requires=['py3exiv2bind>=0.1.9'],
     tests_require=['pytest'],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     zip_safe=False,
     ext_modules=[open_jpeg_extension],
     libraries=[],

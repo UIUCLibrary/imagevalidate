@@ -1,7 +1,4 @@
 ca-certificates
-python3.7-dev
-python3.7-distutils
-python3.7-venv
 python3-pip
 python3.8-dev
 python3.8-distutils

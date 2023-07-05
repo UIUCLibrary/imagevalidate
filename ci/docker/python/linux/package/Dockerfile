@@ -30,8 +30,6 @@ RUN conan install /tmp --build outdated --no-import  && \
 
 FROM base
 
-RUN python3.7 -m pip install pip --upgrade pip
-
 RUN python3.8 -m pip install pip --upgrade pip
 
 RUN python3.9 -m pip install pip --upgrade pip

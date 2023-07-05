@@ -30,7 +30,7 @@ manylinux-x86_64-image = "manylinux2014"
 build-frontend = "build"
 skip = [
     "cp36-*",
-    "cp37-macosx_*",
+    "cp37-*",
     "pp*",
     "*-win32",
     "*-musllinux*",

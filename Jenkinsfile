@@ -16,8 +16,8 @@ def getDevpiConfig() {
 
 def DEVPI_CONFIG = getDevpiConfig()
 SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
-SUPPORTED_LINUX_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11']
-SUPPORTED_WINDOWS_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11']
+SUPPORTED_LINUX_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
+SUPPORTED_WINDOWS_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
 
 def getPypiConfig() {
     node(){
