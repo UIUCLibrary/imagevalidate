@@ -1,4 +1,5 @@
 ARG CONAN_USER_HOME=/conan
+ARG SONAR_SCANNER_VERSION=4.8.0.2856
 FROM ubuntu:20.04 as base_image
 RUN DEBIAN_FRONTEND="noninteractive" apt-get update &&  \
     apt-get -y install tzdata && \
@@ -15,7 +16,6 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get update &&  \
         software-properties-common && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-ARG SONAR_SCANNER_VERSION=4.6.2.2472
 
 #==============================================================================
 FROM base_image as DR_MEMORY_BUILDER
@@ -55,7 +55,7 @@ RUN apt-get update && \
       unzip \
       curl && \
     rm -rf /var/lib/apt/lists/*
-ARG SONAR_SCANNER_VERSION=4.6.2.2472
+ARG SONAR_SCANNER_VERSION
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 ENV SONAR_USER_HOME=/opt/sonar/.sonar
 
@@ -109,7 +109,7 @@ RUN apt-get update &&  \
 
 COPY --from=SONAR_BUILDER /opt/sonar /opt/sonar/
 COPY --from=SONAR_BUILDER /opt/build-wrapper-linux-x86 /opt/build-wrapper-linux-x86/
-ARG SONAR_SCANNER_VERSION=4.6.2.2472
+ARG SONAR_SCANNER_VERSION
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 ENV SONAR_USER_HOME=/opt/sonar/.sonar
 
