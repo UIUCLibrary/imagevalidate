@@ -1,9 +1,8 @@
 ARG CONAN_USER_HOME=/conan
+ARG SONAR_SCANNER_VERSION=4.8.0.2856
 FROM ubuntu:20.04 as base_image
-ARG TZ=America/Chicago
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
-RUN apt-get update && \
+RUN DEBIAN_FRONTEND="noninteractive" apt-get update &&  \
+    apt-get -y install tzdata && \
     apt-get install -y --no-install-recommends \
         ninja-build \
         build-essential \
@@ -15,13 +14,13 @@ RUN apt-get update && \
         python3-venv \
         ca-certificates \
         software-properties-common && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-ARG SONAR_SCANNER_VERSION=4.6.2.2472
 
 #==============================================================================
 FROM base_image as DR_MEMORY_BUILDER
 RUN apt-get update &&  \
-    apt-get install -y --no-install-recommends wget=1.20.3-1ubuntu2
+    apt-get install -y --no-install-recommends wget
 
 WORKDIR /drmemory
 RUN wget --no-verbose https://github.com/DynamoRIO/drmemory/releases/download/release_2.3.0/DrMemory-Linux-2.3.0-1.tar.gz && \
@@ -56,7 +55,7 @@ RUN apt-get update && \
       unzip \
       curl && \
     rm -rf /var/lib/apt/lists/*
-ARG SONAR_SCANNER_VERSION=4.6.2.2472
+ARG SONAR_SCANNER_VERSION
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 ENV SONAR_USER_HOME=/opt/sonar/.sonar
 
@@ -110,7 +109,7 @@ RUN apt-get update &&  \
 
 COPY --from=SONAR_BUILDER /opt/sonar /opt/sonar/
 COPY --from=SONAR_BUILDER /opt/build-wrapper-linux-x86 /opt/build-wrapper-linux-x86/
-ARG SONAR_SCANNER_VERSION=4.6.2.2472
+ARG SONAR_SCANNER_VERSION
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 ENV SONAR_USER_HOME=/opt/sonar/.sonar
 
