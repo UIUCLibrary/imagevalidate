@@ -265,43 +265,43 @@ def test_packages(){
                             ]
                         )
                     }
-                    windowsTestStages["Windows - Python ${pythonVersion} - x86_64: sdist"] = {
-                        packages.testPkg2(
-                            agent: [
-                                dockerfile: [
-                                    label: 'windows && docker && x86',
-                                    filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
-                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
-                                    args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
-                                ]
-                            ],
-                            dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
-                            testSetup: {
-                                checkout scm
-                                unstash 'sdist'
-                            },
-                            testCommand: {
-                                findFiles(glob: 'dist/*.tar.gz').each{
-                                    bat(label: 'Running Tox', script: "tox --workdir %TEMP%\\tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}")
-                                }
-                            },
-                            post:[
-                                failure:{
-                                    bat(script:'pip list')
-                                },
-                                cleanup: {
-                                    cleanWs(
-                                        patterns: [
-                                                [pattern: 'dist/', type: 'INCLUDE'],
-                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                            ],
-                                        notFailBuild: true,
-                                        deleteDirs: true
-                                    )
-                                },
+                }
+                windowsTestStages["Windows - Python ${pythonVersion} - x86_64: sdist"] = {
+                    packages.testPkg2(
+                        agent: [
+                            dockerfile: [
+                                label: 'windows && docker && x86',
+                                filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                                args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
                             ]
-                        )
-                    }
+                        ],
+                        dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                        testSetup: {
+                            checkout scm
+                            unstash 'sdist'
+                        },
+                        testCommand: {
+                            findFiles(glob: 'dist/*.tar.gz').each{
+                                bat(label: 'Running Tox', script: "tox --workdir %TEMP%\\tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}")
+                            }
+                        },
+                        post:[
+                            failure:{
+                                bat(script:'pip list')
+                            },
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
+                            },
+                        ]
+                    )
                 }
             }
         }
