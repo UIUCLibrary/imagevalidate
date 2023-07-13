@@ -265,43 +265,43 @@ def test_packages(){
                             ]
                         )
                     }
-                    windowsTestStages["Windows - Python ${pythonVersion} - x86_64: sdist"] = {
-                        packages.testPkg2(
-                            agent: [
-                                dockerfile: [
-                                    label: 'windows && docker && x86',
-                                    filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
-                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
-                                    args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
-                                ]
-                            ],
-                            dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
-                            testSetup: {
-                                checkout scm
-                                unstash 'sdist'
-                            },
-                            testCommand: {
-                                findFiles(glob: 'dist/*.tar.gz').each{
-                                    bat(label: 'Running Tox', script: "tox --workdir %TEMP%\\tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}")
-                                }
-                            },
-                            post:[
-                                failure:{
-                                    bat(script:'pip list')
-                                },
-                                cleanup: {
-                                    cleanWs(
-                                        patterns: [
-                                                [pattern: 'dist/', type: 'INCLUDE'],
-                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                            ],
-                                        notFailBuild: true,
-                                        deleteDirs: true
-                                    )
-                                },
+                }
+                windowsTestStages["Windows - Python ${pythonVersion} - x86_64: sdist"] = {
+                    packages.testPkg2(
+                        agent: [
+                            dockerfile: [
+                                label: 'windows && docker && x86',
+                                filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                                args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
                             ]
-                        )
-                    }
+                        ],
+                        dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                        testSetup: {
+                            checkout scm
+                            unstash 'sdist'
+                        },
+                        testCommand: {
+                            findFiles(glob: 'dist/*.tar.gz').each{
+                                bat(label: 'Running Tox', script: "tox --workdir %TEMP%\\tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}")
+                            }
+                        },
+                        post:[
+                            failure:{
+                                bat(script:'pip list')
+                            },
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
+                            },
+                        ]
+                    )
                 }
             }
         }
@@ -1030,6 +1030,7 @@ pipeline {
         booleanParam(name: 'RUN_MEMCHECK', defaultValue: false, description: 'Run Memcheck. NOTE: This can be very slow.')
         booleanParam(name: 'TEST_RUN_TOX', defaultValue: false, description: 'Run Tox Tests')
         booleanParam(name: 'USE_SONARQUBE', defaultValue: true, description: 'Send data test data to SonarQube')
+        credentials(name: 'SONARCLOUD_TOKEN', credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl', defaultValue: 'sonarcloud_token', required: false)
         booleanParam(name: 'BUILD_PACKAGES', defaultValue: false, description: 'Build Python packages')
         booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
         booleanParam(name: 'INCLUDE_LINUX_ARM', defaultValue: false, description: 'Include ARM architecture for Linux')
@@ -1357,9 +1358,19 @@ pipeline {
                                                         lock('uiucprescon.imagevalidate-sonarscanner')
                                                     }
                                                     when{
-                                                        equals expected: true, actual: params.USE_SONARQUBE
-                                                        beforeAgent true
-                                                        beforeOptions true
+                                                        allOf{
+                                                            equals expected: true, actual: params.USE_SONARQUBE
+                                                            expression{
+                                                                try{
+                                                                    withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'dddd')]) {
+                                                                        echo 'Found credentials for sonarqube'
+                                                                    }
+                                                                } catch(e){
+                                                                    return false
+                                                                }
+                                                                return true
+                                                            }
+                                                        }
                                                     }
                                                     steps{
                                                         sh(
@@ -1369,7 +1380,7 @@ pipeline {
                                                                     mv *.gcov build/coverage/
                                                                     """
                                                         )
-                                                        sonarcloudSubmit(props, 'reports/sonar-report.json', 'sonarcloud-uiucprescon.imagevalidate')
+                                                        sonarcloudSubmit(props, 'reports/sonar-report.json', params.SONARCLOUD_TOKEN)
                                                     }
                                                     post {
                                                         always{
