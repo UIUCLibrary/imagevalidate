@@ -158,8 +158,13 @@ RUN conan install c:/temp/ --build missing --no-import  ; `
     py -3.11 -m pip install --no-cache-dir pip --upgrade ;  `
     py -3.11 -m pip install --no-cache-dir build
 
-COPY requirements requirements
-RUN python -m pip install pip --no-cache-dir --upgrade ; pip install --no-cache-dir -r requirements/requirements_tox.txt -r requirements/requirements_devpi.txt
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+
+COPY requirements-ci.txt c:/python_requirments/
+COPY requirements/ c:/python_requirments/requirements
+RUN python -m pip install pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-ci.txt
+
 ARG PIP_DOWNLOAD_CACHE
 RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force
 ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
