@@ -1,7 +1,9 @@
+ARG PIP_FIND_LINKS=/wheels
 ARG CONAN_USER_HOME=/conan
 ARG SONAR_SCANNER_VERSION=4.8.0.2856
-FROM ubuntu:20.04 as base_image
+FROM ubuntu:22.04 as base_image
 RUN DEBIAN_FRONTEND="noninteractive" apt-get update &&  \
+    apt-get install -y software-properties-common gpg-agent --no-install-recommends && \
     apt-get -y install tzdata && \
     apt-get install -y --no-install-recommends \
         ninja-build \
@@ -32,21 +34,19 @@ FROM base_image as wheel_builder
 
 RUN apt-get update &&  \
     apt-get install -y --no-install-recommends  \
-      ninja-build=1.10.0-1build1 \
+      ninja-build \
     && rm -rf /var/lib/apt/lists/*
 
 ARG PYTHON_INDEX
 ARG PIP_EXTRA_INDEX_URL
 ENV PIP_NO_CACHE_DIR=1
-COPY requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+COPY requirements-ci.txt /requirements/
 COPY requirements/ /requirements/requirements/
-RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install --upgrade setuptools && \
-    python3 -m pip install wheel && \
-    python3 -m pip wheel --wheel-dir=/wheels  \
-        -r /requirements/requirements.txt \
-        -r /requirements/requirements-ci.txt
 
+ARG PIP_FIND_LINKS
+RUN mkdir -p ${PIP_FIND_LINKS} &&  \
+    python3 -m pip install pip --upgrade && \
+    pip wheel --wheel-dir=${PIP_FIND_LINKS} --no-cache-dir -r /requirements/requirements-ci.txt
 #==============================================================================
 
 FROM base_image as SONAR_BUILDER
@@ -134,20 +134,15 @@ RUN ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
     drmemory -version
 
 ARG PIP_EXTRA_INDEX_URL
+ARG PIP_FIND_LINKS
+COPY --from=wheel_builder ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
+COPY --from=wheel_builder requirements/ /requirements
 
-COPY --from=wheel_builder /wheels /wheels/
+RUN python3 -m pip install pip --upgrade && \
+    pip install --no-index --no-cache-dir --find-links=${PIP_FIND_LINKS} \
+    -r /requirements/requirements-ci.txt
 
-COPY requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
-COPY requirements/ /requirements/requirements/
-#RUN python -m pip install --upgrade pip && \
-#    pip install --upgrade setuptools && \
-#    pip install wheel
-RUN python3 -m pip install --no-cache-dir --upgrade pip && \
-    python3 -m pip install --no-cache-dir --upgrade wheel==0.37.1 && \
-    python3 -m pip install --no-cache-dir --no-index --find-links=/wheels  \
-            -r /requirements/requirements.txt -r /requirements/requirements-ci.txt
-
-ENV PIP_FIND_LINKS=/wheels
+ENV PIP_FIND_LINKS=${PIP_FIND_LINKS}
 ENV PIP_NO_CACHE_DIR=1
 ARG CONAN_USER_HOME
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
@@ -158,3 +153,4 @@ RUN conan install /tmp --build outdated --no-import -pr:b=default && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
     chmod -R 777 ${CONAN_USER_HOME}
+ENV TZ=UTC

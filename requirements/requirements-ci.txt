@@ -11,5 +11,4 @@ pep517
 pybind11
 pytest-cov
 sphinx
--r requirements/requirements_tox.txt
 twine
