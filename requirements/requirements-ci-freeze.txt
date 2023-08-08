@@ -82,7 +82,7 @@ sphinxcontrib-serializinghtml==1.1.5
 toml==0.10.2
 tomli==2.0.1
 tox==3.28.0
-tqdm==4.65.1
+tqdm==4.65.0
 twine==4.0.2
 typing_extensions==4.7.1
 uiucprescon.build @ git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.0
