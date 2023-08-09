@@ -1079,10 +1079,16 @@ pipeline {
                                 )
                                 sh(
                                     label: 'Building docs',
-                                    script: 'python3 -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees'
+                                    script: 'python3 -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees -v -w logs/build_sphinx.log -W --keep-going'
                                 )
                             }
                             post{
+                                always {
+                                    recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log')])
+                                    archiveArtifacts artifacts: 'logs/build_sphinx.log'
+                                    zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.Name}-${props.Version}.doc.zip"
+                                    stash includes: 'dist/*.doc.zip,build/docs/html/**', name: 'DOCS_ARCHIVE'
+                                }
                                 success{
                                     publishHTML(
                                         [
@@ -1094,8 +1100,6 @@ pipeline {
                                             reportTitles: ''
                                         ]
                                     )
-                                    zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.Name}-${props.Version}.doc.zip"
-                                    stash includes: 'dist/*.doc.zip,build/docs/html/**', name: 'DOCS_ARCHIVE'
                                 }
                            }
                        }
