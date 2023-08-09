@@ -3,6 +3,8 @@ name: Multi-platform Compatibility Test (Tox)
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    env:
+      PIP_EXTRA_INDEX_URL: ${{vars.PIP_EXTRA_INDEX_URL}}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2019]
@@ -12,40 +14,91 @@ jobs:
             compiler_version: 14
             compiler_libcxx: libc++
           - os: ubuntu-latest
-            compiler_version: 11.3
+            compiler_version: 11.4
             compiler_libcxx: libstdc++11
           - os: windows-2019
             compiler_version: 16
       fail-fast: false
     name: Python ${{ matrix.python-version }} ${{ matrix.os }} build
+
     steps:
+      - uses: actions/github-script@v6
+        id: conan-path-script
+        with:
+          result-encoding: string
+          script: |
+            if ('${{matrix.os}}' === 'windows-2019'){
+              return 'C:/Users/runneradmin'
+            }
+            if ('${{matrix.os}}' === 'ubuntu-latest'){
+              return '/home/runner'
+            }
+            if ('${{matrix.os}}' === 'macos-latest'){
+              return '/Users/runner'
+            }
+            return ''
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip' # caching pip dependencies
-      - run: |
-          pip install wheel
-          pip install tox
-      - name: Run tox
+          cache-dependency-path: |
+            requirements-ci.txt
+            requirements/requirements-*.txt
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-ci.txt
+      - name: Ensure conan settings has current compiler as valid
+        if: "!contains(matrix.os, 'windows')"
+        env:
+          CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
+        run: |
+          conan config init
+          python ci/docker/python/linux/shared/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml ${{matrix.compiler_version}}
+          conan profile update settings.compiler.version=${{matrix.compiler_version}} default
+
+      - name: Remove Strawberry Perl (Windows only)
+        if: contains(matrix.os, 'windows')
+        run: Remove-Item –path C:\\Strawberry –recurse –force
+      - name: Cache Conan
+        id: cache-conan
+        uses: actions/cache@v3
+        with:
+          path: "${{steps.conan-path-script.outputs.result}}/.conan"
+          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.py') }}
+
+      - name: Prebuild Conan packages (Windows)
+        if: |
+          contains(matrix.os, 'windows') && steps.cache-conan.outputs.cache-hit != 'true'
+        shell: cmd
+        env:
+          CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          conan profile new default --detect
+          conan install . --build  missing --no-import
+
+      - name: Prebuild Conan packages
+        env:
+          CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
+        if: "!contains(matrix.os, 'windows') && steps.cache-conan.outputs.cache-hit != 'true'"
+        run: |
+          conan install . --build  missing --no-import
+
+      - name: Run Tox (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
-          rmdir /S /Q C:\\Strawberry
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          pip install conan
-          conan profile new default --detect
-          conan install . --build  missing --no-import 
           tox -e py
         env:
-          CONAN_USER_HOME: "C:/Users/runneradmin"
-          PIP_EXTRA_INDEX_URL: https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_public/simple/
+          CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
       - name: Run tox
         if: "!contains(matrix.os, 'windows')"
         run: cc --version &&  cc -dumpfullversion -dumpversion && tox -e py -vvv
         env:
+          CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
           CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
           CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
-          PIP_EXTRA_INDEX_URL: https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_public/simple/
 
 
