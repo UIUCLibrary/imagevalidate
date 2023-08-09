@@ -4,7 +4,7 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     env:
-      PIP_EXTRA_INDEX_URL: https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_public/simple/
+      PIP_EXTRA_INDEX_URL: ${{vars.PIP_EXTRA_INDEX_URL}}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2019]
