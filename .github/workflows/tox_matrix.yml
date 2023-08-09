@@ -53,7 +53,6 @@ jobs:
         env:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
         run: |
-          printenv
           conan config init
           python ci/docker/python/linux/shared/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml ${{matrix.compiler_version}}
           conan profile update settings.compiler.version=${{matrix.compiler_version}} default
@@ -61,9 +60,16 @@ jobs:
       - name: Remove Strawberry Perl (Windows only)
         if: contains(matrix.os, 'windows')
         run: Remove-Item –path C:\\Strawberry –recurse –force
+      - name: Cache Conan
+        id: cache-conan
+        uses: actions/cache@v3
+        with:
+          path: "${{steps.conan-path-script.outputs.result}}/.conan"
+          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.py') }}
 
       - name: Prebuild Conan packages (Windows)
-        if: contains(matrix.os, 'windows')
+        if: |
+          contains(matrix.os, 'windows') && steps.cache-conan.outputs.cache-hit != 'true'
         shell: cmd
         env:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
@@ -73,11 +79,13 @@ jobs:
           conan install . --build  missing --no-import
 
       - name: Prebuild Conan packages
-        if: "!contains(matrix.os, 'windows')"
+        env:
+          CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
+        if: "!contains(matrix.os, 'windows') && steps.cache-conan.outputs.cache-hit != 'true'"
         run: |
           conan install . --build  missing --no-import
 
-      - name: Run tox
+      - name: Run Tox (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
