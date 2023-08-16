@@ -10,7 +10,7 @@ import urllib.request
 from tempfile import TemporaryDirectory
 
 # TEST_PATH = os.path.join(os.path.dirname(__file__), "henrytestmetadata")
-SAMPLE_IMAGES = "https://jenkins.library.illinois.edu/userContent/metadata_test_images.tar.gz"
+SAMPLE_IMAGES = "https://nexus.library.illinois.edu/repository/sample-data/images/metadata_test_images.tar.gz"
 
 
 def download_images(url, destination):

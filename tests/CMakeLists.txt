@@ -19,7 +19,7 @@ if(BUILD_TESTING)
     include(Catch)
 # Get sample images
     if(NOT EXISTS ${PROJECT_BINARY_DIR}/metadata_test_images.tar.gz)
-        file(DOWNLOAD https://jenkins.library.illinois.edu/userContent/metadata_test_images.tar.gz ${PROJECT_BINARY_DIR}/metadata_test_images.tar.gz SHOW_PROGRESS)
+        file(DOWNLOAD https://nexus.library.illinois.edu/repository/sample-data/images/metadata_test_images.tar.gz ${PROJECT_BINARY_DIR}/metadata_test_images.tar.gz SHOW_PROGRESS)
     endif()
     FetchContent_Declare(
             test_images

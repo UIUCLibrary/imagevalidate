@@ -6,6 +6,8 @@ jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    env:
+      PIP_EXTRA_INDEX_URL: ${{vars.PIP_EXTRA_INDEX_URL}}
     strategy:
       matrix:
         os: [
@@ -36,11 +38,9 @@ jobs:
           python -m cibuildwheel --output-dir wheelhouse
         env:
            CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
-           PIP_EXTRA_INDEX_URL: https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_public/simple/
       - name: Build wheels
         if: "!contains(matrix.os, 'windows')"
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
            CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
-           PIP_EXTRA_INDEX_URL: https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_public/simple/
         #   CIBW_SOME_OPTION: value
