@@ -688,7 +688,7 @@ def build_packages(){
                     node('docker && linux') {
                         script{
                             try{
-                                docker.image('python').inside {
+                                docker.image('python:3.11').inside {
                                     checkout scm
                                     sh(
                                         label: 'Building sdist',
