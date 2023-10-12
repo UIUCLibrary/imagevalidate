@@ -1,7 +1,6 @@
 build
 coverage[toml]
 cmake
-devpi-client
 flake8
 gcovr
 lxml
