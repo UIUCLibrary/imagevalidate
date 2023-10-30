@@ -1,7 +1,7 @@
 ARG PIPX_HOME=/pipx
 ARG PIP_FIND_LINKS=/wheels
 ARG CONAN_USER_HOME=/conan
-ARG SONAR_SCANNER_VERSION=4.8.0.2856
+ARG SONAR_SCANNER_VERSION=5.0.1.3006
 FROM ubuntu:22.04 AS base_image
 RUN DEBIAN_FRONTEND="noninteractive" apt-get update &&  \
     apt-get install -y software-properties-common gpg-agent --no-install-recommends && \
