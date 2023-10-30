@@ -1,7 +1,8 @@
+ARG PIPX_HOME=/pipx
 ARG PIP_FIND_LINKS=/wheels
 ARG CONAN_USER_HOME=/conan
-ARG SONAR_SCANNER_VERSION=4.8.0.2856
-FROM ubuntu:22.04 as base_image
+ARG SONAR_SCANNER_VERSION=5.0.1.3006
+FROM ubuntu:22.04 AS base_image
 RUN DEBIAN_FRONTEND="noninteractive" apt-get update &&  \
     apt-get install -y software-properties-common gpg-agent --no-install-recommends && \
     apt-get -y install tzdata && \
@@ -49,7 +50,7 @@ RUN mkdir -p ${PIP_FIND_LINKS} &&  \
     pip wheel --wheel-dir=${PIP_FIND_LINKS} --no-cache-dir -r /requirements/requirements-ci.txt
 #==============================================================================
 
-FROM base_image as SONAR_BUILDER
+FROM base_image AS SONAR_BUILDER
 RUN apt-get update && \
     apt-get install -y --no-install-recommends  \
       unzip \
@@ -76,7 +77,7 @@ RUN curl --create-dirs -sSLo /tmp/build-wrapper-linux-x86.zip https://sonarcloud
     which build-wrapper-linux-x86-64
 
 
-FROM wheel_builder as conan_builder
+FROM wheel_builder AS conan_builder
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
@@ -147,6 +148,17 @@ RUN python3 -m pip install pip --upgrade && \
 
 ENV PIP_FIND_LINKS=${PIP_FIND_LINKS}
 ENV PIP_NO_CACHE_DIR=1
+
+ARG PIPX_HOME
+ENV PIPX_HOME=${PIPX_HOME}
+ENV PIPX_BIN_DIR=${PIPX_HOME}/bin
+RUN pip3 install --no-cache-dir pipx && \
+    pipx ensurepath && \
+    mkdir -p $PIPX_HOME  && chmod -R 777 $PIPX_HOME
+RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install 'devpi-client<7.0' &&  \
+    PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install pip-audit
+
+
 ARG CONAN_USER_HOME
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY --from=conan_builder ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/

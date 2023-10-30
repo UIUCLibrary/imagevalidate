@@ -1,4 +1,5 @@
 # escape=`
+ARG PIPX_HOME=c:\pipx
 ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8
 FROM ${FROM_IMAGE} as certsgen
@@ -61,9 +62,18 @@ COPY requirements-ci.txt c:/python_requirments/
 COPY requirements/ c:/python_requirments/requirements
 RUN python -m pip install pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-ci.txt
 
-
 ARG PIP_DOWNLOAD_CACHE
 RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force
 ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
+
+ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
+ARG PIPX_HOME
+ENV PIPX_HOME=${PIPX_HOME}
+ENV PIPX_BIN_DIR=${PIPX_HOME}\bin
+
+
+RUN py -3 -m pip install --no-cache-dir pipx ; `
+    py -3 -m pipx ensurepath
+RUN py -3 -m pipx install 'devpi-client<7.0'
 
 CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate -p=auto

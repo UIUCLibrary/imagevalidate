@@ -1,6 +1,7 @@
+ARG PIPX_HOME=/pipx
 ARG CONAN_USER_HOME=/conan
 ARG PIP_DOWNLOAD_CACHE=/.cache/pip
-FROM ubuntu:22.04 as wheel_builder_base
+FROM ubuntu:22.04 AS wheel_builder_base
 COPY ci/docker/python/linux/tox/apt-packages.txt /tmp/apt-packages.txt
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update && \
@@ -12,7 +13,7 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-FROM wheel_builder_base as conan_builder
+FROM wheel_builder_base AS conan_builder
 COPY requirements/requirements_conan.txt /tmp/requirements_conan.txt
 RUN pip3 install --no-cache-dir -r /tmp/requirements_conan.txt cmake
 ARG CONAN_USER_HOME
@@ -53,6 +54,17 @@ RUN chmod -R 777 ${CONAN_USER_HOME}
 ARG PIP_DOWNLOAD_CACHE
 RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
     chmod -R 777 ${PIP_DOWNLOAD_CACHE}
+
+ARG PIPX_HOME
+ENV PIPX_HOME=${PIPX_HOME}
+ENV PIPX_BIN_DIR=${PIPX_HOME}/bin
+RUN pip3 install --no-cache-dir pipx && \
+    pipx ensurepath && \
+    mkdir -p $PIPX_HOME  && chmod -R 777 $PIPX_HOME
+RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install 'devpi-client<7.0' &&  \
+    PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install pip-audit
+
+
 
 WORKDIR /src
 CMD ["tox", "--workdir", "/tmp/tox", "--recreate"]
