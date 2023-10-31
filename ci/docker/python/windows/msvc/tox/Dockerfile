@@ -114,7 +114,8 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no
     py -3.10 --version ; `
     py -3.11 --version ; `
     Write-Host "Installing Python with Chocolatey - Done"
-
+RUN New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
+    -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
 FROM BASE_BUILDER as CONAN_BUILDER
 ARG CONAN_USER_HOME
