@@ -783,13 +783,18 @@ def build_packages(){
                         try{
                             docker.image('python:3.11').inside {
                                 checkout scm
-                                sh(
-                                    label: 'Building sdist',
-                                    script: '''python -m venv venv --upgrade-deps
-                                               venv/bin/python -m pip install build
-                                               venv/bin/python -m build --sdist --outdir ./dist
-                                    '''
-                                    )
+                                withEnv([
+                                    'PIP_NO_CACHE_DIR=off'
+                                ]) {
+
+                                    sh(
+                                        label: 'Building sdist',
+                                        script: '''python -m venv venv --upgrade-deps
+                                                   venv/bin/python -m pip install build
+                                                   venv/bin/python -m build --sdist --outdir ./dist
+                                        '''
+                                        )
+                                    }
                             }
                             stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
                             wheelStashes << 'sdist'
