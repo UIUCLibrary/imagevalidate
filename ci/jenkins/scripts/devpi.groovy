@@ -178,12 +178,28 @@ def getAgent(args){
                 ws{
                     checkout scm
                     def dockerImage
-                    def dockerImageName = "${currentBuild.fullProjectName}_devpi".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
+                    def dockerImageName = "${currentBuild.fullProjectName}_devpi_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
                     lock("docker build-${env.NODE_NAME}"){
                         dockerImage = docker.build(dockerImageName, "-f ${args.agent.dockerfile.filename} ${args.agent.dockerfile.additionalBuildArgs} .")
                     }
-                    dockerImage.inside(runArgs){
-                        inner()
+                    try{
+                        dockerImage.inside(runArgs){
+                            inner()
+                        }
+                    } finally {
+                        if(isUnix()){
+                                sh(
+                                    label: "Untagging Docker Image used",
+                                    script: "docker image rm --no-prune ${dockerImage.imageName()}",
+                                    returnStatus: true
+                                )
+                        } else {
+                            powershell(
+                                label: "Untagging Docker Image used",
+                                script: "docker image rm --no-prune ${dockerImage.imageName()}",
+                                returnStatus: true
+                            )
+                        }
                     }
                 }
             }
