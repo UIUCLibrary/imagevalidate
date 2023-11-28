@@ -166,9 +166,9 @@ RUN conan install c:/temp/ --build missing --no-import  -pr:b=default; `
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
-COPY requirements-ci.txt c:/python_requirments/
+COPY requirements-dev.txt c:/python_requirments/
 COPY requirements/ c:/python_requirments/requirements
-RUN python -m pip install pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-ci.txt
+RUN python -m pip install pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-dev.txt
 
 ARG PIP_DOWNLOAD_CACHE
 RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force
