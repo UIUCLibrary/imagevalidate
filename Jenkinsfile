@@ -1356,12 +1356,7 @@ pipeline {
                                                                           gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
                                                                           '''
                                                             )
-                                                            publishCoverage(
-                                                                adapters: [
-                                                                        coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
-                                                                    ],
-                                                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                                                           )
+                                                            recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage*.xml']])
                                                         }
                                                     }
                                                 }
