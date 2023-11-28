@@ -23,7 +23,7 @@ def getDockerRuntimeArgs(agent){
     return ""
 }
 
-def getAgent(args, dockerImageName=null){
+def getAgent(args){
     if (args.agent.containsKey("label")){
         return { inner ->
             node(args.agent.label){
@@ -43,51 +43,36 @@ def getAgent(args, dockerImageName=null){
                 ws{
                     checkout scm
                     def dockerImage
-                    dockerImageName = dockerImageName ? dockerImageName: "${currentBuild.fullProjectName}_${getToxEnv(args)}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
+                    def dockerImageName = "${currentBuild.fullProjectName}_${getToxEnv(args)}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
                     lock("docker build-${env.NODE_NAME}"){
                         dockerImage = docker.build(dockerImageName, "-f ${args.agent.dockerfile.filename} ${args.agent.dockerfile.additionalBuildArgs} .")
                     }
-                    dockerImage.inside(dockerArgs){
-                        inner()
+                    try{
+                        dockerImage.inside(dockerArgs){
+                            inner()
+                        }
+                    } finally{
+                        if(isUnix()){
+                            sh(
+                                label: "Untagging Docker Image used",
+                                script: "docker image rm --no-prune ${dockerImage.imageName()}",
+                                returnStatus: true
+                            )
+                        } else {
+                            powershell(
+                                label: "Untagging Docker Image used",
+                                script: "docker image rm --no-prune ${dockerImage.imageName()}",
+                                returnStatus: true
+                            )
+                        }
                     }
                 }
             }
         }
     }
-    error('Invalid agent type, expect [dockerfile,label]')
 }
 
 def testPkg(args = [:]){
-    def tox = args['toxExec'] ? args['toxExec']: "tox"
-    def setup = args['testSetup'] ? args['testSetup']: {
-        checkout scm
-        unstash "${args.stash}"
-    }
-    def teardown =  args['testTeardown'] ? args['testTeardown']: {}
-
-    def agentRunner = getAgent(args)
-    agentRunner {
-        setup()
-        try{
-            findFiles(glob: args.glob).each{
-                def toxCommand = "${tox} --installpkg ${it.path} -e ${getToxEnv(args)}"
-                if(isUnix()){
-                    sh(label: "Testing tox version", script: "${tox} --version")
-//                     toxCommand = toxCommand + " --workdir /tmp/tox"
-                    sh(label: "Running Tox", script: toxCommand)
-                } else{
-                    bat(label: "Testing tox version", script: "${tox} --version")
-                    toxCommand = toxCommand + " --workdir %TEMP%\\tox"
-                    bat(label: "Running Tox", script: toxCommand)
-                }
-            }
-        } finally{
-            teardown()
-        }
-    }
-}
-
-def testPkg2(args = [:]){
     def testCommand = args['testCommand'] ? args['testCommand']: {
         def distroFiles = findFiles(glob: 'dist/*.tar.gz,dist/*.zip,dist/*.whl')
         if (distroFiles.size() == 0){
@@ -113,7 +98,7 @@ def testPkg2(args = [:]){
     def successful = args['post']['success'] ? args['post']['success']: {}
     def failure = args['post']['failure'] ? args['post']['failure']: {}
     def dockerImageName = args['dockerImageName'] ? args['dockerImageName']:  "${currentBuild.fullProjectName}_${getToxEnv(args)}_build".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
-    def agentRunner = getAgent(args, dockerImageName)
+    def agentRunner = getAgent(args)
     agentRunner {
         setup()
         try{
@@ -129,8 +114,7 @@ def testPkg2(args = [:]){
 }
 
 def buildPkg(args = [:]){
-    def dockerImageName = "${currentBuild.fullProjectName}_${getToxEnv(args)}_build".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
-    def agentRunner = getAgent(args, dockerImageName)
+    def agentRunner = getAgent(args)
     def setup = args['buildSetup'] ? args['buildSetup']: {
         checkout scm
     }
@@ -159,6 +143,5 @@ def buildPkg(args = [:]){
 }
 return [
     testPkg: this.&testPkg,
-    testPkg2: this.&testPkg2,
     buildPkg: this.&buildPkg
 ]

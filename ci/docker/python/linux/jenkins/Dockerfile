@@ -41,13 +41,13 @@ RUN apt-get update &&  \
 ARG PYTHON_INDEX
 ARG PIP_EXTRA_INDEX_URL
 ENV PIP_NO_CACHE_DIR=1
-COPY requirements-ci.txt /requirements/
+COPY requirements-dev.txt /requirements/
 COPY requirements/ /requirements/requirements/
 
 ARG PIP_FIND_LINKS
 RUN mkdir -p ${PIP_FIND_LINKS} &&  \
     python3 -m pip install pip --upgrade && \
-    pip wheel --wheel-dir=${PIP_FIND_LINKS} --no-cache-dir -r /requirements/requirements-ci.txt
+    pip wheel --wheel-dir=${PIP_FIND_LINKS} --no-cache-dir -r /requirements/requirements-dev.txt
 #==============================================================================
 
 FROM base_image AS SONAR_BUILDER
@@ -144,7 +144,7 @@ COPY --from=wheel_builder requirements/ /requirements
 
 RUN python3 -m pip install pip --upgrade && \
     pip install --no-index --no-cache-dir --find-links=${PIP_FIND_LINKS} \
-    -r /requirements/requirements-ci.txt
+    -r /requirements/requirements-dev.txt
 
 ENV PIP_FIND_LINKS=${PIP_FIND_LINKS}
 ENV PIP_NO_CACHE_DIR=1

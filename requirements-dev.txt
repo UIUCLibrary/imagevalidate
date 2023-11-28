@@ -1,0 +1,5 @@
+-r requirements/requirements_conan.txt
+-r requirements/requirements_tox.txt
+-r requirements/requirements-dev.txt
+-r requirements/requirements-dev-freeze.txt
+-r requirements/requirements.txt

@@ -15,9 +15,9 @@ def getDevpiConfig() {
 }
 
 def DEVPI_CONFIG = getDevpiConfig()
-SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
-SUPPORTED_LINUX_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
-SUPPORTED_WINDOWS_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
+SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10', '3.11', '3.12']
+SUPPORTED_LINUX_VERSIONS = ['3.8', '3.9', '3.10', '3.11', '3.12']
+SUPPORTED_WINDOWS_VERSIONS = ['3.8', '3.9', '3.10', '3.11', '3.12']
 
 libraries = [:]
 def getPackagingLibrary(){
@@ -104,7 +104,7 @@ def mac_wheels(){
                             if(params.TEST_PACKAGES == true){
                                 stage("Test Wheel (${pythonVersion} MacOS x86_64)"){
                                     retry(2){
-                                        packages.testPkg2(
+                                        packages.testPkg(
                                             agent: [
                                                 label: "mac && python${pythonVersion} && x86_64",
                                             ],
@@ -206,7 +206,7 @@ def mac_wheels(){
                             }
                             stage("Test Wheel (${pythonVersion} MacOS m1)"){
                                 retry(2){
-                                    packages.testPkg2(
+                                    packages.testPkg(
                                         agent: [
                                             label: "mac && python${pythonVersion} && m1",
                                         ],
@@ -298,7 +298,7 @@ def mac_wheels(){
                             parallel(
                                 "Test Python ${pythonVersion} universal2 Wheel on x86_64 mac": {
                                     stage("Test Python ${pythonVersion} universal2 Wheel on x86_64 mac"){
-                                        packages.testPkg2(
+                                        packages.testPkg(
                                             agent: [
                                                 label: "mac && python${pythonVersion} && x86_64",
                                             ],
@@ -340,7 +340,7 @@ def mac_wheels(){
                                 },
                                 "Test Python ${pythonVersion} universal2 Wheel on M1 Mac": {
                                     stage("Test Python ${pythonVersion} universal2 Wheel on M1 Mac"){
-                                        packages.testPkg2(
+                                        packages.testPkg(
                                             agent: [
                                                 label: "mac && python${pythonVersion} && m1",
                                             ],
@@ -429,7 +429,7 @@ def windows_wheels(){
                     }
                     stage("Test Wheel (${pythonVersion} Windows)"){
                         retry(2){
-                            packages.testPkg2(
+                            packages.testPkg(
                                 agent: [
                                     dockerfile: [
                                         label: 'windows && docker && x86_64',
@@ -526,7 +526,7 @@ def linux_wheels(){
                             if(params.TEST_PACKAGES == true){
                                 stage("Test Wheel (${pythonVersion} Linux x86_64)"){
                                     retry(2){
-                                        packages.testPkg2(
+                                        packages.testPkg(
                                             agent: [
                                                 dockerfile: [
                                                     label: 'linux && docker && x86_64',
@@ -615,7 +615,7 @@ def linux_wheels(){
                             if(params.TEST_PACKAGES == true){
                                 stage("Test Wheel (${pythonVersion} Linux ARM64)"){
                                     retry(2){
-                                        packages.testPkg2(
+                                        packages.testPkg(
                                             agent: [
                                                 dockerfile: [
                                                     label: 'linux && docker && arm',
@@ -1356,12 +1356,7 @@ pipeline {
                                                                           gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
                                                                           '''
                                                             )
-                                                            publishCoverage(
-                                                                adapters: [
-                                                                        coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
-                                                                    ],
-                                                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                                                           )
+                                                            recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage*.xml']])
                                                         }
                                                     }
                                                 }
@@ -1579,7 +1574,7 @@ pipeline {
                                         arches.each{arch ->
                                             testSdistStages["Test sdist (MacOS ${arch} - Python ${pythonVersion})"] = {
                                                 stage("Test sdist (MacOS ${arch} - Python ${pythonVersion})"){
-                                                    packages.testPkg2(
+                                                    packages.testPkg(
                                                         agent: [
                                                             label: "mac && python${pythonVersion} && ${arch}",
                                                         ],
@@ -1622,7 +1617,7 @@ pipeline {
                                             testSdistStages["Test sdist (Windows x86_64 - Python ${pythonVersion})"] = {
                                                 stage("Test sdist (Windows x86_64 - Python ${pythonVersion})"){
                                                     retry(2){
-                                                        packages.testPkg2(
+                                                        packages.testPkg(
                                                             agent: [
                                                                 dockerfile: [
                                                                     label: 'windows && docker && x86',
@@ -1666,7 +1661,7 @@ pipeline {
                                         if(params.INCLUDE_LINUX_X86_64 == true){
                                             testSdistStages["Test sdist (Linux x86_64 - Python ${pythonVersion})"] = {
                                                 stage("Test sdist (Linux x86_64 - Python ${pythonVersion})"){
-                                                    packages.testPkg2(
+                                                    packages.testPkg(
                                                         agent: [
                                                             dockerfile: [
                                                                 label: 'linux && docker && x86',
@@ -1705,7 +1700,7 @@ pipeline {
                                         if(params.INCLUDE_LINUX_ARM == true){
                                             testSdistStages["Test sdist (Linux ARM64 - Python ${pythonVersion})"] = {
                                                 stage("Test sdist (Linux ARM64 - Python ${pythonVersion})"){
-                                                    packages.testPkg2(
+                                                    packages.testPkg(
                                                         agent: [
                                                             dockerfile: [
                                                                 label: 'linux && docker && arm64',
@@ -1980,7 +1975,8 @@ pipeline {
                             if (!env.TAG_NAME?.trim()){
                                 checkout scm
                                 devpi = load 'ci/jenkins/scripts/devpi.groovy'
-                                docker.build('imagevalidate:devpi','-f ./ci/docker/python/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL .').inside{
+                                def dockerImage = docker.build('imagevalidate:devpi','-f ./ci/docker/python/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL .')
+                                dockerImage.inside{
                                     devpi.pushPackageToIndex(
                                         pkgName: props.Name,
                                         pkgVersion: props.Version,
@@ -1990,6 +1986,7 @@ pipeline {
                                         credentialsId: DEVPI_CONFIG.credentialsId
                                     )
                                 }
+                                sh script: "docker image rm --no-prune ${dockerImage.imageName()}"
                             }
                         }
                     }
@@ -1999,7 +1996,8 @@ pipeline {
                         script{
                             checkout scm
                             devpi = load 'ci/jenkins/scripts/devpi.groovy'
-                            docker.build('imagevalidate:devpi','-f ./ci/docker/python/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL .').inside{
+                            def dockerImage = docker.build('imagevalidate:devpi','-f ./ci/docker/python/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL .')
+                            dockerImage.inside{
                                 devpi.removePackage(
                                     pkgName: props.Name,
                                     pkgVersion: props.Version,
@@ -2009,6 +2007,7 @@ pipeline {
 
                                 )
                             }
+                            sh script: "docker image rm --no-prune ${dockerImage.imageName()}"
                         }
                     }
                 }

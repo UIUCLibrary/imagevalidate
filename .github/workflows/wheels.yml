@@ -26,10 +26,8 @@ jobs:
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@v3
-        with:
-          python-version: '3.11'  # conan 1.61.0 doesn't work with python 3.12
       - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel==2.10.2
+        run: python -m pip install -r requirements/requirements-cibuildwheel.txt
 
       - name: Build wheels
         if: contains(matrix.os, 'windows')
