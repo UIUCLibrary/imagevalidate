@@ -2,10 +2,10 @@
 ARG PIPX_HOME=c:\pipx
 ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8
-FROM ${FROM_IMAGE} as certsgen
+FROM ${FROM_IMAGE} AS certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
-FROM ${FROM_IMAGE} as BASE_BUILDER
+FROM ${FROM_IMAGE} AS BASE_BUILDER
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
@@ -35,7 +35,7 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     { `
         throw 'git.exe not found' ; `
     }; `
-    Write-Host "Finished install packages with Chocolatey" \
+    Write-Host "Finished install packages with Chocolatey"
 
 ADD ci/docker/shared/chocolatey/python.xml choco/python.config
 RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose choco/python.config ;`
@@ -47,6 +47,7 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no
     py -3.9 --version ; `
     py -3.10 --version ; `
     py -3.11 --version ; `
+    py -3.12 --version ; `
     Write-Host "Installing Python with Chocolatey - Done"
 
 

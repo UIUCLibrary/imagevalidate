@@ -113,6 +113,7 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no
     py -3.9 --version ; `
     py -3.10 --version ; `
     py -3.11 --version ; `
+    py -3.12 --version ; `
     Write-Host "Installing Python with Chocolatey - Done"
 RUN New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
     -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
@@ -130,7 +131,7 @@ COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY ci/docker/python/windows/msvc/shared/profile.ini ${CONAN_USER_HOME}/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
 RUN conan config home
-RUN conan install c:/temp/ --build missing --build openjpeg --no-import  && `
+RUN conan install c:/temp/ --build missing --build openjpeg --no-import -pr:b=default && `
     conan remove "*" -b --src -f && `
     conan remove --lock
 # ==============================================================================
@@ -148,7 +149,7 @@ COPY --from=CONAN_BUILDER ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY conanfile.py c:/temp/conanfile.py
 RUN conan config home
-RUN conan install c:/temp/ --build missing --no-import  ; `
+RUN conan install c:/temp/ --build missing --no-import  -pr:b=default; `
     conan remove "*" -b --src -f ; `
     conan remove --locks  ; `
     py -3.8 -m pip install --no-cache-dir pip --upgrade ; `
@@ -158,7 +159,9 @@ RUN conan install c:/temp/ --build missing --no-import  ; `
     py -3.10 -m pip install --no-cache-dir pip --upgrade ;  `
     py -3.10 -m pip install --no-cache-dir build; `
     py -3.11 -m pip install --no-cache-dir pip --upgrade ;  `
-    py -3.11 -m pip install --no-cache-dir build
+    py -3.11 -m pip install --no-cache-dir build; `
+    py -3.12 -m pip install --no-cache-dir pip --upgrade ;  `
+    py -3.12 -m pip install --no-cache-dir build
 
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
