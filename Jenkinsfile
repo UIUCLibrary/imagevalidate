@@ -2019,7 +2019,7 @@ pipeline {
                     agent {
                         dockerfile {
                             filename 'ci/docker/python/linux/jenkins/Dockerfile'
-                            label 'linux && docker'
+                            label 'linux && docker && x86_64'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                         }
                     }
