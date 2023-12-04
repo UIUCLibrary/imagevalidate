@@ -1078,6 +1078,9 @@ pipeline {
                         }
                         beforeAgent true
                     }
+                    options {
+                        retry(2)
+                    }
                     stages{
                         stage('Sphinx Documentation'){
                             steps {
