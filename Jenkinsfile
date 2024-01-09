@@ -1,3 +1,8 @@
+library identifier: 'JenkinsPythonHelperLibrary@2024.1.1', retriever: modernSCM(
+  [$class: 'GitSCMSource',
+   remote: 'https://github.com/UIUCLibrary/JenkinsPythonHelperLibrary.git',
+   ])
+
 def getDevpiConfig() {
     node(){
         configFileProvider([configFile(fileId: 'devpi_config', variable: 'CONFIG_FILE')]) {
@@ -20,17 +25,6 @@ SUPPORTED_LINUX_VERSIONS = ['3.8', '3.9', '3.10', '3.11', '3.12']
 SUPPORTED_WINDOWS_VERSIONS = ['3.8', '3.9', '3.10', '3.11', '3.12']
 
 libraries = [:]
-def getPackagingLibrary(){
-    if ("packaging" in libraries){
-        return libraries["packaging"]
-    }
-    def packages
-    node(){
-        checkout scm
-        libraries["packaging"] = load 'ci/jenkins/scripts/packaging.groovy'
-        return libraries["packaging"]
-    }
-}
 
 def getPypiConfig() {
     node(){
@@ -42,7 +36,6 @@ def getPypiConfig() {
 }
 
 def mac_wheels(){
-    def packages = getPackagingLibrary()
     def wheelStages = [:]
     SUPPORTED_MAC_VERSIONS.each{ pythonVersion ->
         wheelStages["Python ${pythonVersion} - Mac"] = {
@@ -52,7 +45,7 @@ def mac_wheels(){
                     if(params.INCLUDE_MACOS_X86_64 == true){
                         archStages["MacOS - Python ${pythonVersion} - x86_64: wheel"] = {
                             stage("Build Wheel (${pythonVersion} MacOS x86_64)"){
-                                packages.buildPkg(
+                                buildPythonPkg(
                                     agent: [
                                         label: "mac && python${pythonVersion} && x86_64",
                                     ],
@@ -104,7 +97,7 @@ def mac_wheels(){
                             if(params.TEST_PACKAGES == true){
                                 stage("Test Wheel (${pythonVersion} MacOS x86_64)"){
                                     retry(2){
-                                        packages.testPkg(
+                                        testPythonPkg(
                                             agent: [
                                                 label: "mac && python${pythonVersion} && x86_64",
                                             ],
@@ -152,7 +145,7 @@ def mac_wheels(){
                     if(params.INCLUDE_MACOS_ARM == true){
                         archStages["MacOS - Python ${pythonVersion} - M1: wheel"] = {
                             stage("Build Wheel (${pythonVersion} MacOS m1)"){
-                                packages.buildPkg(
+                                buildPythonPkg(
                                     agent: [
                                         label: "mac && python${pythonVersion} && m1",
                                     ],
@@ -206,7 +199,7 @@ def mac_wheels(){
                             }
                             stage("Test Wheel (${pythonVersion} MacOS m1)"){
                                 retry(2){
-                                    packages.testPkg(
+                                    testPythonPkg(
                                         agent: [
                                             label: "mac && python${pythonVersion} && m1",
                                         ],
@@ -298,7 +291,7 @@ def mac_wheels(){
                             parallel(
                                 "Test Python ${pythonVersion} universal2 Wheel on x86_64 mac": {
                                     stage("Test Python ${pythonVersion} universal2 Wheel on x86_64 mac"){
-                                        packages.testPkg(
+                                        testPythonPkg(
                                             agent: [
                                                 label: "mac && python${pythonVersion} && x86_64",
                                             ],
@@ -306,7 +299,7 @@ def mac_wheels(){
                                                 checkout scm
                                                 unstash "python${pythonVersion} mac-universal2 wheel"
                                             },
-                                            retry: 3,
+                                            retries: 3,
                                             testCommand: {
                                                 findFiles(glob: 'dist/*.whl').each{
                                                     sh(label: 'Running Tox',
@@ -340,7 +333,7 @@ def mac_wheels(){
                                 },
                                 "Test Python ${pythonVersion} universal2 Wheel on M1 Mac": {
                                     stage("Test Python ${pythonVersion} universal2 Wheel on M1 Mac"){
-                                        packages.testPkg(
+                                        testPythonPkg(
                                             agent: [
                                                 label: "mac && python${pythonVersion} && m1",
                                             ],
@@ -348,7 +341,7 @@ def mac_wheels(){
                                                 checkout scm
                                                 unstash "python${pythonVersion} mac-universal2 wheel"
                                             },
-                                            retry: 3,
+                                            retries: 3,
                                             testCommand: {
                                                 findFiles(glob: 'dist/*.whl').each{
                                                     sh(label: 'Running Tox',
@@ -388,7 +381,6 @@ def mac_wheels(){
 }
 
 def windows_wheels(){
-    def packages = getPackagingLibrary()
     def wheelStages = [:]
     SUPPORTED_WINDOWS_VERSIONS.each{ pythonVersion ->
         if(params.INCLUDE_WINDOWS_X86_64 == true){
@@ -396,7 +388,7 @@ def windows_wheels(){
                 stage("Python ${pythonVersion} - Windows"){
                     stage("Build Wheel (${pythonVersion} Windows)"){
                         retry(2){
-                            packages.buildPkg(
+                            buildPythonPkg(
                                 agent: [
                                     dockerfile: [
                                         label: 'windows && docker && x86_64',
@@ -429,16 +421,16 @@ def windows_wheels(){
                     }
                     stage("Test Wheel (${pythonVersion} Windows)"){
                         retry(2){
-                            packages.testPkg(
+                            testPythonPkg(
                                 agent: [
                                     dockerfile: [
                                         label: 'windows && docker && x86_64',
                                         filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
                                         additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
                                         args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
+                                        dockerImageName: "${currentBuild.fullProjectName}_test_no_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                                     ]
                                 ],
-                                dockerImageName: "${currentBuild.fullProjectName}_test_no_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                                 testSetup: {
                                      checkout scm
                                      unstash "python${pythonVersion} windows wheel"
@@ -478,7 +470,6 @@ def windows_wheels(){
 }
 
 def linux_wheels(){
-    def packages = getPackagingLibrary()
     def wheelStages = [:]
      SUPPORTED_LINUX_VERSIONS.each{ pythonVersion ->
         wheelStages["Python ${pythonVersion} - Linux"] = {
@@ -488,7 +479,7 @@ def linux_wheels(){
                     archBuilds["Python ${pythonVersion} Linux x86_64 Wheel"] = {
                         stage("Python ${pythonVersion} Linux x86_64 Wheel"){
                             stage("Build Wheel (${pythonVersion} Linux x86_64)"){
-                                packages.buildPkg(
+                                buildPythonPkg(
                                     agent: [
                                         dockerfile: [
                                             label: 'linux && docker && x86_64',
@@ -526,7 +517,7 @@ def linux_wheels(){
                             if(params.TEST_PACKAGES == true){
                                 stage("Test Wheel (${pythonVersion} Linux x86_64)"){
                                     retry(2){
-                                        packages.testPkg(
+                                        testPythonPkg(
                                             agent: [
                                                 dockerfile: [
                                                     label: 'linux && docker && x86_64',
@@ -578,7 +569,7 @@ def linux_wheels(){
                     archBuilds["Python ${pythonVersion} Linux ARM64 wheel"] = {
                         stage("Python ${pythonVersion} Linux ARM64 Wheel"){
                             stage("Build Wheel (${pythonVersion} Linux ARM64)"){
-                                packages.buildPkg(
+                                buildPythonPkg(
                                     agent: [
                                         dockerfile: [
                                             label: 'linux && docker && arm',
@@ -615,7 +606,7 @@ def linux_wheels(){
                             if(params.TEST_PACKAGES == true){
                                 stage("Test Wheel (${pythonVersion} Linux ARM64)"){
                                     retry(2){
-                                        packages.testPkg(
+                                        testPythonPkg(
                                             agent: [
                                                 dockerfile: [
                                                     label: 'linux && docker && arm',
@@ -1428,19 +1419,19 @@ pipeline {
                     }
                     steps {
                         script{
-                            def tox = fileLoader.fromGit(
-                                        'tox',
-                                        'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
-                                        '8',
-                                        null,
-                                        ''
-                                    )
+//                            def tox = fileLoader.fromGit(
+//                                        'tox',
+//                                        'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
+//                                        '8',
+//                                        null,
+//                                        ''
+//                                    )
                             def windowsJobs = [:]
                             def linuxJobs = [:]
                             script{
                                 parallel(
                                     'Linux':{
-                                        linuxJobs = tox.getToxTestsParallel(
+                                        linuxJobs = getToxTestsParallel(
                                             envNamePrefix: 'Tox Linux',
                                             label: 'linux && docker && x86_64',
                                             dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
@@ -1450,7 +1441,7 @@ pipeline {
                                         )
                                     },
                                     'Windows':{
-                                        windowsJobs = tox.getToxTestsParallel(
+                                        windowsJobs = getToxTestsParallel(
                                             envNamePrefix: 'Tox Windows',
                                             label: 'windows && docker && x86_64',
                                             dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
@@ -1558,11 +1549,6 @@ pipeline {
                             }
                             steps{
                                 script{
-                                    def packages
-                                    node(){
-                                        checkout scm
-                                        packages = load 'ci/jenkins/scripts/packaging.groovy'
-                                    }
                                     def testSdistStages = [
                                         failFast: true
                                     ]
@@ -1577,7 +1563,7 @@ pipeline {
                                         arches.each{arch ->
                                             testSdistStages["Test sdist (MacOS ${arch} - Python ${pythonVersion})"] = {
                                                 stage("Test sdist (MacOS ${arch} - Python ${pythonVersion})"){
-                                                    packages.testPkg(
+                                                    testPythonPkg(
                                                         agent: [
                                                             label: "mac && python${pythonVersion} && ${arch}",
                                                         ],
@@ -1620,16 +1606,16 @@ pipeline {
                                             testSdistStages["Test sdist (Windows x86_64 - Python ${pythonVersion})"] = {
                                                 stage("Test sdist (Windows x86_64 - Python ${pythonVersion})"){
                                                     retry(2){
-                                                        packages.testPkg(
+                                                        testPythonPkg(
                                                             agent: [
                                                                 dockerfile: [
                                                                     label: 'windows && docker && x86',
                                                                     filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
                                                                     args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
+                                                                    dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                                                                 ]
                                                             ],
-                                                            dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                                                             testSetup: {
                                                                 checkout scm
                                                                 unstash 'python sdist'
@@ -1664,7 +1650,7 @@ pipeline {
                                         if(params.INCLUDE_LINUX_X86_64 == true){
                                             testSdistStages["Test sdist (Linux x86_64 - Python ${pythonVersion})"] = {
                                                 stage("Test sdist (Linux x86_64 - Python ${pythonVersion})"){
-                                                    packages.testPkg(
+                                                    testPythonPkg(
                                                         agent: [
                                                             dockerfile: [
                                                                 label: 'linux && docker && x86',
@@ -1703,7 +1689,7 @@ pipeline {
                                         if(params.INCLUDE_LINUX_ARM == true){
                                             testSdistStages["Test sdist (Linux ARM64 - Python ${pythonVersion})"] = {
                                                 stage("Test sdist (Linux ARM64 - Python ${pythonVersion})"){
-                                                    packages.testPkg(
+                                                    testPythonPkg(
                                                         agent: [
                                                             dockerfile: [
                                                                 label: 'linux && docker && arm64',
@@ -1711,7 +1697,7 @@ pipeline {
                                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip'
                                                             ]
                                                         ],
-                                                        retry: 3,
+                                                        retries: 3,
                                                         testSetup: {
                                                             checkout scm
                                                             unstash 'python sdist'
@@ -2052,19 +2038,12 @@ pipeline {
                             wheelStashes.each{
                                 unstash it
                             }
-                            def pypi = fileLoader.fromGit(
-                                    'pypi',
-                                    'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
-                                    '2',
-                                    null,
-                                    ''
-                                )
-                            pypi.pypiUpload(
-                                credentialsId: 'jenkins-nexus',
-                                repositoryUrl: SERVER_URL,
-                                glob: 'dist/*'
-                                )
                         }
+                        pypiUpload(
+                            credentialsId: 'jenkins-nexus',
+                            repositoryUrl: SERVER_URL,
+                            glob: 'dist/*'
+                        )
                     }
                     post{
                         cleanup{
