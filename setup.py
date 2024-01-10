@@ -119,7 +119,6 @@ setup(
         'uiucprescon.imagevalidate',
         "uiucprescon.imagevalidate.profiles"],
     test_suite="tests",
-    setup_requires=['pytest-runner'],
     install_requires=['py3exiv2bind>=0.1.9'],
     tests_require=['pytest'],
     python_requires=">=3.8",

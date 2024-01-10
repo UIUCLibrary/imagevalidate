@@ -119,7 +119,7 @@ def mac_wheels(){
                                             },
                                             post:[
                                                 failure:{
-                                                    sh(script:'pip list')
+                                                    sh(script:'pip list', returnStatus: true)
                                                 },
                                                 cleanup: {
                                                     cleanWs(
@@ -221,7 +221,7 @@ def mac_wheels(){
                                         },
                                         post:[
                                             failure:{
-                                                sh(script:'pip list')
+                                                sh(script:'pip list', returnStatus: true)
                                             },
                                             cleanup: {
                                                 cleanWs(
