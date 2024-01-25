@@ -1560,7 +1560,7 @@ pipeline {
                                             arches << "x86_64"
                                         }
                                         if(params.INCLUDE_MACOS_ARM == true){
-                                            arches << "m1"
+                                            arches << "arm64"
                                         }
                                         arches.each{arch ->
                                             testSdistStages["Test sdist (MacOS ${arch} - Python ${pythonVersion})"] = {
