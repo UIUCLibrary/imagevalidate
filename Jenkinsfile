@@ -49,6 +49,7 @@ def mac_wheels(){
                                     agent: [
                                         label: "mac && python${pythonVersion} && x86_64",
                                     ],
+                                    retries: 3,
                                     buildCmd: {
                                         withEnv([
                                             '_PYTHON_HOST_PLATFORM=macosx-10.9-x86_64',
@@ -96,48 +97,48 @@ def mac_wheels(){
                             }
                             if(params.TEST_PACKAGES == true){
                                 stage("Test Wheel (${pythonVersion} MacOS x86_64)"){
-                                    retry(2){
-                                        testPythonPkg(
-                                            agent: [
-                                                label: "mac && python${pythonVersion} && x86_64",
-                                            ],
-                                            testSetup: {
-                                                checkout scm
-                                                unstash "python${pythonVersion} mac x86_64 wheel"
+                                    testPythonPkg(
+                                        agent: [
+                                            label: "mac && python${pythonVersion} && x86_64",
+                                        ],
+                                        testSetup: {
+                                            checkout scm
+                                            unstash "python${pythonVersion} mac x86_64 wheel"
+                                        },
+                                        retries: 3,
+                                        testCommand: {
+                                            findFiles(glob: 'dist/*.whl').each{
+                                                sh(label: 'Running Tox',
+                                                   script: """python${pythonVersion} -m venv venv
+                                                              . ./venv/bin/activate
+                                                              python -m pip install --upgrade pip
+                                                              pip install -r requirements/requirements_tox.txt
+                                                              tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                          """
+                                                )
+                                            }
+                                        },
+                                        post:[
+                                            failure:{
+                                                sh(script:'pip list', returnStatus: true)
                                             },
-                                            testCommand: {
-                                                findFiles(glob: 'dist/*.whl').each{
-                                                    sh(label: 'Running Tox',
-                                                       script: """python${pythonVersion} -m venv venv
-                                                                  . ./venv/bin/activate
-                                                                  python -m pip install --upgrade pip
-                                                                  pip install -r requirements/requirements_tox.txt
-                                                                  tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
-                                                              """
-                                                    )
-                                                }
+                                            cleanup: {
+                                                cleanWs(
+                                                    patterns: [
+                                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                                            [pattern: 'venv/', type: 'INCLUDE'],
+                                                            [pattern: '.tox/', type: 'INCLUDE'],
+                                                        ],
+                                                    notFailBuild: true,
+                                                    deleteDirs: true
+                                                )
                                             },
-                                            post:[
-                                                failure:{
-                                                    sh(script:'pip list', returnStatus: true)
-                                                },
-                                                cleanup: {
-                                                    cleanWs(
-                                                        patterns: [
-                                                                [pattern: 'dist/', type: 'INCLUDE'],
-                                                                [pattern: 'venv/', type: 'INCLUDE'],
-                                                                [pattern: '.tox/', type: 'INCLUDE'],
-                                                            ],
-                                                        notFailBuild: true,
-                                                        deleteDirs: true
-                                                    )
-                                                },
-                                                success: {
-                                                     archiveArtifacts artifacts: 'dist/*.whl'
-                                                }
-                                            ]
-                                        )
-                                    }
+                                            success: {
+                                                 archiveArtifacts artifacts: 'dist/*.whl'
+                                            }
+                                        ]
+                                    )
+                                    
                                 }
                             }
                         }
@@ -149,6 +150,7 @@ def mac_wheels(){
                                     agent: [
                                         label: "mac && python${pythonVersion} && m1",
                                     ],
+                                    retries: 3,
                                     buildCmd: {
             //                     Taken from cibuildwheel source code
             //                     https://github.com/pypa/cibuildwheel/blob/main/cibuildwheel/macos.py
@@ -198,48 +200,48 @@ def mac_wheels(){
                                 )
                             }
                             stage("Test Wheel (${pythonVersion} MacOS m1)"){
-                                retry(2){
-                                    testPythonPkg(
-                                        agent: [
-                                            label: "mac && python${pythonVersion} && m1",
-                                        ],
-                                        testSetup: {
-                                            checkout scm
-                                            unstash "python${pythonVersion} m1 mac wheel"
+                                testPythonPkg(
+                                    agent: [
+                                        label: "mac && python${pythonVersion} && m1",
+                                    ],
+                                    retries: 3,
+                                    testSetup: {
+                                        checkout scm
+                                        unstash "python${pythonVersion} m1 mac wheel"
+                                    },
+                                    testCommand: {
+                                        findFiles(glob: 'dist/*.whl').each{
+                                            sh(label: 'Running Tox',
+                                               script: """python${pythonVersion} -m venv venv
+                                                          . ./venv/bin/activate
+                                                          python -m pip install --upgrade pip
+                                                          pip install -r requirements/requirements_tox.txt
+                                                          tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                      """
+                                            )
+                                        }
+                                    },
+                                    post:[
+                                        failure:{
+                                            sh(script:'pip list', returnStatus: true)
                                         },
-                                        testCommand: {
-                                            findFiles(glob: 'dist/*.whl').each{
-                                                sh(label: 'Running Tox',
-                                                   script: """python${pythonVersion} -m venv venv
-                                                              . ./venv/bin/activate
-                                                              python -m pip install --upgrade pip
-                                                              pip install -r requirements/requirements_tox.txt
-                                                              tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
-                                                          """
-                                                )
-                                            }
+                                        cleanup: {
+                                            cleanWs(
+                                                patterns: [
+                                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                                        [pattern: 'venv/', type: 'INCLUDE'],
+                                                        [pattern: '.tox/', type: 'INCLUDE'],
+                                                    ],
+                                                notFailBuild: true,
+                                                deleteDirs: true
+                                            )
                                         },
-                                        post:[
-                                            failure:{
-                                                sh(script:'pip list', returnStatus: true)
-                                            },
-                                            cleanup: {
-                                                cleanWs(
-                                                    patterns: [
-                                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                                            [pattern: '.tox/', type: 'INCLUDE'],
-                                                        ],
-                                                    notFailBuild: true,
-                                                    deleteDirs: true
-                                                )
-                                            },
-                                            success: {
-                                                 archiveArtifacts artifacts: 'dist/*.whl'
-                                            }
-                                        ]
-                                    )
-                                }
+                                        success: {
+                                             archiveArtifacts artifacts: 'dist/*.whl'
+                                        }
+                                    ]
+                                )
+                                
                             }
                         }
                     }
@@ -1567,6 +1569,7 @@ pipeline {
                                                         agent: [
                                                             label: "mac && python${pythonVersion} && ${arch}",
                                                         ],
+                                                        retries: 3,
                                                         testSetup: {
                                                             checkout scm
                                                             unstash 'python sdist'
