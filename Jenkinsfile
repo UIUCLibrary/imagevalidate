@@ -1138,6 +1138,9 @@ pipeline {
                                             args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/opt/sonar/.sonar/cache'
                                         }
                                     }
+                                    options {
+                                      retry(conditions: [agent()], count: 3)
+                                    }
                                     stages{
                                         stage('Set up Tests'){
                                             parallel{
