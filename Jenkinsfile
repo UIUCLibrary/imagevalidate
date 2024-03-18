@@ -1517,6 +1517,9 @@ pipeline {
                             environment{
                                 PIP_NO_CACHE_DIR="off"
                             }
+                            options {
+                                retry(3)
+                            }
                             steps{
                                 sh(
                                     label: 'Building sdist',
