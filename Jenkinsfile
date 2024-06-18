@@ -395,7 +395,7 @@ def windows_wheels(){
                                     dockerfile: [
                                         label: 'windows && docker && x86_64',
                                         filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
-                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
                                         args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
                                     ]
                                 ],
@@ -428,7 +428,7 @@ def windows_wheels(){
                                     dockerfile: [
                                         label: 'windows && docker && x86_64',
                                         filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
-                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
                                         args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
                                         dockerImageName: "${currentBuild.fullProjectName}_test_no_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                                     ]
@@ -1450,7 +1450,7 @@ pipeline {
                                             envNamePrefix: 'Tox Windows',
                                             label: 'windows && docker && x86_64',
                                             dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
-                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
+                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
                                             dockerRunArgs: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
                                             retry: 2
                                         )
@@ -1620,7 +1620,7 @@ pipeline {
                                                                 dockerfile: [
                                                                     label: 'windows && docker && x86',
                                                                     filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
-                                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
                                                                     args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
                                                                     dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                                                                 ]
