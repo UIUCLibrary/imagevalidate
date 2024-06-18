@@ -1,7 +1,10 @@
 # escape=`
 ARG PIPX_HOME=c:\pipx
+ARG UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv
 ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8
+ARG UV_EXTRA_INDEX_URL
+
 FROM ${FROM_IMAGE} AS certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
@@ -62,11 +65,12 @@ ARG PIP_INDEX_URL
 
 COPY requirements-dev.txt c:/python_requirments/
 COPY requirements/ c:/python_requirments/requirements
-RUN python -m pip install pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-dev.txt
+ARG UV_EXTRA_INDEX_URL
+ENV UV_INDEX_STRATEGY=unsafe-best-match
+RUN python -m pip install pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements/requirements_tox.txt
 
 ARG PIP_DOWNLOAD_CACHE
 RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force
-ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 
 ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 ARG PIPX_HOME

@@ -3,6 +3,7 @@ ARG PIPX_HOME=c:\pipx
 ARG VS_INSTALL_PATH="C:\BuildTools"
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
+ARG UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
 FROM ${FROM_IMAGE} as certsgen
 RUN certutil -generateSSTFromWU roots.sst
@@ -117,7 +118,9 @@ ARG PIP_INDEX_URL
 
 COPY requirements-dev.txt c:/python_requirments/
 COPY requirements/ c:/python_requirments/requirements
-RUN python -m pip install pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-dev.txt
+ARG UV_EXTRA_INDEX_URL
+ENV UV_INDEX_STRATEGY=unsafe-best-match
+RUN python -m pip install pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements/requirements_tox.txt build
 
 ARG PIP_DOWNLOAD_CACHE
 RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force
@@ -131,6 +134,13 @@ ENV PIPX_BIN_DIR=${PIPX_HOME}\bin
 RUN py -3 -m pip install --no-cache-dir pipx ; `
     py -3 -m pipx ensurepath
 RUN py -3 -m pipx install 'devpi-client<7.0'
+
+
+ARG UV_CACHE_DIR
+ARG PIP_DOWNLOAD_CACHE
+
+ENV UV_CACHE_DIR=${UV_CACHE_DIR}
+ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 
 WORKDIR C:/src
 CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate -p=auto
