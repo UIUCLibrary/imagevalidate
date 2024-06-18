@@ -1,6 +1,8 @@
 ARG PIPX_HOME=/pipx
 ARG CONAN_USER_HOME=/conan
 ARG PIP_DOWNLOAD_CACHE=/.cache/pip
+ARG UV_CACHE_DIR=/.cache/uv
+ARG UV_EXTRA_INDEX_URL
 FROM ubuntu:22.04 AS wheel_builder_base
 COPY ci/docker/python/linux/tox/apt-packages.txt /tmp/apt-packages.txt
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -39,7 +41,7 @@ ARG PIP_INDEX_URL
 COPY requirements/ /tmp/python_requirements/requirements/
 COPY requirements-dev.txt /tmp/python_requirements
 RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install -r /tmp/python_requirements/requirements-dev.txt
+    python3 -m pip install -r /tmp/python_requirements/requirements/requirements_tox.txt -r /tmp/python_requirements/requirements/requirements_conan.txt
 
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY conanfile.py /tmp/conanfile.py
@@ -52,8 +54,13 @@ RUN conan install /tmp --build missing --no-import  && \
 RUN chmod -R 777 ${CONAN_USER_HOME}
 
 ARG PIP_DOWNLOAD_CACHE
+ARG UV_CACHE_DIR
 RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
-    chmod -R 777 ${PIP_DOWNLOAD_CACHE}
+    chmod -R 777 ${PIP_DOWNLOAD_CACHE} && \
+    mkdir -p ${UV_CACHE_DIR} && \
+    chmod -R 777 ${UV_CACHE_DIR}
+
+ENV UV_INDEX_STRATEGY=unsafe-best-match
 
 ARG PIPX_HOME
 ENV PIPX_HOME=${PIPX_HOME}

@@ -113,7 +113,7 @@ def mac_wheels(){
                                                               . ./venv/bin/activate
                                                               python -m pip install --upgrade pip
                                                               pip install -r requirements/requirements_tox.txt
-                                                              tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                              UV_INDEX_STRATEGY=unsafe-best-match tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
                                                           """
                                                 )
                                             }
@@ -216,7 +216,7 @@ def mac_wheels(){
                                                           . ./venv/bin/activate
                                                           python -m pip install --upgrade pip
                                                           pip install -r requirements/requirements_tox.txt
-                                                          tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                          UV_INDEX_STRATEGY=unsafe-best-match tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
                                                       """
                                             )
                                         }
@@ -309,7 +309,7 @@ def mac_wheels(){
                                                                   . ./venv/bin/activate
                                                                   python -m pip install --upgrade pip
                                                                   pip install -r requirements/requirements_tox.txt
-                                                                  CONAN_REVISIONS_ENABLED=1 tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                  UV_INDEX_STRATEGY=unsafe-best-match CONAN_REVISIONS_ENABLED=1 tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
                                                                """
                                                     )
                                                 }
@@ -351,7 +351,7 @@ def mac_wheels(){
                                                                   . ./venv/bin/activate
                                                                   python -m pip install --upgrade pip
                                                                   pip install -r requirements/requirements_tox.txt
-                                                                  CONAN_REVISIONS_ENABLED=1 tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                  UV_INDEX_STRATEGY=unsafe-best-match CONAN_REVISIONS_ENABLED=1 tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
                                                                """
                                                     )
                                                 }
@@ -395,7 +395,7 @@ def windows_wheels(){
                                     dockerfile: [
                                         label: 'windows && docker && x86_64',
                                         filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
-                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
                                         args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
                                     ]
                                 ],
@@ -428,8 +428,8 @@ def windows_wheels(){
                                     dockerfile: [
                                         label: 'windows && docker && x86_64',
                                         filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
-                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
-                                        args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
+                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                                        args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip -v uvcache_imagevalidate:c:/users/containeradministrator/appdata/local/uv',
                                         dockerImageName: "${currentBuild.fullProjectName}_test_no_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                                     ]
                                 ],
@@ -487,7 +487,7 @@ def linux_wheels(){
                                             label: 'linux && docker && x86_64',
                                             filename: 'ci/docker/python/linux/package/Dockerfile',
                                             additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg manylinux_image=quay.io/pypa/manylinux2014_x86_64',
-                                            args: '-v pipcache_imagevalidate:/.cache/pip',
+                                            args: '-v pipcache_imagevalidate:/.cache/pip -v uvcache_imagevalidate:/.cache/uv',
                                         ]
                                     ],
                                     buildCmd: {
@@ -524,8 +524,8 @@ def linux_wheels(){
                                                 dockerfile: [
                                                     label: 'linux && docker && x86_64',
                                                     filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
-                                                    args: '-v pipcache_imagevalidate:/.cache/pip',
+                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv',
+                                                    args: '-v pipcache_imagevalidate:/.cache/pip -v uvcache_imagevalidate:/.cache/uv',
                                                 ]
                                             ],
                                             testSetup: {
@@ -613,8 +613,8 @@ def linux_wheels(){
                                                 dockerfile: [
                                                     label: 'linux && docker && arm',
                                                     filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
-                                                    args: '-v pipcache_imagevalidate:/.cache/pip',
+                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv',
+                                                    args: '-v pipcache_imagevalidate:/.cache/pip -v uvcache_imagevalidate:/.cache/uv',
                                                 ]
                                             ],
                                             testSetup: {
@@ -1440,8 +1440,8 @@ pipeline {
                                             envNamePrefix: 'Tox Linux',
                                             label: 'linux && docker && x86_64',
                                             dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
-                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
-                                            dockerRunArgs: '-v pipcache_imagevalidate:/.cache/pip',
+                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv',
+                                            dockerRunArgs: '-v pipcache_imagevalidate:/.cache/pip -v uvcache_imagevalidate:/.cache/uv',
                                             retry: 2
                                         )
                                     },
@@ -1450,8 +1450,8 @@ pipeline {
                                             envNamePrefix: 'Tox Windows',
                                             label: 'windows && docker && x86_64',
                                             dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
-                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
-                                            dockerRunArgs: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
+                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip --build-arg UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv',
+                                            dockerRunArgs: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip -v uvcache_imagevalidate:c:/users/containeradministrator/appdata/local/uv',
                                             retry: 2
                                         )
                                     },
@@ -1587,7 +1587,7 @@ pipeline {
                                                                               . ./venv/bin/activate
                                                                               python -m pip install --upgrade pip
                                                                               pip install -r requirements/requirements_tox.txt
-                                                                              CONAN_REVISIONS_ENABLED=1  tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                              UV_INDEX_STRATEGY=unsafe-best-match CONAN_REVISIONS_ENABLED=1  tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
                                                                            """
                                                                 )
                                                             }
@@ -1620,8 +1620,8 @@ pipeline {
                                                                 dockerfile: [
                                                                     label: 'windows && docker && x86',
                                                                     filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
-                                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
-                                                                    args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip',
+                                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                                                                    args: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip -v uvcache_imagevalidate:c:/users/containeradministrator/appdata/local/uv',
                                                                     dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                                                                 ]
                                                             ],
@@ -1664,7 +1664,7 @@ pipeline {
                                                             dockerfile: [
                                                                 label: 'linux && docker && x86',
                                                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip'
+                                                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv'
                                                             ]
                                                         ],
                                                         testSetup: {
@@ -1703,7 +1703,7 @@ pipeline {
                                                             dockerfile: [
                                                                 label: 'linux && docker && arm64',
                                                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip'
+                                                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv'
                                                             ]
                                                         ],
                                                         retries: 3,
@@ -1816,7 +1816,7 @@ pipeline {
                                             agent: [
                                                 dockerfile: [
                                                     filename: 'ci/docker/python/windows/msvc/tox/Dockerfile',
-                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
+                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip --build-arg UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv',
                                                     label: 'windows && docker && x86_64 && devpi-access',
                                                 ]
                                             ],
@@ -1842,7 +1842,7 @@ pipeline {
                                             agent: [
                                                 dockerfile: [
                                                     filename: 'ci/docker/python/windows/msvc/tox_no_vs/Dockerfile',
-                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
+                                                    additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip --build-arg UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv',
                                                     label: 'windows && docker && x86_64 && devpi-access'
                                                 ]
                                             ],

@@ -8,6 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       PIP_EXTRA_INDEX_URL: ${{vars.PIP_EXTRA_INDEX_URL}}
+      UV_EXTRA_INDEX_URL: ${{vars.PIP_EXTRA_INDEX_URL}}
     strategy:
       matrix:
         os: [
