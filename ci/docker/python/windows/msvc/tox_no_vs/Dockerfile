@@ -26,9 +26,9 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
     Remove-Item -Force -Recurse ${Env:TEMP}\*
 
 
-ADD ci/docker/shared/chocolatey/packages.config choco/packages.config
+COPY ci/docker/python/windows/msvc/tox_no_vs/chocolatey/packages.xml c:/choco/packages.config
 RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
-    C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose choco/packages.config ;`
+    C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose c:/choco/packages.config ;`
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
     refreshenv ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
