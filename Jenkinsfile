@@ -1,4 +1,4 @@
-library identifier: 'JenkinsPythonHelperLibrary@2024.1.2', retriever: modernSCM(
+library identifier: 'JenkinsPythonHelperLibrary@2024.2.1', retriever: modernSCM(
   [$class: 'GitSCMSource',
    remote: 'https://github.com/UIUCLibrary/JenkinsPythonHelperLibrary.git',
    ])
@@ -1442,6 +1442,7 @@ pipeline {
                                             dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
                                             dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv',
                                             dockerRunArgs: '-v pipcache_imagevalidate:/.cache/pip -v uvcache_imagevalidate:/.cache/uv',
+                                            verbosity: 1,
                                             retry: 2
                                         )
                                     },
@@ -1452,6 +1453,7 @@ pipeline {
                                             dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
                                             dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip --build-arg UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv',
                                             dockerRunArgs: '-v pipcache_imagevalidate:c:/users/containeradministrator/appdata/local/pip -v uvcache_imagevalidate:c:/users/containeradministrator/appdata/local/uv',
+                                            verbosity: 1,
                                             retry: 2
                                         )
                                     },
