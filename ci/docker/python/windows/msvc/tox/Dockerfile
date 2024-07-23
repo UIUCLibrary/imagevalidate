@@ -93,7 +93,7 @@ RUN certutil -addstore -f root roots.sst ; `
 COPY requirements requirements
 RUN python -m pip install pip --upgrade ; `
     pip install wheel ; `
-    pip install pip install --no-cache-dir -r requirements/requirements_conan.txt
+    pip install --no-cache-dir -r requirements/requirements_conan.txt
 ARG CONAN_USER_HOME
 COPY --from=CONAN_BUILDER ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
