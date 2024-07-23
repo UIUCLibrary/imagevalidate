@@ -4,6 +4,7 @@ ARG VS_INSTALL_PATH="C:\BuildTools"
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ARG UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv
+ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
 FROM ${FROM_IMAGE} as certsgen
 RUN certutil -generateSSTFromWU roots.sst
