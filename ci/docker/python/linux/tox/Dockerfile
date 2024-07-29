@@ -38,7 +38,8 @@ ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
-COPY requirements/ /tmp/python_requirements/requirements/
+COPY requirements/requirements_conan.txt /tmp/python_requirements/requirements/requirements_conan.txt
+COPY requirements/requirements_tox.txt /tmp/python_requirements/requirements/requirements_tox.txt
 COPY requirements-dev.txt /tmp/python_requirements
 RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install -r /tmp/python_requirements/requirements/requirements_tox.txt -r /tmp/python_requirements/requirements/requirements_conan.txt

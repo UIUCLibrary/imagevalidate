@@ -73,7 +73,7 @@ FROM BASE_BUILDER as CONAN_BUILDER
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-COPY requirements requirements
+COPY requirements/requirements_conan.txt requirements/requirements_conan.txt
 RUN python -m pip install --upgrade pip ; `
     pip install wheel ; `
     pip install -r requirements/requirements_conan.txt cmake
@@ -91,7 +91,7 @@ FROM BASE_BUILDER
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
-COPY requirements requirements
+COPY requirements/requirements_conan.txt requirements/requirements_conan.txt
 RUN python -m pip install pip --upgrade ; `
     pip install wheel ; `
     pip install --no-cache-dir -r requirements/requirements_conan.txt
@@ -117,8 +117,7 @@ RUN conan install c:/temp/ --build missing --no-import  -pr:b=default; `
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
-COPY requirements-dev.txt c:/python_requirments/
-COPY requirements/ c:/python_requirments/requirements
+COPY requirements/requirements_tox.txt c:/python_requirments/requirements/requirements_tox.txt
 ARG UV_EXTRA_INDEX_URL
 ENV UV_INDEX_STRATEGY=unsafe-best-match
 RUN python -m pip install pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements/requirements_tox.txt build
