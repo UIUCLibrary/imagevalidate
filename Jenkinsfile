@@ -1424,13 +1424,6 @@ pipeline {
                     }
                     steps {
                         script{
-//                            def tox = fileLoader.fromGit(
-//                                        'tox',
-//                                        'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
-//                                        '8',
-//                                        null,
-//                                        ''
-//                                    )
                             def windowsJobs = [:]
                             def linuxJobs = [:]
                             script{
@@ -1587,7 +1580,7 @@ pipeline {
                                                                               . ./venv/bin/activate
                                                                               python -m pip install --upgrade pip
                                                                               pip install -r requirements/requirements_tox.txt
-                                                                              UV_INDEX_STRATEGY=unsafe-best-match CONAN_REVISIONS_ENABLED=1  tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                              UV_INDEX_STRATEGY=unsafe-best-match CONAN_REVISIONS_ENABLED=1  tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
                                                                            """
                                                                 )
                                                             }
@@ -1631,7 +1624,7 @@ pipeline {
                                                             },
                                                             testCommand: {
                                                                 findFiles(glob: 'dist/*.tar.gz').each{
-                                                                    bat(label: 'Running Tox', script: "tox --workdir %TEMP%\\tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}")
+                                                                    bat(label: 'Running Tox', script: "tox run --workdir .\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}")
                                                                 }
                                                             },
                                                             post:[
@@ -1641,6 +1634,7 @@ pipeline {
                                                                 cleanup: {
                                                                     cleanWs(
                                                                         patterns: [
+                                                                                [pattern: '.tox/', type: 'INCLUDE'],
                                                                                 [pattern: 'dist/', type: 'INCLUDE'],
                                                                                 [pattern: '**/__pycache__/', type: 'INCLUDE'],
                                                                             ],
@@ -1675,7 +1669,7 @@ pipeline {
                                                             findFiles(glob: 'dist/*.tar.gz').each{
                                                                 sh(
                                                                     label: 'Running Tox',
-                                                                    script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                                                                    script: "tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '')}"
                                                                     )
                                                             }
                                                         },
@@ -1683,6 +1677,7 @@ pipeline {
                                                             cleanup: {
                                                                 cleanWs(
                                                                     patterns: [
+                                                                            [pattern: '.tox', type: 'INCLUDE'],
                                                                             [pattern: 'dist/', type: 'INCLUDE'],
                                                                             [pattern: '**/__pycache__/', type: 'INCLUDE'],
                                                                         ],
@@ -1715,7 +1710,7 @@ pipeline {
                                                             findFiles(glob: 'dist/*.tar.gz').each{
                                                                 sh(
                                                                     label: 'Running Tox',
-                                                                    script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                                                                    script: "tox --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '')}"
                                                                     )
                                                             }
                                                         },
@@ -1723,6 +1718,7 @@ pipeline {
                                                             cleanup: {
                                                                 cleanWs(
                                                                     patterns: [
+                                                                            [pattern: '.tox/', type: 'INCLUDE'],
                                                                             [pattern: 'dist/', type: 'INCLUDE'],
                                                                             [pattern: '**/__pycache__/', type: 'INCLUDE'],
                                                                         ],
