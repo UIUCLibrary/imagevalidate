@@ -1650,13 +1650,20 @@ pipeline {
                                         }
                                     }
                                     SUPPORTED_LINUX_VERSIONS.each{pythonVersion ->
+                                        def arches = []
                                         if(params.INCLUDE_LINUX_X86_64 == true){
-                                            testSdistStages["Test sdist (Linux x86_64 - Python ${pythonVersion})"] = {
-                                                stage("Test sdist (Linux x86_64 - Python ${pythonVersion})"){
+                                            arches << "x86_64"
+                                        }
+                                        if(params.INCLUDE_LINUX_ARM == true){
+                                            arches << "ARM64"
+                                        }
+                                        arches.each{arch ->
+                                            testSdistStages["Test sdist (Linux ${arch} - Python ${pythonVersion})"] = {
+                                                stage("Test sdist (Linux ${arch} - Python ${pythonVersion})"){
                                                     testPythonPkg(
                                                         agent: [
                                                             dockerfile: [
-                                                                label: 'linux && docker && x86',
+                                                                label: "linux && docker && ${arch}",
                                                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
                                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv'
                                                             ]
@@ -1678,47 +1685,6 @@ pipeline {
                                                                 cleanWs(
                                                                     patterns: [
                                                                             [pattern: '.tox', type: 'INCLUDE'],
-                                                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                        ],
-                                                                    notFailBuild: true,
-                                                                    deleteDirs: true
-                                                                )
-                                                            },
-                                                        ]
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        if(params.INCLUDE_LINUX_ARM == true){
-                                            testSdistStages["Test sdist (Linux ARM64 - Python ${pythonVersion})"] = {
-                                                stage("Test sdist (Linux ARM64 - Python ${pythonVersion})"){
-                                                    testPythonPkg(
-                                                        agent: [
-                                                            dockerfile: [
-                                                                label: 'linux && docker && arm64',
-                                                                filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv'
-                                                            ]
-                                                        ],
-                                                        retries: 3,
-                                                        testSetup: {
-                                                            checkout scm
-                                                            unstash 'python sdist'
-                                                        },
-                                                        testCommand: {
-                                                            findFiles(glob: 'dist/*.tar.gz').each{
-                                                                sh(
-                                                                    label: 'Running Tox',
-                                                                    script: "tox --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '')}"
-                                                                    )
-                                                            }
-                                                        },
-                                                        post:[
-                                                            cleanup: {
-                                                                cleanWs(
-                                                                    patterns: [
-                                                                            [pattern: '.tox/', type: 'INCLUDE'],
                                                                             [pattern: 'dist/', type: 'INCLUDE'],
                                                                             [pattern: '**/__pycache__/', type: 'INCLUDE'],
                                                                         ],
