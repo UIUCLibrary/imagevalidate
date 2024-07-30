@@ -54,6 +54,7 @@ def mac_wheels(){
                                         withEnv([
                                             '_PYTHON_HOST_PLATFORM=macosx-10.9-x86_64',
                                             'MACOSX_DEPLOYMENT_TARGET=10.9',
+                                            'UV_INDEX_STRATEGY=unsafe-best-match',
                                             'ARCHFLAGS=-arch x86_64'
                                         ]){
                                              sh(label: 'Building wheel',
@@ -61,8 +62,8 @@ def mac_wheels(){
                                                            . ./venv/bin/activate
                                                            python -m pip install --upgrade pip
                                                            pip install wheel==0.37
-                                                           pip install build delocate
-                                                           python -m build --wheel
+                                                           pip install build delocate uv
+                                                           python -m build --wheel --installer=uv
                                                            """
                                                )
                                             findFiles(glob: 'dist/*.whl').each{
@@ -160,6 +161,7 @@ def mac_wheels(){
                                         withEnv([
                                             '_PYTHON_HOST_PLATFORM=macosx-11.0-arm64',
                                             'MACOSX_DEPLOYMENT_TARGET=11.0',
+                                            'UV_INDEX_STRATEGY=unsafe-best-match',
                                             'ARCHFLAGS=-arch arm64'
                                             ]) {
                                              sh(label: 'Building wheel',
@@ -167,8 +169,8 @@ def mac_wheels(){
                                                            . ./venv/bin/activate
                                                            pip install --upgrade pip
                                                            pip install wheel==0.37
-                                                           pip install build delocate
-                                                           python -m build --wheel
+                                                           pip install build delocate uv
+                                                           python -m build --wheel --installer=uv
                                                            """
                                                )
                                              findFiles(glob: 'dist/*.whl').each{
@@ -400,7 +402,7 @@ def windows_wheels(){
                                     ]
                                 ],
                                 buildCmd: {
-                                    bat "py -${pythonVersion} -m pip wheel -v --no-deps -w ./dist ."
+                                    bat "py -${pythonVersion} -m build --wheel --installer=uv"
                                 },
                                 post:[
                                     cleanup: {
@@ -492,7 +494,7 @@ def linux_wheels(){
                                     ],
                                     buildCmd: {
                                         sh(label: 'Building python wheel',
-                                           script:"""python${pythonVersion} -m build --wheel .
+                                           script:"""UV_INDEX_STRATEGY=unsafe-best-match python${pythonVersion} -m build --wheel --installer=uv
                                                      auditwheel repair ./dist/*.whl -w ./dist
                                                      """
                                            )
@@ -581,7 +583,7 @@ def linux_wheels(){
                                     ],
                                     buildCmd: {
                                         sh(label: 'Building python wheel',
-                                           script:"""python${pythonVersion} -m build --wheel .
+                                           script:"""UV_INDEX_STRATEGY=unsafe-best-match python${pythonVersion} -m build --wheel --installer=uv
                                                      auditwheel repair ./dist/*.whl -w ./dist
                                                      """
                                            )
@@ -1624,7 +1626,7 @@ pipeline {
                                                             },
                                                             testCommand: {
                                                                 findFiles(glob: 'dist/*.tar.gz').each{
-                                                                    bat(label: 'Running Tox', script: "tox run --workdir .\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}")
+                                                                    bat(label: 'Running Tox', script: "tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}")
                                                                 }
                                                             },
                                                             post:[
