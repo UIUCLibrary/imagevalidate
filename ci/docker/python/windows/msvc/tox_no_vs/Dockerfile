@@ -63,8 +63,7 @@ RUN certutil -addstore -f root roots.sst ; `
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
-COPY requirements-dev.txt c:/python_requirments/
-COPY requirements/ c:/python_requirments/requirements
+COPY requirements/requirements_tox.txt c:/python_requirments/requirements/requirements_tox.txt
 ARG UV_EXTRA_INDEX_URL
 ENV UV_INDEX_STRATEGY=unsafe-best-match
 RUN python -m pip install pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements/requirements_tox.txt

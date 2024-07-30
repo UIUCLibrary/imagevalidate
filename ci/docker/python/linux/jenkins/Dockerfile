@@ -42,7 +42,6 @@ ARG PYTHON_INDEX
 ARG PIP_EXTRA_INDEX_URL
 ENV PIP_NO_CACHE_DIR=1
 COPY requirements-dev.txt /requirements/
-COPY requirements/ /requirements/requirements/
 
 ARG PIP_FIND_LINKS
 RUN mkdir -p ${PIP_FIND_LINKS} &&  \
@@ -140,7 +139,7 @@ RUN ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_FIND_LINKS
 COPY --from=wheel_builder ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
-COPY --from=wheel_builder requirements/ /requirements
+COPY requirements-dev.txt /requirements/requirements-dev.txt
 
 RUN python3 -m pip install pip --upgrade && \
     pip install --no-index --no-cache-dir --find-links=${PIP_FIND_LINKS} \

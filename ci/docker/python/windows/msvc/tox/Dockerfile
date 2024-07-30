@@ -3,8 +3,9 @@ ARG PIPX_HOME=c:\pipx
 ARG VS_INSTALL_PATH="C:\BuildTools"
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-ARG UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv
-ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
+ARG UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv
+ARG CONAN_USER_HOME=c:/users/ContainerUser
+ARG PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
 FROM ${FROM_IMAGE} as certsgen
 RUN certutil -generateSSTFromWU roots.sst
@@ -73,7 +74,7 @@ FROM BASE_BUILDER as CONAN_BUILDER
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-COPY requirements requirements
+COPY requirements/requirements_conan.txt requirements/requirements_conan.txt
 RUN python -m pip install --upgrade pip ; `
     pip install wheel ; `
     pip install -r requirements/requirements_conan.txt cmake
@@ -91,7 +92,7 @@ FROM BASE_BUILDER
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
-COPY requirements requirements
+COPY requirements/requirements_conan.txt requirements/requirements_conan.txt
 RUN python -m pip install pip --upgrade ; `
     pip install wheel ; `
     pip install --no-cache-dir -r requirements/requirements_conan.txt
@@ -117,16 +118,11 @@ RUN conan install c:/temp/ --build missing --no-import  -pr:b=default; `
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
-COPY requirements-dev.txt c:/python_requirments/
-COPY requirements/ c:/python_requirments/requirements
+COPY requirements/requirements_tox.txt c:/python_requirments/requirements/requirements_tox.txt
 ARG UV_EXTRA_INDEX_URL
 ENV UV_INDEX_STRATEGY=unsafe-best-match
 RUN python -m pip install pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements/requirements_tox.txt build
 
-ARG PIP_DOWNLOAD_CACHE
-RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force
-
-ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 ARG PIPX_HOME
 ENV PIPX_HOME=${PIPX_HOME}
 ENV PIPX_BIN_DIR=${PIPX_HOME}\bin
@@ -139,6 +135,8 @@ RUN py -3 -m pipx install 'devpi-client<7.0'
 
 ARG UV_CACHE_DIR
 ARG PIP_DOWNLOAD_CACHE
+RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force; `
+    New-Item -type directory -path ${Env:UV_CACHE_DIR} -Force
 
 ENV UV_CACHE_DIR=${UV_CACHE_DIR}
 ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}

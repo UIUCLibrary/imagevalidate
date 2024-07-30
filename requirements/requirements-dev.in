@@ -1,0 +1,4 @@
+-r requirements_conan.txt
+-r requirements_tox.txt
+-r requirements-dev.txt
+-r requirements.txt
