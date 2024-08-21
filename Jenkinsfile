@@ -1659,7 +1659,7 @@ pipeline {
                                             arches << "x86_64"
                                         }
                                         if(params.INCLUDE_LINUX_ARM == true){
-                                            arches << "ARM64"
+                                            arches << "arm64"
                                         }
                                         arches.each{arch ->
                                             testSdistStages["Test sdist (Linux ${arch} - Python ${pythonVersion})"] = {
