@@ -3,25 +3,28 @@ ARG PIP_FIND_LINKS=/wheels
 ARG CONAN_USER_HOME=/conan
 ARG SONAR_SCANNER_VERSION=5.0.1.3006
 FROM ubuntu:22.04 AS base_image
-RUN DEBIAN_FRONTEND="noninteractive" apt-get update &&  \
-    apt-get install -y software-properties-common gpg-agent --no-install-recommends && \
-    apt-get -y install tzdata && \
-    apt-get install -y --no-install-recommends \
+RUN rm -f /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,target=/var/cache/apt \
+    DEBIAN_FRONTEND="noninteractive" apt-get update &&  \
+    apt-get install -yqq software-properties-common gpg-agent --no-install-recommends && \
+    apt-get -yqq install tzdata && \
+    apt-get install -yqq --no-install-recommends \
         ninja-build \
         build-essential \
         ccache \
+        curl\
         git \
         python3 \
         python3-dev \
         python3-pip \
         python3-venv \
         ca-certificates \
-        software-properties-common && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+        software-properties-common \
+        unzip && \
+     rm -rf /var/lib/apt/lists/*
 
 #==============================================================================
-FROM base_image as DR_MEMORY_BUILDER
+FROM base_image AS DR_MEMORY_BUILDER
 RUN apt-get update &&  \
     apt-get install -y --no-install-recommends wget
 
@@ -31,12 +34,7 @@ RUN wget --no-verbose https://github.com/DynamoRIO/drmemory/releases/download/re
     ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
     drmemory -version
 
-FROM base_image as wheel_builder
-
-RUN apt-get update &&  \
-    apt-get install -y --no-install-recommends  \
-      ninja-build \
-    && rm -rf /var/lib/apt/lists/*
+FROM base_image AS wheel_builder
 
 ARG PYTHON_INDEX
 ARG PIP_EXTRA_INDEX_URL
@@ -50,11 +48,6 @@ RUN mkdir -p ${PIP_FIND_LINKS} &&  \
 #==============================================================================
 
 FROM base_image AS SONAR_BUILDER
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends  \
-      unzip \
-      curl && \
-    rm -rf /var/lib/apt/lists/*
 ARG SONAR_SCANNER_VERSION
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 ENV SONAR_USER_HOME=/opt/sonar/.sonar
@@ -80,21 +73,28 @@ FROM wheel_builder AS conan_builder
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-COPY requirements/requirements_conan.txt /tmp/requirements_conan.txt
-RUN pip install --no-cache-dir -r /tmp/requirements_conan.txt cmake
+
 COPY ci/docker/shared/conan/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json
 COPY ci/docker/python/linux/jenkins/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 COPY ci/docker/python/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_compiler_support_by_conan.py
-RUN conan config init &&  \
-    python3 /tmp/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml  11.4
+COPY requirements-dev.txt /tmp/requirements-dev.txt
+RUN --mount=type=cache,target=${CONAN_USER_HOME}/.conan \
+    python3 -m venv venv && \
+    . ./venv/bin/activate  && \
+    pip install --no-cache $(grep ^uv /tmp/requirements-dev.txt) && \
+    uv pip install --no-cache $(grep ^conan /tmp/requirements-dev.txt) && \
+    uv pip install --no-cache $(grep ^cmake /tmp/requirements-dev.txt) && \
+    conan config init &&  \
+    python3 /tmp/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml  11.4 && \
+    conan install /tmp --build outdated --no-import -pr:b=default && \
+    conan install /tmp --build outdated --no-import -pr:b=default -o "*:shared=True" && \
+    conan remove "*" -b --src -f && \
+    conan remove --locks && \
+    deactivate && rm -rf venv
 
 
 # shared files are needed to run the Build C++ Tests stage
-RUN conan install /tmp --build outdated --no-import -pr:b=default && \
-    conan install /tmp --build outdated --no-import -pr:b=default -o "*:shared=True" && \
-    conan remove "*" -b --src -f && \
-    conan remove --locks
 
 FROM base_image
 
@@ -123,9 +123,8 @@ RUN ln -s /opt/build-wrapper-linux-x86/build-wrapper-linux-x86-64 /usr/local/bin
     which build-wrapper-linux-x86-64
 
 RUN mkdir -p /.sonar/cache && \
-    chmod -R 777 /.sonar/cache
-
-RUN chmod -R 777 $SONAR_USER_HOME
+    chmod -R 777 /.sonar/cache && \
+    chmod -R 777 $SONAR_USER_HOME
 
 ENV SONAR_SCANNER_OPTS="-server"
 
@@ -138,10 +137,10 @@ RUN ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
 
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_FIND_LINKS
-COPY --from=wheel_builder ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
 COPY requirements-dev.txt /requirements/requirements-dev.txt
 
-RUN python3 -m pip install pip --upgrade && \
+RUN --mount=type=bind,from=wheel_builder,source=${PIP_FIND_LINKS},target=${PIP_FIND_LINKS}\
+    python3 -m pip install pip --upgrade && \
     pip install --no-index --no-cache-dir --find-links=${PIP_FIND_LINKS} \
     -r /requirements/requirements-dev.txt
 
