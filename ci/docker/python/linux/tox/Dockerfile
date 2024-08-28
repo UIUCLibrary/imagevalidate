@@ -6,30 +6,37 @@ ARG UV_EXTRA_INDEX_URL
 FROM ubuntu:22.04 AS wheel_builder_base
 COPY ci/docker/python/linux/tox/apt-packages.txt /tmp/apt-packages.txt
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN apt-get update && \
-    apt-get install -y software-properties-common gpg-agent --no-install-recommends && \
-    add-apt-repository ppa:deadsnakes/ppa && \
-    DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install tzdata && \
+RUN rm -f /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,target=/var/cache/apt \
     apt-get update && \
-     < /tmp/apt-packages.txt xargs apt-get install -y && \
-    apt-get clean && \
+    apt-get install -yqq --no-install-recommends software-properties-common gpg-agent && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -yqq install --no-install-recommends tzdata && \
+    apt-get update && \
+     < /tmp/apt-packages.txt xargs apt-get install -yqq --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
 FROM wheel_builder_base AS conan_builder
-COPY requirements/requirements_conan.txt /tmp/requirements_conan.txt
-RUN pip3 install --no-cache-dir -r /tmp/requirements_conan.txt cmake
+COPY requirements-dev.txt /tmp/requirements-dev.txt
 ARG CONAN_USER_HOME
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY ci/docker/python/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_compiler_support_by_conan.py
-RUN conan config init &&  \
-    python3 /tmp/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml  11.4 && \
-    cat $(conan config home)/settings.yml
 COPY conanfile.py /tmp/conanfile.py
-RUN conan config home
-RUN conan install /tmp --build outdated --build=openjpeg --no-import && \
+RUN --mount=type=cache,target=${CONAN_USER_HOME}/.conan \
+    python3 -m venv venv && \
+    . ./venv/bin/activate  && \
+    pip install --no-cache $(grep ^uv /tmp/requirements-dev.txt) && \
+    uv pip install --no-cache $(grep ^conan /tmp/requirements-dev.txt) && \
+    uv pip install --no-cache $(grep ^cmake /tmp/requirements-dev.txt) && \
+    conan config init &&  \
+    python3 /tmp/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml  11.4 && \
+    cat $(conan config home)/settings.yml && \
+    conan config home && \
+    conan install /tmp --build outdated --build=openjpeg --no-import && \
     conan remove "*" -b --src -f && \
-    conan remove --locks
+    conan remove --locks && \
+    deactivate && rm -rf venv
 # ==============================================================================
 
 FROM wheel_builder_base
@@ -48,10 +55,6 @@ COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY --from=conan_builder ${CONAN_USER_HOME}/ ${CONAN_USER_HOME}/
-RUN conan config home
-RUN conan install /tmp --build missing --no-import  && \
-    conan remove "*" -b --src -f && \
-    conan remove --locks
 RUN chmod -R 777 ${CONAN_USER_HOME}
 
 ARG PIP_DOWNLOAD_CACHE
