@@ -493,11 +493,14 @@ def linux_wheels(){
                                         ]
                                     ],
                                     buildCmd: {
-                                        sh(label: 'Building python wheel',
-                                           script:"""UV_INDEX_STRATEGY=unsafe-best-match python${pythonVersion} -m build --wheel --installer=uv
-                                                     auditwheel repair ./dist/*.whl -w ./dist
-                                                     """
-                                           )
+                                        retry(3){
+                                          
+                                          sh(label: 'Building python wheel',
+                                             script:"""UV_INDEX_STRATEGY=unsafe-best-match python${pythonVersion} -m build --wheel --installer=uv
+                                                       auditwheel repair ./dist/*.whl -w ./dist
+                                                       """
+                                             )
+                                        }
                                     },
                                     post:[
                                         cleanup: {
