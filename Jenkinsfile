@@ -492,15 +492,13 @@ def linux_wheels(){
                                             args: '-v pipcache_imagevalidate:/.cache/pip -v uvcache_imagevalidate:/.cache/uv',
                                         ]
                                     ],
-                                    buildCmd: {
-                                        retry(3){
-                                          
-                                          sh(label: 'Building python wheel',
-                                             script:"""UV_INDEX_STRATEGY=unsafe-best-match python${pythonVersion} -m build --wheel --installer=uv
-                                                       auditwheel repair ./dist/*.whl -w ./dist
-                                                       """
-                                             )
-                                        }
+                                    retries: 3,
+                                    buildCmd: {                                         
+                                        sh(label: 'Building python wheel',
+                                           script:"""UV_INDEX_STRATEGY=unsafe-best-match python${pythonVersion} -m build --wheel --installer=uv
+                                                     auditwheel repair ./dist/*.whl -w ./dist
+                                                     """
+                                           )
                                     },
                                     post:[
                                         cleanup: {
