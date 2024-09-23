@@ -488,16 +488,14 @@ def linux_wheels(){
                                         dockerfile: [
                                             label: 'linux && docker && x86_64',
                                             filename: 'ci/docker/python/linux/package/Dockerfile',
-                                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg manylinux_image=quay.io/pypa/manylinux2014_x86_64',
-                                            args: '-v pipcache_imagevalidate:/.cache/pip -v uvcache_imagevalidate:/.cache/uv',
+                                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg manylinux_image=quay.io/pypa/manylinux2014_x86_64 --build-arg UV_CACHE_DIR=/.cache/uv',
+                                            args: '-v pipcache_imagevalidate:/.cache/pip -v uvcache_wheel_builder_imagevalidate:/.cache/uv',
                                         ]
                                     ],
                                     retries: 3,
                                     buildCmd: {                                         
                                         sh(label: 'Building python wheel',
-                                           script:"""UV_INDEX_STRATEGY=unsafe-best-match python${pythonVersion} -m build --wheel --installer=uv
-                                                     auditwheel repair ./dist/*.whl -w ./dist
-                                                     """
+                                           script: "sh ./contrib/build_linux_wheels.sh . --base-python=python${pythonVersion}"
                                            )
                                     },
                                     post:[
@@ -584,9 +582,7 @@ def linux_wheels(){
                                     ],
                                     buildCmd: {
                                         sh(label: 'Building python wheel',
-                                           script:"""UV_INDEX_STRATEGY=unsafe-best-match python${pythonVersion} -m build --wheel --installer=uv
-                                                     auditwheel repair ./dist/*.whl -w ./dist
-                                                     """
+                                           script: "sh ./contrib/build_linux_wheels.sh . --base-python=python${pythonVersion}"
                                            )
                                     },
                                     post:[
