@@ -79,6 +79,5 @@ ENV PIPX_BIN_DIR=${PIPX_HOME}\bin
 
 RUN py -3 -m pip install --no-cache-dir pipx ; `
     py -3 -m pipx ensurepath
-RUN py -3 -m pipx install 'devpi-client<7.0'
 
 CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate -p=auto
