@@ -115,16 +115,7 @@ openjpeg_library = \
      }
      )
 setup(
-    packages=[
-        'uiucprescon.imagevalidate',
-        "uiucprescon.imagevalidate.profiles"],
-    test_suite="tests",
-    install_requires=['py3exiv2bind>=0.1.9'],
-    tests_require=['pytest'],
-    python_requires=">=3.8",
-    zip_safe=False,
     ext_modules=[open_jpeg_extension],
     libraries=[],
-    package_data={"uiucprescon.imagevalidate": ["py.typed"]},
     cmdclass=cmd_class
 )
