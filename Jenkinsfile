@@ -1155,14 +1155,15 @@ pipeline {
                     when{
                         equals expected: true, actual: params.TEST_RUN_TOX
                     }
-                    steps {
-                        script{
-                            def windowsJobs = [:]
-                            def linuxJobs = [:]
-                            script{
-                                parallel(
-                                    'Linux':{
-                                        linuxJobs = getToxTestsParallel(
+                    parallel{
+                        stage('Linux'){
+                            when{
+                                expression {return nodesByLabel('linux && docker && x86').size() > 0}
+                            }
+                            steps{
+                                script{
+                                    parallel(
+                                        getToxTestsParallel(
                                             envNamePrefix: 'Tox Linux',
                                             label: 'linux && docker && x86_64',
                                             dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
@@ -1170,9 +1171,18 @@ pipeline {
                                             dockerRunArgs: '-v pipcache_imagevalidate:/.cache/pip -v uvcache_imagevalidate:/.cache/uv',
                                             retry: 2
                                         )
-                                    },
-                                    'Windows':{
-                                        windowsJobs = getToxTestsParallel(
+                                    )
+                                }
+                            }
+                        }
+                        stage('Windows'){
+                            when{
+                                expression {return nodesByLabel('windows && docker && x86').size() > 0}
+                            }
+                            steps{
+                                script{
+                                    parallel(
+                                        getToxTestsParallel(
                                             envNamePrefix: 'Tox Windows',
                                             label: 'windows && docker && x86_64',
                                             dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
@@ -1182,11 +1192,9 @@ pipeline {
                                             verbosity: 3,
                                             retry: 2
                                         )
-                                    },
-                                    failFast: true
-                                )
+                                    )
+                                }
                             }
-                            parallel(windowsJobs + linuxJobs)
                         }
                     }
                 }
