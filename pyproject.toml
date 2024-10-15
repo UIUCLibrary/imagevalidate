@@ -10,6 +10,43 @@ requires = [
 build-backend = "uiucprescon.build"
 
 
+[project]
+name = "uiucprescon.imagevalidate"
+version = "0.1.10.dev4"
+dependencies = [
+    "py3exiv2bind>=0.1.9"
+]
+requires-python = ">=3.8"
+readme = "README.rst"
+license = {text = "University of Illinois/NCSA Open Source License"}
+authors = [
+    {name = "University Library at The University of Illinois at Urbana Champaign: Preservation Services", email = "prescons@library.illinois.edu"},
+]
+maintainers = [
+    {name = "Henry Borchers", email = "hborcher@illinois.edu"}
+]
+description = "Validate image metadata"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: University of Illinois/NCSA Open Source License",
+    "Topic :: Multimedia :: Graphics",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+]
+[project.urls]
+Documentation = "https://www.library.illinois.edu/dccdocs/imagevalidate"
+Download = "https://github.com/UIUCLibrary/imagevalidate"
+
+[tool.setuptools]
+packages = [
+    "uiucprescon.imagevalidate",
+    "uiucprescon.imagevalidate.profiles",
+]
+
+[tool.setuptools.package-data]
+"uiucprescon.imagevalidate" = ["py.typed"]
+
 [tool.coverage.run]
 relative_files = true
 branch = true

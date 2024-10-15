@@ -256,7 +256,8 @@ def mac_wheels(){
                                                """
                                    )
                                def fusedWheel = findFiles(excludes: '', glob: 'out/*.whl')[0]
-                               def universalWheel = "uiucprescon.imagevalidate-${props.Version}-cp${pythonVersion.replace('.','')}-cp${pythonVersion.replace('.','')}-macosx_11_0_universal2.whl"
+                               def props = readTOML( file: 'pyproject.toml')['project']
+                               def universalWheel = "uiucprescon.imagevalidate-${props.version}-cp${pythonVersion.replace('.','')}-cp${pythonVersion.replace('.','')}-macosx_11_0_universal2.whl"
                                sh "mv ${fusedWheel.path} ./dist/${universalWheel}"
                                stash includes: 'dist/*.whl', name: "python${pythonVersion} mac-universal2 wheel"
                                wheelStashes << "python${pythonVersion} mac-universal2 wheel"
@@ -660,17 +661,18 @@ def get_sonarqube_unresolved_issues(report_task_file){
     }
 }
 
-def sonarcloudSubmit(props, outputJson, sonarCredentials){
+def sonarcloudSubmit(outputJson, sonarCredentials){
     withSonarQubeEnv(installationName:'sonarcloud', credentialsId: sonarCredentials) {
+        def props = readTOML( file: 'pyproject.toml')['project']
         if (env.CHANGE_ID){
             sh(
                 label: 'Running Sonar Scanner',
-                script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
+                script:"sonar-scanner -Dsonar.projectVersion=${props.version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
                 )
         } else {
             sh(
                 label: 'Running Sonar Scanner',
-                script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
+                script: "sonar-scanner -Dsonar.projectVersion=${props.version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
                 )
         }
     }
@@ -695,68 +697,11 @@ def startup(){
                 }
             }
         },
-        'Getting Distribution Info': {
-            stage('Getting Distribution Info'){
-                node('linux && docker') {
-                    try{
-                        checkout scm
-                        docker.image('python').inside {
-                            timeout(2){
-                                sh(
-                                   label: 'Running setup.py with dist_info',
-                                   script: '''python --version
-                                              PIP_NO_CACHE_DIR=off python setup.py dist_info
-                                           '''
-                                )
-                                stash includes: '*.dist-info/**', name: 'DIST-INFO'
-                                archiveArtifacts artifacts: '*.dist-info/**'
-                            }
-                        }
-                    } finally{
-                        cleanWs(
-                            patterns: [
-                                    [pattern: '*.dist-info/**', type: 'INCLUDE'],
-                                    [pattern: '.eggs/', type: 'INCLUDE'],
-                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                ],
-                            notFailBuild: true,
-                            deleteDirs: true
-                        )
-                    }
-                }
-            }
-        }
     )
 }
 
-def get_props(){
-    stage('Reading Package Metadata'){
-        node() {
-            try{
-                unstash 'DIST-INFO'
-                def metadataFile = findFiles(excludes: '', glob: '*.dist-info/METADATA')[0]
-                def package_metadata = readProperties interpolate: true, file: metadataFile.path
-                echo """Metadata:
-
-Name      ${package_metadata.Name}
-Version   ${package_metadata.Version}
-"""
-                return package_metadata
-            } finally {
-                cleanWs(
-                    patterns: [
-                            [pattern: '*.dist-info/**', type: 'INCLUDE'],
-                        ],
-                    notFailBuild: true,
-                    deleteDirs: true
-                )
-            }
-        }
-    }
-}
 stage('Pipeline Pre-tasks'){
     startup()
-    props = get_props()
 }
 pipeline {
     agent none
@@ -823,7 +768,10 @@ pipeline {
                                 always {
                                     recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log')])
                                     archiveArtifacts artifacts: 'logs/build_sphinx.log'
-                                    zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.Name}-${props.Version}.doc.zip"
+                                    script{
+                                        def props = readTOML( file: 'pyproject.toml')['project']
+                                        zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.name}-${props.version}.doc.zip"
+                                    }
                                     stash includes: 'dist/*.doc.zip,build/docs/html/**', name: 'DOCS_ARCHIVE'
                                 }
                                 success{
@@ -1119,7 +1067,7 @@ pipeline {
                                                                     mv *.gcov build/coverage/
                                                                     """
                                                         )
-                                                        sonarcloudSubmit(props, 'reports/sonar-report.json', params.SONARCLOUD_TOKEN)
+                                                        sonarcloudSubmit('reports/sonar-report.json', params.SONARCLOUD_TOKEN)
                                                     }
                                                     post {
                                                         always{
@@ -1155,14 +1103,15 @@ pipeline {
                     when{
                         equals expected: true, actual: params.TEST_RUN_TOX
                     }
-                    steps {
-                        script{
-                            def windowsJobs = [:]
-                            def linuxJobs = [:]
-                            script{
-                                parallel(
-                                    'Linux':{
-                                        linuxJobs = getToxTestsParallel(
+                    parallel{
+                        stage('Linux'){
+                            when{
+                                expression {return nodesByLabel('linux && docker && x86').size() > 0}
+                            }
+                            steps{
+                                script{
+                                    parallel(
+                                        getToxTestsParallel(
                                             envNamePrefix: 'Tox Linux',
                                             label: 'linux && docker && x86_64',
                                             dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
@@ -1170,9 +1119,18 @@ pipeline {
                                             dockerRunArgs: '-v pipcache_imagevalidate:/.cache/pip -v uvcache_imagevalidate:/.cache/uv',
                                             retry: 2
                                         )
-                                    },
-                                    'Windows':{
-                                        windowsJobs = getToxTestsParallel(
+                                    )
+                                }
+                            }
+                        }
+                        stage('Windows'){
+                            when{
+                                expression {return nodesByLabel('windows && docker && x86').size() > 0}
+                            }
+                            steps{
+                                script{
+                                    parallel(
+                                        getToxTestsParallel(
                                             envNamePrefix: 'Tox Windows',
                                             label: 'windows && docker && x86_64',
                                             dockerfile: 'ci/docker/python/windows/msvc/tox/Dockerfile',
@@ -1182,11 +1140,9 @@ pipeline {
                                             verbosity: 3,
                                             retry: 2
                                         )
-                                    },
-                                    failFast: true
-                                )
+                                    )
+                                }
                             }
-                            parallel(windowsJobs + linuxJobs)
                         }
                     }
                 }
