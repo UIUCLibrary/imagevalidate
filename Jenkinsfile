@@ -1355,6 +1355,7 @@ pipeline {
                                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv'
                                                             ]
                                                         ],
+                                                        retries: 3,
                                                         testSetup: {
                                                             checkout scm
                                                             unstash 'python sdist'
