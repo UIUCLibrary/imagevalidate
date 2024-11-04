@@ -2,4 +2,4 @@ pybind11
 pytest
 py3exiv2bind>=0.1.9
 toml
-git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.0
+uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.3.tar.gz
