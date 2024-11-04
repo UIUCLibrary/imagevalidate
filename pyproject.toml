@@ -16,7 +16,7 @@ version = "0.1.10.dev4"
 dependencies = [
     "py3exiv2bind>=0.1.9"
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 readme = "README.rst"
 license = {text = "University of Illinois/NCSA Open Source License"}
 authors = [
@@ -71,6 +71,7 @@ build-frontend = "build"
 skip = [
     "cp36-*",
     "cp37-*",
+    "cp38-*",
     "pp*",
     "*-win32",
     "*-musllinux*",

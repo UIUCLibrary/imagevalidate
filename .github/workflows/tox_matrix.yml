@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2019]
-        python-version: ['3.8' ,'3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         include:
           - os: macos-latest
             compiler_version: 14
@@ -47,6 +47,17 @@ jobs:
               return '/Users/runner'
             }
             return ''
+      - uses: actions/github-script@v6
+        id: tox-env
+        with:
+          script: |
+            const frontend = "${{matrix.frontend}}"
+            const toxEnv = "py${{matrix.python-version}}".replace('.','') 
+            if(frontend === ""){
+              return toxEnv
+            }
+            return "py${{matrix.python-version}}".replace('.','') + "-${{matrix.frontend}}"
+          result-encoding: string
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
@@ -100,13 +111,15 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          tox -e py
+          tox run
         env:
+          TOX_ENV: "${{ steps.tox-env.outputs.result }}"
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
-      - name: Run tox
+      - name: Run Tox
         if: "!contains(matrix.os, 'windows')"
-        run: cc --version &&  cc -dumpfullversion -dumpversion && tox -e py -vvv
+        run: cc --version &&  cc -dumpfullversion -dumpversion && tox run -vvv
         env:
+          TOX_ENV: "${{ steps.tox-env.outputs.result }}"
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
           CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
           CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}

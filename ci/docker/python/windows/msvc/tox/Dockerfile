@@ -7,10 +7,10 @@ ARG UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv
 ARG CONAN_USER_HOME=c:/users/ContainerUser
 ARG PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
-FROM ${FROM_IMAGE} as certsgen
+FROM ${FROM_IMAGE} AS certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
-FROM ${FROM_IMAGE} as BASE_BUILDER
+FROM ${FROM_IMAGE} AS BASE_BUILDER
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
@@ -39,8 +39,8 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
     Remove-Item -Force -Recurse ${Env:TEMP}\*
 
 
-ADD ci/docker/shared/chocolatey/packages.config choco/packages.config
-ADD ci/docker/shared/verifyenv.ps1 verifyenv.ps1
+COPY ci/docker/shared/chocolatey/packages.config choco/packages.config
+COPY ci/docker/shared/verifyenv.ps1 verifyenv.ps1
 RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose choco/packages.config ;`
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
@@ -55,22 +55,18 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     $env:Path = [System.Environment]::GetEnvironmentVariable(\"Path\",\"Machine\") + \";\" + [System.Environment]::GetEnvironmentVariable(\"Path\",\"User\") ; `
     ./verifyenv.ps1
 
-ADD ci/docker/shared/chocolatey/python.xml choco/python.config
-RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose choco/python.config ;`
+COPY ci/docker/shared/chocolatey/python.xml choco/python.config
+COPY ci/docker/shared/chocolatey/Install-Python.ps1 c:/choco/Install-Python.ps1
+
+RUN c:/choco/Install-Python.ps1 choco/python.config ;`
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
-    refreshenv ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
-    py --list ;`
-    py -3.8 --version ; `
-    py -3.9 --version ; `
-    py -3.10 --version ; `
-    py -3.11 --version ; `
-    py -3.12 --version ; `
     Write-Host "Installing Python with Chocolatey - Done"
+
 RUN New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
     -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
-FROM BASE_BUILDER as CONAN_BUILDER
+FROM BASE_BUILDER AS CONAN_BUILDER
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
