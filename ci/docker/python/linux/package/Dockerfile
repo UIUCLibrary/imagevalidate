@@ -24,7 +24,6 @@ RUN python -m pip install pip --upgrade && python -m pip install wheel
 FROM base AS conan_builder
 COPY requirements-dev.txt /tmp/requirements-dev.txt
 ARG CONAN_USER_HOME
-COPY ci/docker/shared/conan/remotes.json  $CONAN_USER_HOME/.conan/remotes.json
 ARG TARGETARCH
 COPY ci/docker/python/linux/package/conan/$TARGETARCH/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py

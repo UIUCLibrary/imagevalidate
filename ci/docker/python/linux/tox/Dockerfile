@@ -16,11 +16,12 @@ RUN --mount=type=cache,target=/var/cache/apt \
      < /tmp/apt-packages.txt xargs apt-get install -yqq --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
+ARG CONAN_USER_HOME
+RUN mkdir -p ${CONAN_USER_HOME}
+
 FROM wheel_builder_base AS conan_builder
 COPY requirements-dev.txt /tmp/requirements-dev.txt
 ARG CONAN_USER_HOME
-ENV CONAN_USER_HOME=${CONAN_USER_HOME}
-COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY ci/docker/python/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_compiler_support_by_conan.py
 COPY conanfile.py /tmp/conanfile.py
 RUN --mount=type=cache,target=${CONAN_USER_HOME}/.conan \
@@ -41,7 +42,6 @@ RUN --mount=type=cache,target=${CONAN_USER_HOME}/.conan \
 
 FROM wheel_builder_base
 
-ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
@@ -51,8 +51,7 @@ COPY requirements-dev.txt /tmp/python_requirements
 RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install -r /tmp/python_requirements/requirements/requirements_tox.txt -r /tmp/python_requirements/requirements/requirements_conan.txt
 
-COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
-COPY conanfile.py /tmp/conanfile.py
+ARG CONAN_USER_HOME
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY --from=conan_builder ${CONAN_USER_HOME}/ ${CONAN_USER_HOME}/
 RUN chmod -R 777 ${CONAN_USER_HOME}
@@ -65,16 +64,6 @@ RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
     chmod -R 777 ${UV_CACHE_DIR}
 
 ENV UV_INDEX_STRATEGY=unsafe-best-match
-
-ARG PIPX_HOME
-ENV PIPX_HOME=${PIPX_HOME}
-ENV PIPX_BIN_DIR=${PIPX_HOME}/bin
-RUN pip3 install --no-cache-dir pipx && \
-    pipx ensurepath && \
-    mkdir -p $PIPX_HOME  && chmod -R 777 $PIPX_HOME
-RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install pip-audit
-
-
 
 WORKDIR /src
 CMD ["tox", "--workdir", "/tmp/tox", "--recreate"]

@@ -3,7 +3,7 @@ requires = [
     "setuptools>=40.8.0",
     "wheel",
     "conan>=1.50.0,<2.0",
-    'uiucprescon.build @ git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.2.1'
+    'uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.3.tar.gz'
 
 ]
 
@@ -16,7 +16,7 @@ version = "0.1.10.dev4"
 dependencies = [
     "py3exiv2bind>=0.1.9"
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 readme = "README.rst"
 license = {text = "University of Illinois/NCSA Open Source License"}
 authors = [
@@ -71,6 +71,7 @@ build-frontend = "build"
 skip = [
     "cp36-*",
     "cp37-*",
+    "cp38-*",
     "pp*",
     "*-win32",
     "*-musllinux*",
