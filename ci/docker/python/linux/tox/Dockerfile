@@ -22,16 +22,18 @@ RUN mkdir -p ${CONAN_USER_HOME}
 FROM wheel_builder_base AS conan_builder
 COPY requirements-dev.txt /tmp/requirements-dev.txt
 ARG CONAN_USER_HOME
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+ARG UV_EXTRA_INDEX_URL
+ARG UV_INDEX_URL
 COPY ci/docker/python/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_compiler_support_by_conan.py
 COPY conanfile.py /tmp/conanfile.py
-RUN --mount=type=cache,target=${CONAN_USER_HOME}/.conan \
-    python3 -m venv venv && \
+RUN python3 -m venv venv && \
+    venv/bin/pip install --no-cache --disable-pip-version-check uv && \
     . ./venv/bin/activate  && \
-    pip install --no-cache $(grep ^uv /tmp/requirements-dev.txt) && \
-    uv pip install --no-cache $(grep ^conan /tmp/requirements-dev.txt) && \
-    uv pip install --no-cache $(grep ^cmake /tmp/requirements-dev.txt) && \
+    uv pip install --index-strategy=unsafe-best-match --no-cache -r /tmp/requirements-dev.txt && \
     conan config init &&  \
-    python3 /tmp/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml  11.4 && \
+    python /tmp/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml  11.4 && \
     cat $(conan config home)/settings.yml && \
     conan config home && \
     conan install /tmp --build outdated --build=openjpeg --no-import && \
@@ -45,12 +47,6 @@ FROM wheel_builder_base
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
-COPY requirements/requirements_conan.txt /tmp/python_requirements/requirements/requirements_conan.txt
-COPY requirements/requirements_tox.txt /tmp/python_requirements/requirements/requirements_tox.txt
-COPY requirements-dev.txt /tmp/python_requirements
-RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install -r /tmp/python_requirements/requirements/requirements_tox.txt -r /tmp/python_requirements/requirements/requirements_conan.txt
-
 ARG CONAN_USER_HOME
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY --from=conan_builder ${CONAN_USER_HOME}/ ${CONAN_USER_HOME}/
@@ -63,7 +59,6 @@ RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
     mkdir -p ${UV_CACHE_DIR} && \
     chmod -R 777 ${UV_CACHE_DIR}
 
-ENV UV_INDEX_STRATEGY=unsafe-best-match
 
 WORKDIR /src
 CMD ["tox", "--workdir", "/tmp/tox", "--recreate"]

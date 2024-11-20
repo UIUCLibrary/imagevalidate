@@ -45,16 +45,17 @@ FROM base_image AS conan_builder
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
+ARG UV_EXTRA_INDEX_URL
+ARG UV_INDEX_URL
 
 COPY ci/docker/python/linux/jenkins/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 COPY ci/docker/python/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_compiler_support_by_conan.py
 COPY requirements-dev.txt /tmp/requirements-dev.txt
 RUN python3 -m venv venv && \
+    venv/bin/pip install --no-cache --disable-pip-version-check uv && \
     . ./venv/bin/activate  && \
-    pip install --no-cache $(grep ^uv /tmp/requirements-dev.txt) && \
-    uv pip install --no-cache $(grep ^conan /tmp/requirements-dev.txt) && \
-    uv pip install --no-cache $(grep ^cmake /tmp/requirements-dev.txt) && \
+    uv pip install --no-cache --index-strategy unsafe-best-match -r /tmp/requirements-dev.txt && \
     conan config init &&  \
     python3 /tmp/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml  11.4 && \
     conan install /tmp --build outdated --no-import -pr:b=default && \

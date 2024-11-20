@@ -1,4 +1,18 @@
--r requirements_conan.txt
--r requirements_tox.txt
--r requirements-dev.txt
--r requirements.txt
+build
+conan<2.0
+coverage[toml]
+cmake
+delocate ; sys_platform == 'darwin'
+flake8
+gcovr
+lxml
+mypy
+ninja
+paramiko
+pybind11
+pytest
+sphinx
+twine
+toml
+tox
+uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.3.tar.gz

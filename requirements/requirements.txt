@@ -1,5 +1,0 @@
-pybind11
-pytest
-py3exiv2bind>=0.1.9
-toml
-uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.3.tar.gz
