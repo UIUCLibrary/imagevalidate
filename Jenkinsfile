@@ -630,23 +630,6 @@ def sonarcloudSubmit(outputJson, sonarCredentials){
      }
 }
 
-
-def startup(){
-    parallel(
-        'Loading Reference Build Information': {
-            stage('Loading Reference Build Information'){
-                node(){
-                    checkout scm
-                    discoverGitReferenceBuild()
-                }
-            }
-        },
-    )
-}
-
-stage('Pipeline Pre-tasks'){
-    startup()
-}
 pipeline {
     agent none
     options {
@@ -678,12 +661,13 @@ pipeline {
                 }
             }
             stages{
-                stage('Building'){
+                stage('Build and Testing'){
                     agent {
                         dockerfile {
                             filename 'ci/docker/python/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86_64'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
+                            args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/opt/sonar/.sonar/cache'
                         }
                     }
                     environment{
@@ -693,26 +677,51 @@ pipeline {
                         UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
                         UV_CACHE_DIR='/tmp/uvcache'
                     }
-                    when{
-                        anyOf{
-                            equals expected: true, actual: params.RUN_CHECKS
-                            equals expected: true, actual: params.DEPLOY_DOCS
-                        }
-                        beforeAgent true
-                    }
                     options {
-                        retry(2)
+                      retry(conditions: [agent()], count: 3)
                     }
                     stages{
+                        stage('Setup'){
+                            stages{
+                                stage('Loading Reference Build Information'){
+                                    steps{
+                                        mineRepository()
+                                        discoverGitReferenceBuild()
+                                    }
+                                }
+                                stage('Setup Testing Environment'){
+                                    steps{
+                                        sh(
+                                            label: 'Create virtual environment',
+                                            script: '''python3 -m venv bootstrap_uv
+                                                       bootstrap_uv/bin/pip install uv
+                                                       bootstrap_uv/bin/uv venv venv
+                                                       . ./venv/bin/activate
+                                                       bootstrap_uv/bin/uv pip install uv
+                                                       rm -rf bootstrap_uv
+                                                       uv pip install -r requirements-dev.txt
+                                                       '''
+                                       )
+                                    }
+                                }
+                                stage('Installing project as editable package'){
+                                    steps{
+                                        sh(
+                                            label: 'Install package in development mode',
+                                            script: '''. ./venv/bin/activate
+                                                       CFLAGS="--coverage" uv pip install -e .
+                                                    '''
+                                            )
+                                    }
+                                }
+                            }
+                        }
                         stage('Sphinx Documentation'){
                             steps {
                                 sh(
                                     label: 'Building docs',
-                                    script: '''python3 -m venv venv
-                                                . ./venv/bin/activate
-                                                venv/bin/pip install uv
-                                                uvx --from sphinx --with-editable . --with-requirements requirements-dev.txt sphinx-build -b html docs/source build/docs/html -d build/docs/doctrees -v -w logs/build_sphinx.log -W --keep-going
-                                                rm -rf ./venv
+                                    script: '''. ./venv/bin/activate
+                                               sphinx-build -b html docs/source build/docs/html -d build/docs/doctrees -v -w logs/build_sphinx.log -W --keep-going
                                             '''
                                 )
                             }
@@ -740,382 +749,306 @@ pipeline {
                                 }
                            }
                        }
-                   }
-                   post{
-                       cleanup{
-                           cleanWs(
-                               deleteDirs: true,
-                               patterns: [
-                                   [pattern: 'logs/', type: 'INCLUDE'],
-                                   [pattern: 'build/', type: 'INCLUDE'],
-                                   [pattern: 'dist/', type: 'INCLUDE'],
-                                   [pattern: '.eggs/', type: 'INCLUDE']
-                               ]
-                           )
-                       }
-                   }
-                }
-                stage('Checks'){
-                    when{
-                        equals expected: true, actual: params.RUN_CHECKS
-                    }
-                    stages{
-                        stage('Testing'){
+                        stage('Code Quality'){
+                            when{
+                                equals expected: true, actual: params.RUN_CHECKS
+                            }
                             stages{
-                                stage('Code Quality') {
-                                    agent {
-                                        dockerfile {
-                                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
-                                            label 'linux && docker && x86_64'
-                                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
-                                            args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/opt/sonar/.sonar/cache'
+                                stage('Build C++ Tests'){
+                                    steps{
+                                        tee('logs/cmake-build.log'){
+                                            sh(label: 'Compiling CPP Code',
+                                               script: '''. ./venv/bin/activate
+                                                          conan install . -if build/cpp -o "*:shared=True" --build=missing
+                                                          cmake -B build/cpp \
+                                                            -Wdev \
+                                                            -DCMAKE_BUILD_TYPE=Debug \
+                                                            -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake \
+                                                            -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON \
+                                                            -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true \
+                                                            -DBUILD_TESTING:BOOL=true \
+                                                            -DCMAKE_CXX_FLAGS="-fno-inline -fno-omit-frame-pointer -fprofile-arcs -ftest-coverage -Wall -Wextra" \
+                                                            -DMEMORYCHECK_COMMAND=$(which drmemory) \
+                                                            -DMEMORYCHECK_COMMAND_OPTIONS="-check_uninit_blacklist libopenjp2.so.7"
+                                                          build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --config Debug
+                                                          '''
+                                            )
                                         }
                                     }
-                                    environment{
-                                        PIP_CACHE_DIR='/tmp/pipcache'
-                                        UV_INDEX_STRATEGY='unsafe-best-match'
-                                        UV_TOOL_DIR='/tmp/uvtools'
-                                        UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
-                                        UV_CACHE_DIR='/tmp/uvcache'
+                                    post{
+                                        always{
+                                            archiveArtifacts artifacts: 'logs/*'
+                                            recordIssues(
+                                                 tools: [
+                                                     gcc(pattern: 'logs/cmake-build.log'),
+                                                     [$class: 'Cmake', pattern: 'logs/cmake-build.log']
+                                                 ]
+                                            )
+                                        }
                                     }
-                                    options {
-                                      retry(conditions: [agent()], count: 3)
-                                    }
-                                    stages{
-                                        stage('Setup'){
-                                            stages{
-                                                stage('Setup Testing Environment'){
-                                                    steps{
-                                                        sh(
-                                                            label: 'Create virtual environment',
-                                                            script: '''python3 -m venv bootstrap_uv
-                                                                       bootstrap_uv/bin/pip install uv
-                                                                       bootstrap_uv/bin/uv venv venv
-                                                                       . ./venv/bin/activate
-                                                                       bootstrap_uv/bin/uv pip install uv
-                                                                       rm -rf bootstrap_uv
-                                                                       uv pip install -r requirements-dev.txt
-                                                                       '''
-                                                       )
-                                                    }
-                                                }
-                                                stage('Set up Tests'){
-                                                    parallel{
-                                                        stage('Setup Python Testing Environment'){
-                                                            steps{
-                                                                sh(
-                                                                    label: 'Install package in development mode',
-                                                                    script: '''. ./venv/bin/activate
-                                                                               CFLAGS="--coverage" uv pip install -e .
-                                                                            '''
-                                                                    )
-                                                            }
-                                                        }
-                                                        stage('Build C++ Tests'){
-                                                            steps{
-                                                                tee('logs/cmake-build.log'){
-                                                                    sh(label: 'Compiling CPP Code',
-                                                                       script: '''. ./venv/bin/activate
-                                                                                  conan install . -if build/cpp -o "*:shared=True" --build=missing
-                                                                                  cmake -B build/cpp \
-                                                                                    -Wdev \
-                                                                                    -DCMAKE_BUILD_TYPE=Debug \
-                                                                                    -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake \
-                                                                                    -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON \
-                                                                                    -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true \
-                                                                                    -DBUILD_TESTING:BOOL=true \
-                                                                                    -DCMAKE_CXX_FLAGS="-fno-inline -fno-omit-frame-pointer -fprofile-arcs -ftest-coverage -Wall -Wextra" \
-                                                                                    -DMEMORYCHECK_COMMAND=$(which drmemory) \
-                                                                                    -DMEMORYCHECK_COMMAND_OPTIONS="-check_uninit_blacklist libopenjp2.so.7"
-                                                                                  build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --config Debug
-                                                                                  '''
-                                                                    )
-                                                                }
-                                                            }
-                                                            post{
-                                                                always{
-                                                                    archiveArtifacts artifacts: 'logs/*'
-                                                                    recordIssues(
-                                                                         tools: [
-                                                                             gcc(pattern: 'logs/cmake-build.log'),
-                                                                             [$class: 'Cmake', pattern: 'logs/cmake-build.log']
-                                                                         ]
-                                                                    )
-                                                                }
-                                                            }
-                                                        }
-                                                    }
+                                }
+                                stage('Run Testing'){
+                                    parallel {
+                                        stage('C++ Unit Tests'){
+                                            steps{
+                                                sh(label: 'Running CTest',
+                                                   script: '''. ./venv/bin/activate
+                                                              cd build/cpp
+                                                              ctest --output-on-failure --no-compress-output -T Test
+                                                           '''
+                                                )
+                                            }
+                                            post{
+                                                always{
+                                                    xunit(
+                                                       testTimeMargin: '3000',
+                                                       thresholdMode: 1,
+                                                       thresholds: [
+                                                           failed(),
+                                                           skipped()
+                                                       ],
+                                                       tools: [
+                                                           CTest(
+                                                               deleteOutputFiles: true,
+                                                               failIfNotNew: true,
+                                                               pattern: 'build/cpp/Testing/**/*.xml',
+                                                               skipNoTestFiles: true,
+                                                               stopProcessingIfError: true
+                                                           )
+                                                       ]
+                                                   )
+                                                   sh '''. ./venv/bin/activate
+                                                         mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml
+                                                      '''
+                                                   stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
                                                 }
                                             }
                                         }
-                                        stage('Run Tests'){
-                                            stages{
-                                                stage('Run Testing'){
-                                                    parallel {
-                                                        stage('C++ Unit Tests'){
-                                                            steps{
-                                                                sh(label: 'Running CTest',
-                                                                   script: '''. ./venv/bin/activate
-                                                                              cd build/cpp
-                                                                              ctest --output-on-failure --no-compress-output -T Test
-                                                                           '''
-                                                                )
-                                                            }
-                                                            post{
-                                                                always{
-                                                                    xunit(
-                                                                       testTimeMargin: '3000',
-                                                                       thresholdMode: 1,
-                                                                       thresholds: [
-                                                                           failed(),
-                                                                           skipped()
-                                                                       ],
-                                                                       tools: [
-                                                                           CTest(
-                                                                               deleteOutputFiles: true,
-                                                                               failIfNotNew: true,
-                                                                               pattern: 'build/cpp/Testing/**/*.xml',
-                                                                               skipNoTestFiles: true,
-                                                                               stopProcessingIfError: true
-                                                                           )
-                                                                       ]
-                                                                   )
-                                                                   sh '''. ./venv/bin/activate
-                                                                         mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml
-                                                                      '''
-                                                                   stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
-                                                                }
-                                                            }
-                                                        }
-                                                        stage('Clang Tidy Analysis') {
-                                                            steps{
-                                                                tee('logs/clang-tidy.log') {
-                                                                    sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary $(which clang-tidy) -p $WORKSPACE/build/cpp/ ./uiucprescon/imagevalidate' )
-                                                                }
-                                                            }
-                                                            post{
-                                                                always {
-                                                                    recordIssues(tools: [clangTidy(pattern: 'logs/clang-tidy.log')])
-                                                                }
-                                                            }
-                                                        }
-                                                        stage('CPP Check'){
-                                                            steps{
-                                                                writeFile(
-                                                                    file: 'cppcheck_exclusions.txt',
-                                                                    text: "*:${WORKSPACE}/build/cpp/_deps/*"
-                                                                )
-                                                                catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
-                                                                    sh(label: 'Running cppcheck',
-                                                                       script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all -i build/cpp/_deps  --inline-suppr --xml --xml-version=2 --output-file=logs/cppcheck_debug.xml --suppress=missingIncludeSystem --suppressions-list=cppcheck_exclusions.txt --check-config'
-                                                                       )
-                                                                }
-                                                            }
-                                                            post{
-                                                                always {
-                                                                    recordIssues(
-                                                                        filters: [
-                                                                             excludeType('unmatchedSuppression')
-                                                                        ],
-                                                                        tools: [
-                                                                            cppCheck(pattern: 'logs/cppcheck_debug.xml')
-                                                                        ]
-                                                                    )
-                                                                }
-                                                            }
-                                                        }
-                                                        stage('MemCheck'){
-                                                            when{
-                                                                equals expected: true, actual: params.RUN_MEMCHECK
-                                                            }
-                                                            steps{
-                                                                timeout(15){
-                                                                    sh(
-                                                                      label: 'Running memcheck',
-                                                                      script: '(cd build/cpp && ctest -T memcheck -j $(grep -c ^processor /proc/cpuinfo) )'
-                                                                    )
-                                                                }
-                                                            }
-                                                            post{
-                                                                always{
-                                                                    recordIssues(
-                                                                        tools: [
-                                                                            drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
-                                                                            ]
-                                                                    )
-                                                                    archiveArtifacts allowEmptyArchive: true, artifacts: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt'
-                                                                }
-                                                            }
-                                                        }
-                                                        stage('Run PyTest Unit Tests'){
-                                                            steps{
-                                                                catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: 'UNSTABLE') {
-                                                                    sh(
-                                                                        label: 'Running Pytest',
-                                                                        script:'''. ./venv/bin/activate
-                                                                                  mkdir -p reports/coverage
-                                                                                  coverage run --parallel-mode --source=uiucprescon -m pytest --junitxml=reports/pytest.xml --integration
-                                                                                  '''
-                                                                   )
-                                                               }
-                                                            }
-                                                            post {
-                                                                always {
-                                                                    junit 'reports/pytest.xml'
-                                                                }
-                                                            }
-                                                        }
-                                                        stage('Run Doctest Tests'){
-                                                           steps {
-                                                               catchError(buildResult: 'SUCCESS', message: 'Doctest found issues', stageResult: 'UNSTABLE') {
-                                                                   sh( label: 'Running Doctest',
-                                                                       script: '''. ./venv/bin/activate
-                                                                                  coverage run --parallel-mode --source=uiucprescon -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v
-                                                                                  mkdir -p reports
-                                                                                  mv build/docs/output.txt reports/doctest.txt
-                                                                                  '''
-                                                                       )
-                                                               }
-                                                           }
-                                                        }
-                                                        stage('Task Scanner'){
-                                                            steps{
-                                                                recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'uiucprescon/**/*.py', normalTags: 'TODO')])
-                                                            }
-                                                        }
-                                                        stage('Run MyPy Static Analysis') {
-                                                            steps{
-                                                                catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
-                                                                    sh(
-                                                                        label: 'Running Mypy',
-                                                                        script: '''. ./venv/bin/activate
-                                                                                   mkdir -p logs
-                                                                                   mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log
-                                                                                   '''
-                                                                   )
-                                                                }
-                                                            }
-                                                            post {
-                                                                always {
-                                                                    recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                                                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                                                                }
-                                                            }
-                                                        }
-                                                        stage('Run Flake8 Static Analysis') {
-                                                            steps{
-                                                                catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
-                                                                    sh '''. ./venv/bin/activate
-                                                                          mkdir -p logs
-                                                                          flake8 uiucprescon --format=pylint --tee --output-file=logs/flake8.log
-                                                                          '''
-                                                                }
-                                                            }
-                                                            post {
-                                                                always {
-                                                                    recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                    post{
-                                                        always{
-                                                            sh(label: 'combining coverage data',
-                                                               script: '''. ./venv/bin/activate
-                                                                          coverage combine
-                                                                          coverage xml -o ./reports/coverage-python.xml
-                                                                          gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
-                                                                          '''
-                                                            )
-                                                            recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage*.xml']])
-                                                        }
-                                                    }
-                                                }
-                                                stage('Sonarcloud Analysis'){
-                                                    options{
-                                                        lock('uiucprescon.imagevalidate-sonarscanner')
-                                                    }
-                                                    environment{
-                                                        VERSION="${readTOML( file: 'pyproject.toml')['project'].version}"
-                                                        SONAR_USER_HOME='/tmp/sonar'
-                                                    }
-                                                    when{
-                                                        allOf{
-                                                            equals expected: true, actual: params.USE_SONARQUBE
-                                                            expression{
-                                                                try{
-                                                                    withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'dddd')]) {
-                                                                        echo 'Found credentials for sonarqube'
-                                                                    }
-                                                                } catch(e){
-                                                                    return false
-                                                                }
-                                                                return true
-                                                            }
-                                                        }
-                                                    }
-                                                    steps{
-                                                        sh(
-                                                            label: 'Preparing c++ coverage data available for SonarQube',
-                                                            script: """mkdir -p build/coverage
-                                                                    find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
-                                                                    mv *.gcov build/coverage/
-                                                                    """
-                                                        )
-                                                        script{
-                                                            withSonarQubeEnv(installationName:'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
-                                                                if (env.CHANGE_ID){
-                                                                    sh(
-                                                                        label: 'Running Sonar Scanner',
-                                                                        script: """. ./venv/bin/activate
-                                                                                   uvx pysonar-scanner -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory
-                                                                                """
-                                                                        )
-                                                                } else {
-                                                                    sh(
-                                                                        label: 'Running Sonar Scanner',
-                                                                        script: """. ./venv/bin/activate
-                                                                                   uvx pysonar-scanner -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory
-                                                                                """
-                                                                        )
-                                                                }
-                                                            }
-                                                            timeout(time: 1, unit: 'HOURS') {
-                                                                 def sonarqube_result = waitForQualityGate(abortPipeline: false)
-                                                                 if (sonarqube_result.status != 'OK') {
-                                                                     unstable "SonarQube quality gate: ${sonarqube_result.status}"
-                                                                 }
-                                                                 def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
-                                                                 writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-                                                            }
-                                                        }
-                                                    }
-                                                    post {
-                                                        always{
-                                                            script{
-                                                                if(fileExists('reports/sonar-report.json')){
-                                                                    stash includes: 'reports/sonar-report.json', name: 'SONAR_REPORT'
-                                                                    archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
-                                                                    recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
-                                                                }
-                                                            }
-                                                        }
-                                                    }
+                                        stage('Clang Tidy Analysis') {
+                                            steps{
+                                                tee('logs/clang-tidy.log') {
+                                                    sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary $(which clang-tidy) -p $WORKSPACE/build/cpp/ ./uiucprescon/imagevalidate' )
                                                 }
                                             }
                                             post{
-                                                cleanup{
-                                                    cleanWs(
-                                                        patterns: [
-                                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                                            [pattern: 'logs/', type: 'INCLUDE'],
-                                                            [pattern: 'reports', type: 'INCLUDE'],
+                                                always {
+                                                    recordIssues(tools: [clangTidy(pattern: 'logs/clang-tidy.log')])
+                                                }
+                                            }
+                                        }
+                                        stage('CPP Check'){
+                                            steps{
+                                                writeFile(
+                                                    file: 'cppcheck_exclusions.txt',
+                                                    text: "*:${WORKSPACE}/build/cpp/_deps/*"
+                                                )
+                                                catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
+                                                    sh(label: 'Running cppcheck',
+                                                       script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all -i build/cpp/_deps  --inline-suppr --xml --xml-version=2 --output-file=logs/cppcheck_debug.xml --suppress=missingIncludeSystem --suppressions-list=cppcheck_exclusions.txt --check-config'
+                                                       )
+                                                }
+                                            }
+                                            post{
+                                                always {
+                                                    recordIssues(
+                                                        filters: [
+                                                             excludeType('unmatchedSuppression')
+                                                        ],
+                                                        tools: [
+                                                            cppCheck(pattern: 'logs/cppcheck_debug.xml')
                                                         ]
                                                     )
                                                 }
                                             }
                                         }
+                                        stage('MemCheck'){
+                                            when{
+                                                equals expected: true, actual: params.RUN_MEMCHECK
+                                            }
+                                            steps{
+                                                timeout(15){
+                                                    sh(
+                                                      label: 'Running memcheck',
+                                                      script: '(cd build/cpp && ctest -T memcheck -j $(grep -c ^processor /proc/cpuinfo) )'
+                                                    )
+                                                }
+                                            }
+                                            post{
+                                                always{
+                                                    recordIssues(
+                                                        tools: [
+                                                            drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
+                                                            ]
+                                                    )
+                                                    archiveArtifacts allowEmptyArchive: true, artifacts: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt'
+                                                }
+                                            }
+                                        }
+                                        stage('Run PyTest Unit Tests'){
+                                            steps{
+                                                catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: 'UNSTABLE') {
+                                                    sh(
+                                                        label: 'Running Pytest',
+                                                        script:'''. ./venv/bin/activate
+                                                                  mkdir -p reports/coverage
+                                                                  coverage run --parallel-mode --source=uiucprescon -m pytest --junitxml=reports/pytest.xml --integration
+                                                                  '''
+                                                   )
+                                               }
+                                            }
+                                            post {
+                                                always {
+                                                    junit 'reports/pytest.xml'
+                                                }
+                                            }
+                                        }
+                                        stage('Run Doctest Tests'){
+                                           steps {
+                                               catchError(buildResult: 'SUCCESS', message: 'Doctest found issues', stageResult: 'UNSTABLE') {
+                                                   sh( label: 'Running Doctest',
+                                                       script: '''. ./venv/bin/activate
+                                                                  coverage run --parallel-mode --source=uiucprescon -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v
+                                                                  mkdir -p reports
+                                                                  mv build/docs/output.txt reports/doctest.txt
+                                                                  '''
+                                                       )
+                                               }
+                                           }
+                                        }
+                                        stage('Task Scanner'){
+                                            steps{
+                                                recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'uiucprescon/**/*.py', normalTags: 'TODO')])
+                                            }
+                                        }
+                                        stage('Run MyPy Static Analysis') {
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
+                                                    sh(
+                                                        label: 'Running Mypy',
+                                                        script: '''. ./venv/bin/activate
+                                                                   mkdir -p logs
+                                                                   mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log
+                                                                   '''
+                                                   )
+                                                }
+                                            }
+                                            post {
+                                                always {
+                                                    recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                                }
+                                            }
+                                        }
+                                        stage('Run Flake8 Static Analysis') {
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
+                                                    sh '''. ./venv/bin/activate
+                                                          mkdir -p logs
+                                                          flake8 uiucprescon --format=pylint --tee --output-file=logs/flake8.log
+                                                          '''
+                                                }
+                                            }
+                                            post {
+                                                always {
+                                                    recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                                                }
+                                            }
+                                        }
                                     }
+                                    post{
+                                        always{
+                                            sh(label: 'combining coverage data',
+                                               script: '''. ./venv/bin/activate
+                                                          coverage combine
+                                                          coverage xml -o ./reports/coverage-python.xml
+                                                          gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
+                                                          '''
+                                            )
+                                            recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage*.xml']])
+                                        }
+                                    }
+                                }
+                                stage('Sonarcloud Analysis'){
+                                    options{
+                                        lock('uiucprescon.imagevalidate-sonarscanner')
+                                    }
+                                    environment{
+                                        VERSION="${readTOML( file: 'pyproject.toml')['project'].version}"
+                                        SONAR_USER_HOME='/tmp/sonar'
+                                    }
+                                    when{
+                                        allOf{
+                                            equals expected: true, actual: params.USE_SONARQUBE
+                                            expression{
+                                                try{
+                                                    withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'dddd')]) {
+                                                        echo 'Found credentials for sonarqube'
+                                                    }
+                                                } catch(e){
+                                                    return false
+                                                }
+                                                return true
+                                            }
+                                        }
+                                    }
+                                    steps{
+                                        sh(
+                                            label: 'Preparing c++ coverage data available for SonarQube',
+                                            script: """mkdir -p build/coverage
+                                                    find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
+                                                    mv *.gcov build/coverage/
+                                                    """
+                                        )
+                                        script{
+                                            withSonarQubeEnv(installationName:'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
+                                                if (env.CHANGE_ID){
+                                                    sh(
+                                                        label: 'Running Sonar Scanner',
+                                                        script: """. ./venv/bin/activate
+                                                                   uvx pysonar-scanner -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory
+                                                                """
+                                                        )
+                                                } else {
+                                                    sh(
+                                                        label: 'Running Sonar Scanner',
+                                                        script: """. ./venv/bin/activate
+                                                                   uvx pysonar-scanner -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory
+                                                                """
+                                                        )
+                                                }
+                                            }
+                                            timeout(time: 1, unit: 'HOURS') {
+                                                 def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                                                 if (sonarqube_result.status != 'OK') {
+                                                     unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                                                 }
+                                                 def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
+                                                 writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+                                            }
+                                        }
+                                    }
+                                    post {
+                                        always{
+                                            script{
+                                                if(fileExists('reports/sonar-report.json')){
+                                                    stash includes: 'reports/sonar-report.json', name: 'SONAR_REPORT'
+                                                    archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
+                                                    recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            post{
+                                cleanup{
+                                    cleanWs(
+                                        patterns: [
+                                            [pattern: 'venv/', type: 'INCLUDE'],
+                                            [pattern: 'logs/', type: 'INCLUDE'],
+                                            [pattern: 'reports', type: 'INCLUDE'],
+                                        ]
+                                    )
                                 }
                             }
                         }
