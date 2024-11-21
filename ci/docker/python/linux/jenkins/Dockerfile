@@ -59,7 +59,6 @@ RUN python3 -m venv venv && \
     conan config init &&  \
     python3 /tmp/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml  11.4 && \
     conan install /tmp --build outdated --no-import -pr:b=default && \
-    conan install /tmp --build outdated --no-import -pr:b=default -o "*:shared=True" && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
     deactivate && rm -rf venv
