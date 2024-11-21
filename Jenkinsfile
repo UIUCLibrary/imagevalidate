@@ -766,7 +766,9 @@ pipeline {
                                                 timeout(15){
                                                     sh(
                                                       label: 'Running memcheck',
-                                                      script: '(cd build/cpp && ctest -T memcheck -j $(grep -c ^processor /proc/cpuinfo) )'
+                                                      script: '''. ./venv/bin/activate
+                                                                 (cd build/cpp && ctest -T memcheck -j $(grep -c ^processor /proc/cpuinfo) )
+                                                              '''
                                                     )
                                                 }
                                             }
