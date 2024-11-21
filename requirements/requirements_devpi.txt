@@ -1,1 +1,0 @@
-devpi_client<7

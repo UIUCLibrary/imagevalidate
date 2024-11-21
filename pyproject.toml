@@ -43,6 +43,7 @@ packages = [
     "uiucprescon.imagevalidate",
     "uiucprescon.imagevalidate.profiles",
 ]
+include-package-data = false
 
 [tool.setuptools.package-data]
 "uiucprescon.imagevalidate" = ["py.typed"]
@@ -78,12 +79,12 @@ skip = [
     "*-manylinux_i686"
 ]
 build-verbosity = 1
-environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_USER_HOME", "PIP_EXTRA_INDEX_URL"]
+environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_USER_HOME", "PIP_EXTRA_INDEX_URL", "UV_EXTRA_INDEX_URL"]
 
 [tool.cibuildwheel.windows]
 before-all = [
     "pip install wheel",
-    "pip install -r requirements/requirements_conan.txt cmake ninja",
+    "pip install -r requirements-dev.txt",
     "conan profile new default --detect --force",
     "conan profile update settings.compiler.version=%CONAN_COMPILER_VERSION% default",
     "conan install ./ --build missing",
@@ -93,7 +94,7 @@ CONAN_USER_HOME="$TEMP/conan"
 
 [tool.cibuildwheel.macos]
 before-all = [
-    "pip3 install -r requirements/requirements_conan.txt cmake ninja",
+    "pip3 install -r requirements-dev.txt",
     "conan profile new $ENVTMPDIR/.conan/profiles/default --detect --force",
     "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
     "conan install ./ --build missing --install-folder=$CONAN_BUILD_INFO_DIR"
@@ -115,12 +116,12 @@ CONAN_BUILD_INFO_DIR="/tmp/conan/build/"
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 before-all = [
     "cc --version", "cc -dumpfullversion -dumpversion",
-    "pip3 install -r requirements/requirements_conan.txt cmake ninja",
-    "conan profile new /tmp/conan/.conan/profiles/default --detect",
-    "if [ -z \"$CONAN_COMPILER_LIBCXX\" ]; then : ; else conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX default; fi",
-    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
-    "conan profile show default",
-    "conan install ./ --build missing",
+    'pip3 install uv',
+    "uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt)  conan profile new /tmp/conan/.conan/profiles/default --detect",
+    "if [ -z \"$CONAN_COMPILER_LIBCXX\" ];  then : ; else uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX   default; fi",
+    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
+    "uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan profile show default",
+    "uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan install ./ --build missing -pr:b=default",
 
 ]
 [tool.cibuildwheel.linux.environment]

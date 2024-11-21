@@ -43,8 +43,7 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
 
 COPY ci/docker/python/windows/tox/chocolatey/packages.config choco/packages.config
 COPY ci/docker/python/windows/tox/chocolatey/verifyenv.ps1 verifyenv.ps1
-RUN choco cache remove --confirm; `
-    C:\ProgramData\chocolatey\bin\choco.exe sources ; `
+RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose choco/packages.config ;`
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
     refreshenv ; `
@@ -57,15 +56,8 @@ RUN choco cache remove --confirm; `
     Write-Host "Verifying installed packages" ;`
     $env:Path = [System.Environment]::GetEnvironmentVariable(\"Path\",\"Machine\") + \";\" + [System.Environment]::GetEnvironmentVariable(\"Path\",\"User\") ; `
     ./verifyenv.ps1 ;`
-    choco cache remove --confirm
+    Write-Host "Verifying installed packages - Done"
 
-COPY ci/docker/python/windows/tox/chocolatey/python.xml choco/python.config
-COPY ci/docker/python/windows/tox/chocolatey/Install-Python.ps1 c:/choco/Install-Python.ps1
-
-RUN choco cache remove --confirm;`
-    c:/choco/Install-Python.ps1 choco/python.config ;`
-    choco cache remove --confirm ; `
-    Write-Host "Installing Python with Chocolatey - Done"
 
 RUN New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
     -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
@@ -83,7 +75,7 @@ COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/python/windows/tox/conan/profile.ini ${CONAN_USER_HOME}/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
 RUN python -m venv venv && `
-    venv\\Scripts\\pip install uv --no-cache-dir && `
+    venv\\Scripts\\pip install --disable-pip-version-check --no-cache-dir uv && `
     venv\\Scripts\\uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan config home && `
     venv\\Scripts\\uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match `
       conan install c:/temp/ --build missing --build openjpeg --no-import -pr:b=default && `
@@ -91,7 +83,7 @@ RUN python -m venv venv && `
       conan remove "*" -b --src -f && `
     venv\\Scripts\\uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match `
       conan remove --lock && `
-    venv\\Scripts\\uv clean && `
+    venv\\Scripts\\uv cache clean && `
     rmdir /S /Q venv
 # ==============================================================================
 
@@ -103,11 +95,8 @@ RUN certutil -addstore -f root roots.sst ; `
 ARG CONAN_USER_HOME
 COPY --from=CONAN_BUILDER ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ARG UV_EXTRA_INDEX_URL
-ENV UV_INDEX_STRATEGY=unsafe-best-match
 
+ENV UV_INDEX_STRATEGY=unsafe-best-match
 
 ARG UV_CACHE_DIR
 ENV UV_CACHE_DIR=${UV_CACHE_DIR}

@@ -7,9 +7,10 @@ RUN --mount=type=cache,target=/var/cache/apt \
     apt-get install -yqq software-properties-common gpg-agent --no-install-recommends && \
     apt-get -yqq install tzdata && \
     apt-get install -yqq --no-install-recommends \
-        ninja-build \
         build-essential \
+        clang-tidy \
         ccache \
+        cppcheck \
         curl\
         git \
         python3 \
@@ -35,30 +36,37 @@ RUN wget --no-verbose https://github.com/DynamoRIO/drmemory/releases/download/re
 
 FROM base_image AS SONAR_BUILDER
 
-RUN curl --create-dirs -sSLo /tmp/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip && \
-    unzip -o /tmp/build-wrapper-linux-x86.zip -d /opt/ &&\
-    ln -s /opt/build-wrapper-linux-x86/build-wrapper-linux-x86-64 /usr/local/bin/build-wrapper-linux-x86-64 && \
-    which build-wrapper-linux-x86-64
+RUN case $(uname -m) in \
+    x86_64) URL=https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip ;; \
+    aarch64) URL=https://sonarcloud.io/static/cpp/build-wrapper-linux-aarch64.zip ;; \
+    esac; \
+    curl --create-dirs -sSLo /tmp/build-wrapper-linux.zip $URL && \
+    unzip -o /tmp/build-wrapper-linux.zip -d /opt/build-wrapper-linux/ && \
+    case $(uname -m) in \
+        x86_64) ln -s /opt/build-wrapper-linux/build-wrapper-linux-x86/build-wrapper-linux-x86-64 /usr/local/bin/build-wrapper-linux ;; \
+        aarch64) ln -s /opt/build-wrapper-linux/build-wrapper-linux-aarch64/build-wrapper-linux-aarch64 /usr/local/bin/build-wrapper-linux ;; \
+    esac; \
+    which build-wrapper-linux
 
 
 FROM base_image AS conan_builder
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
+ARG UV_EXTRA_INDEX_URL
+ARG UV_INDEX_URL
 
 COPY ci/docker/python/linux/jenkins/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 COPY ci/docker/python/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_compiler_support_by_conan.py
 COPY requirements-dev.txt /tmp/requirements-dev.txt
 RUN python3 -m venv venv && \
+    venv/bin/pip install --no-cache --disable-pip-version-check uv && \
     . ./venv/bin/activate  && \
-    pip install --no-cache $(grep ^uv /tmp/requirements-dev.txt) && \
-    uv pip install --no-cache $(grep ^conan /tmp/requirements-dev.txt) && \
-    uv pip install --no-cache $(grep ^cmake /tmp/requirements-dev.txt) && \
+    uv pip install --no-cache --index-strategy unsafe-best-match -r /tmp/requirements-dev.txt && \
     conan config init &&  \
     python3 /tmp/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml  11.4 && \
     conan install /tmp --build outdated --no-import -pr:b=default && \
-    conan install /tmp --build outdated --no-import -pr:b=default -o "*:shared=True" && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
     deactivate && rm -rf venv
@@ -68,26 +76,17 @@ RUN python3 -m venv venv && \
 
 FROM base_image
 
-RUN apt-get update &&  \
-    apt-get install -y --no-install-recommends  \
-      ninja-build \
-      ccache \
-      clang-tidy \
-      cppcheck && \
-    rm -rf /var/lib/apt/lists/*
-
 # -----------------------------------------------------------------------------
-# Install sonar-scanner and build-wrapper
+# Install sonar build-wrapper
 # -----------------------------------------------------------------------------
 
-COPY --from=SONAR_BUILDER /opt/build-wrapper-linux-x86 /opt/build-wrapper-linux-x86/
-ENV SONAR_USER_HOME=/opt/sonar/.sonar
+COPY --from=SONAR_BUILDER /opt/build-wrapper-linux /opt/build-wrapper-linux/
 
-RUN ln -s /opt/build-wrapper-linux-x86/build-wrapper-linux-x86-64 /usr/local/bin/build-wrapper-linux-x86-64 && \
-    mkdir -p /.sonar/cache && \
-    chmod -R 777 /.sonar/cache && \
-    which build-wrapper-linux-x86-64
-
+RUN case $(uname -m) in \
+        x86_64) ln -s /opt/build-wrapper-linux/build-wrapper-linux-x86/build-wrapper-linux-x86-64 /usr/local/bin/build-wrapper-linux  ;; \
+        aarch64) ln ln -s /opt/build-wrapper-linux/build-wrapper-linux-aarch64/build-wrapper-linux-aarch64 /usr/local/bin/build-wrapper-linux  ;; \
+    esac; \
+    which build-wrapper-linux
 ENV SONAR_SCANNER_OPTS="-server"
 
 # -----------------------------------------------------------------------------
