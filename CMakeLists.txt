@@ -9,15 +9,11 @@ if(NOT CONAN_OPENJPEG_ROOT)
 endif()
 
 FetchContent_Declare(libpybind11
-        URL https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz
-        URL_HASH SHA1=8caf0bde85813f9eac55e516d4afcb925806aa5e
+        URL https://github.com/pybind/pybind11/archive/v2.13.6.tar.gz
+        URL_HASH SHA1=8c7e3e8fec829ced31a495dec281153511f33c63
         )
 
-FetchContent_GetProperties(libpybind11)
-if (NOT libpybind11_POPULATED)
-    FetchContent_Populate(libpybind11)
-    add_subdirectory(${libpybind11_SOURCE_DIR} ${libpybind11_BINARY_DIR})
-endif ()
+FetchContent_MakeAvailable(libpybind11)
 
 add_subdirectory(uiucprescon/imagevalidate)
 include(CTest)
