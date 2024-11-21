@@ -43,6 +43,7 @@ packages = [
     "uiucprescon.imagevalidate",
     "uiucprescon.imagevalidate.profiles",
 ]
+include-package-data = false
 
 [tool.setuptools.package-data]
 "uiucprescon.imagevalidate" = ["py.typed"]
