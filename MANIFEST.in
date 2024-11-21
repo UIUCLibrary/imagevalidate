@@ -12,10 +12,6 @@ include CMakeLists.txt
 include conanfile.py
 recursive-include uiucprescon/imagevalidate CMakeLists.txt *.cpp *.h
 
-# Running requirements
-include requirements.txt
-recursive-include requirements *.txt
-
 # Tox configuration setting
 include tox.ini
 
