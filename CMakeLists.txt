@@ -13,11 +13,7 @@ FetchContent_Declare(libpybind11
         URL_HASH SHA1=8caf0bde85813f9eac55e516d4afcb925806aa5e
         )
 
-FetchContent_GetProperties(libpybind11)
-if (NOT libpybind11_POPULATED)
-    FetchContent_Populate(libpybind11)
-    add_subdirectory(${libpybind11_SOURCE_DIR} ${libpybind11_BINARY_DIR})
-endif ()
+FetchContent_MakeAvailable(libpybind11)
 
 add_subdirectory(uiucprescon/imagevalidate)
 include(CTest)

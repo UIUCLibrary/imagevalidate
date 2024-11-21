@@ -8,12 +8,8 @@ if(BUILD_TESTING)
 #        GIT_TAG 15cf3ca
     )
 
-    FetchContent_GetProperties(libcatch2)
-    if(NOT libcatch2_POPULATED)
-        FetchContent_Populate(libcatch2)
-        add_library(Catch2 INTERFACE)
-        list(APPEND CMAKE_MODULE_PATH ${libcatch2_SOURCE_DIR}/contrib/)
-    endif()
+    FetchContent_MakeAvailable(libcatch2)
+    list(APPEND CMAKE_MODULE_PATH ${libcatch2_SOURCE_DIR}/contrib/)
 
     target_include_directories(Catch2 INTERFACE ${libcatch2_SOURCE_DIR}/single_include)
     include(Catch)
@@ -25,10 +21,7 @@ if(BUILD_TESTING)
             test_images
             URL ${PROJECT_BINARY_DIR}/metadata_test_images.tar.gz
     )
-        if(NOT test_images_POPULATED)
-            FetchContent_Populate(test_images)
-        endif()
-
+    FetchContent_MakeAvailable(test_images)
     add_executable(tester test-main.cpp test-basic.cpp test_exceptions.cpp)
     target_include_directories(tester PRIVATE ${PROJECT_SOURCE_DIR}/uiucprescon/imagevalidate)
 
