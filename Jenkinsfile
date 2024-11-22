@@ -5,9 +5,9 @@ library identifier: 'JenkinsPythonHelperLibrary@2024.2.0', retriever: modernSCM(
    ])
 
 
-SUPPORTED_MAC_VERSIONS = ['3.9', '3.10', '3.11', '3.12']
-SUPPORTED_LINUX_VERSIONS = ['3.9', '3.10', '3.11', '3.12']
-SUPPORTED_WINDOWS_VERSIONS = ['3.9', '3.10', '3.11', '3.12']
+SUPPORTED_MAC_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
+SUPPORTED_LINUX_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
+SUPPORTED_WINDOWS_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
 
 def installMSVCRuntime(cacheLocation){
     def cachedFile = "${cacheLocation}\\vc_redist.x64.exe".replaceAll(/\\\\+/, '\\\\')
@@ -386,7 +386,7 @@ def linux_wheels(){
                                                         label: "linux && docker && ${arch}",
                                                         filename: 'ci/docker/python/linux/package/Dockerfile',
                                                         additionalBuildArgs: "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg manylinux_image=${arch=='x86_64'? 'quay.io/pypa/manylinux2014_x86_64': 'quay.io/pypa/manylinux2014_aarch64'} --build-arg UV_CACHE_DIR=/.cache/uv",
-                                                        args: '-v pipcache_imagevalidate:/.cache/pip -v uvcache_wheel_builder_imagevalidate:/.cache/uv',
+                                                        args: '--mount source=python-package-tmp-uiucpreson-imagevalidate,target=/tmp',
                                                     ]
                                                 ],
                                                 retries: 3,
@@ -399,7 +399,7 @@ def linux_wheels(){
                                                         'UV_CACHE_DIR=/tmp/uvcache',
                                                     ]){
                                                         sh(label: 'Building python wheel',
-                                                           script: """python3 -m venv venv
+                                                           script: """python${pythonVersion} -m venv venv
                                                                       trap "rm -rf venv" EXIT
                                                                       venv/bin/pip install --disable-pip-version-check uv
                                                                       venv/bin/uv build --python ${pythonVersion} --python-preference=system --wheel
@@ -1413,11 +1413,18 @@ pipeline {
         stage('Release') {
             parallel {
                 stage('Deploy to pypi') {
+                    environment{
+                        PIP_CACHE_DIR='/tmp/pipcache'
+                        UV_INDEX_STRATEGY='unsafe-best-match'
+                        UV_TOOL_DIR='/tmp/uvtools'
+                        UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                        UV_CACHE_DIR='/tmp/uvcache'
+                    }
                     agent {
-                        dockerfile {
-                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
-                            label 'linux && docker && x86_64'
-                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
+                        docker{
+                            image 'python'
+                            label 'docker && linux'
+                            args '--mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp'
                         }
                     }
                     when{
@@ -1447,18 +1454,39 @@ pipeline {
                                 unstash it
                             }
                         }
-                        pypiUpload(
-                            credentialsId: 'jenkins-nexus',
-                            repositoryUrl: SERVER_URL,
-                            glob: 'dist/*'
-                        )
+                        withEnv(
+                            [
+                                "TWINE_REPOSITORY_URL=${SERVER_URL}",
+                                'UV_INDEX_STRATEGY=unsafe-best-match'
+                            ]
+                        ){
+                            withCredentials(
+                                [
+                                    usernamePassword(
+                                        credentialsId: 'jenkins-nexus',
+                                        passwordVariable: 'TWINE_PASSWORD',
+                                        usernameVariable: 'TWINE_USERNAME'
+                                    )
+                                ]){
+                                    sh(
+                                        label: 'Uploading to pypi',
+                                        script: '''python3 -m venv venv
+                                                   trap "rm -rf venv" EXIT
+                                                   . ./venv/bin/activate
+                                                   pip install --disable-pip-version-check uv
+                                                   uvx --with-requirements=requirements-dev.txt twine upload --disable-progress-bar --non-interactive dist/*
+                                                '''
+                                    )
+                            }
+                        }
                     }
                     post{
                         cleanup{
                             cleanWs(
                                 deleteDirs: true,
                                 patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE']
+                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
                                     ]
                             )
                         }

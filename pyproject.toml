@@ -68,7 +68,7 @@ junit_family="xunit2"
 test-requires = "pytest"
 test-command = "pytest {project}/tests"
 manylinux-x86_64-image = "manylinux2014"
-build-frontend = "build"
+build-frontend = "build[uv]"
 skip = [
     "cp36-*",
     "cp37-*",
@@ -79,12 +79,12 @@ skip = [
     "*-manylinux_i686"
 ]
 build-verbosity = 1
-environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_USER_HOME", "PIP_EXTRA_INDEX_URL", "UV_EXTRA_INDEX_URL"]
+environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_USER_HOME", "PIP_EXTRA_INDEX_URL", "UV_EXTRA_INDEX_URL", "UV_INDEX_STRATEGY"]
 
 [tool.cibuildwheel.windows]
 before-all = [
     "pip install wheel",
-    "pip install -r requirements-dev.txt",
+    "pip install -r requirements-dev.txt uv",
     "conan profile new default --detect --force",
     "conan profile update settings.compiler.version=%CONAN_COMPILER_VERSION% default",
     "conan install ./ --build missing",
@@ -94,7 +94,7 @@ CONAN_USER_HOME="$TEMP/conan"
 
 [tool.cibuildwheel.macos]
 before-all = [
-    "pip3 install -r requirements-dev.txt",
+    "pip3 install -r requirements-dev.txt uv",
     "conan profile new $ENVTMPDIR/.conan/profiles/default --detect --force",
     "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
     "conan install ./ --build missing --install-folder=$CONAN_BUILD_INFO_DIR"
@@ -116,7 +116,6 @@ CONAN_BUILD_INFO_DIR="/tmp/conan/build/"
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 before-all = [
     "cc --version", "cc -dumpfullversion -dumpversion",
-    'pip3 install uv',
     "uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt)  conan profile new /tmp/conan/.conan/profiles/default --detect",
     "if [ -z \"$CONAN_COMPILER_LIBCXX\" ];  then : ; else uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX   default; fi",
     "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",

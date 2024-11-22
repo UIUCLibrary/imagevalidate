@@ -5,7 +5,6 @@ ARG PIP_DOWNLOAD_CACHE=/.cache/pip
 FROM ${manylinux_image} AS base
 
 RUN yum install -y openjpeg2-devel ca-certificates
-ENV PATH=/opt/python/cp39-cp39/bin:/opt/python/cp38-cp38/bin:/opt/python/cp37-cp37m/bin:/opt/python/cp35-cp35m/bin:$PATH
 
 # ==============================================================================
 
@@ -20,15 +19,12 @@ ARG UV_INDEX_URL
 
 COPY ci/docker/python/linux/package/conan/$TARGETARCH/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
-RUN python3 -m venv venv && \
-    venv/bin/pip install --no-cache --disable-pip-version-check uv && \
-    . ./venv/bin/activate  && \
-    uv pip install --no-cache  --index-strategy unsafe-best-match -r /tmp/requirements-dev.txt && \
-    conan config home && \
-    conan install /tmp --build outdated --no-import  && \
-    conan remove "*" -b --src -f && \
-    conan remove --locks &&  \
-    deactivate && rm -rf venv
+ARG UV_CACHE_DIR=/root/.cache/uv
+RUN --mount=type=cache,target=${UV_CACHE_DIR} \
+    uvx --index-strategy unsafe-best-match --with-requirements /tmp/requirements-dev.txt conan config home && \
+    uvx --index-strategy unsafe-best-match --with-requirements /tmp/requirements-dev.txt conan install /tmp --build outdated --no-import  && \
+    uvx --index-strategy unsafe-best-match --with-requirements /tmp/requirements-dev.txt conan remove "*" -b --src -f && \
+    uvx --index-strategy unsafe-best-match --with-requirements /tmp/requirements-dev.txt conan remove --locks
 # ==============================================================================
 
 FROM base
