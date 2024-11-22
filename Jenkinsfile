@@ -5,9 +5,9 @@ library identifier: 'JenkinsPythonHelperLibrary@2024.2.0', retriever: modernSCM(
    ])
 
 
-SUPPORTED_MAC_VERSIONS = ['3.9', '3.10', '3.11', '3.12']
-SUPPORTED_LINUX_VERSIONS = ['3.9', '3.10', '3.11', '3.12']
-SUPPORTED_WINDOWS_VERSIONS = ['3.9', '3.10', '3.11', '3.12']
+SUPPORTED_MAC_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
+SUPPORTED_LINUX_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
+SUPPORTED_WINDOWS_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
 
 def installMSVCRuntime(cacheLocation){
     def cachedFile = "${cacheLocation}\\vc_redist.x64.exe".replaceAll(/\\\\+/, '\\\\')
@@ -386,7 +386,7 @@ def linux_wheels(){
                                                         label: "linux && docker && ${arch}",
                                                         filename: 'ci/docker/python/linux/package/Dockerfile',
                                                         additionalBuildArgs: "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg manylinux_image=${arch=='x86_64'? 'quay.io/pypa/manylinux2014_x86_64': 'quay.io/pypa/manylinux2014_aarch64'} --build-arg UV_CACHE_DIR=/.cache/uv",
-                                                        args: '-v pipcache_imagevalidate:/.cache/pip -v uvcache_wheel_builder_imagevalidate:/.cache/uv',
+                                                        args: '--mount source=python-package-tmp-uiucpreson-imagevalidate,target=/tmp',
                                                     ]
                                                 ],
                                                 retries: 3,
@@ -399,7 +399,7 @@ def linux_wheels(){
                                                         'UV_CACHE_DIR=/tmp/uvcache',
                                                     ]){
                                                         sh(label: 'Building python wheel',
-                                                           script: """python3 -m venv venv
+                                                           script: """python${pythonVersion} -m venv venv
                                                                       trap "rm -rf venv" EXIT
                                                                       venv/bin/pip install --disable-pip-version-check uv
                                                                       venv/bin/uv build --python ${pythonVersion} --python-preference=system --wheel
