@@ -271,7 +271,7 @@ def windows_wheels(){
                                         label: 'windows && docker && x86_64',
                                         filename: 'ci/docker/python/windows/tox/Dockerfile',
                                         additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv',
-                                        args: '-v pipcache_imagevalidate:c:/users/ContainerUser/appdata/local/pip',
+                                        args: '--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython',
                                     ]
                                 ],
                                 buildCmd: {
@@ -310,7 +310,7 @@ def windows_wheels(){
                             if(params.TEST_PACKAGES == true){
                                 retry(2){
                                     node('windows && docker'){
-                                        docker.image('python').inside('--mount source=python-tmp-uiucpreson-imagevalidate,target=C:\\Users\\ContainerUser\\Documents --mount source=msvc-runtime,target=c:\\msvc_runtime'){
+                                        docker.image('python').inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime'){
                                             checkout scm
                                             installMSVCRuntime('c:\\msvc_runtime\\')
                                             unstash "python${pythonVersion} windows wheel"
@@ -1058,7 +1058,7 @@ pipeline {
                                  script{
                                      def envs = []
                                      node('docker && windows'){
-                                         docker.image('python').inside('--mount source=python-tmp-uiucpreson-imagevalidate,target=C:\\Users\\ContainerUser\\Documents'){
+                                         docker.image('python').inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
                                              try{
                                                  checkout scm
                                                  bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
@@ -1091,7 +1091,7 @@ pipeline {
                                                             image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/python/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv .')
                                                         }
                                                         try{
-                                                            image.inside('--mount source=python-tmp-tox-uiucpreson-imagevalidate,target=C:\\Users\\ContainerUser\\Documents'){
+                                                            image.inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
                                                                 try{
                                                                     retry(3){
                                                                         bat(label: 'Running Tox',
