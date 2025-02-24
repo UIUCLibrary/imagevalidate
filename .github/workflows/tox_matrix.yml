@@ -75,7 +75,7 @@ jobs:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
         run: |
           conan config init
-          python ci/docker/python/linux/shared/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml ${{matrix.compiler_version}}
+          python ci/docker/python/linux/shared/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml $(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)")
           conan profile update settings.compiler.version=${{matrix.compiler_version}} default
 
       - name: Remove Strawberry Perl (Windows only)
@@ -125,7 +125,7 @@ jobs:
           CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
 
         #   CIBW_SOME_OPTION: value
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if:  ${{ inputs.save }}
         with:
           name: uiucprescon.ocr-wheels

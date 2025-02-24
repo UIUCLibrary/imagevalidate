@@ -13,9 +13,9 @@ jobs:
       matrix:
         os: [
           ubuntu-20.04,
-          windows-2019, macOS-11]
+          windows-2019, macos-13]
         include:
-          - os: macOS-11
+          - os: macos-13
             compiler_version: 13
           - os: ubuntu-20.04
             compiler_version: 10.2
