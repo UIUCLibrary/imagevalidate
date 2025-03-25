@@ -5,9 +5,9 @@ library identifier: 'JenkinsPythonHelperLibrary@2024.2.0', retriever: modernSCM(
    ])
 
 
-SUPPORTED_MAC_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
-SUPPORTED_LINUX_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
-SUPPORTED_WINDOWS_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
+def SUPPORTED_MAC_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
+def SUPPORTED_LINUX_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
+def SUPPORTED_WINDOWS_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
 
 def installMSVCRuntime(cacheLocation){
     def cachedFile = "${cacheLocation}\\vc_redist.x64.exe".replaceAll(/\\\\+/, '\\\\')
@@ -44,7 +44,7 @@ def getPypiConfig() {
     }
 }
 
-def mac_wheels(){
+def mac_wheels(pythonVersions, testPackages, params){
     def selectedArches = []
     def allValidArches = ['arm64', 'x86_64']
     if(params.INCLUDE_MACOS_X86_64 == true){
@@ -53,7 +53,7 @@ def mac_wheels(){
     if(params.INCLUDE_MACOS_ARM == true){
         selectedArches << "arm64"
     }
-    parallel([failFast: true] << SUPPORTED_MAC_VERSIONS.collectEntries{ pythonVersion ->
+    parallel([failFast: true] << pythonVersions.collectEntries{ pythonVersion ->
         def versionStageName = "Python ${pythonVersion} - Mac"
         return [
             "${versionStageName}": {
@@ -195,7 +195,7 @@ def mac_wheels(){
                         }
                         def testUniversal2WheelStageName = "Test Universal2 Python ${pythonVersion} Wheel"
                         stage(testUniversal2WheelStageName){
-                            if(params.TEST_PACKAGES == true){
+                            if(testPackages == true){
                                 parallel([failFast: true] << allValidArches.collectEntries{ arch ->
                                     def testWheelStageName = "Test Python ${pythonVersion} universal2 Wheel on ${arch} mac"
                                     return [
@@ -257,60 +257,52 @@ def mac_wheels(){
     )
 }
 
-def windows_wheels(){
-    parallel([failFast: true] << SUPPORTED_WINDOWS_VERSIONS.collectEntries{ pythonVersion ->
+def windows_wheels(pythonVersions, testPackages, params){
+    parallel([failFast: true] << pythonVersions.collectEntries{ pythonVersion ->
         def newStage = "Python ${pythonVersion} - Windows"
         [
             "${newStage}": {
                 stage(newStage){
                     if(params.INCLUDE_WINDOWS_X86_64 == true){
                         stage("Build Wheel (${pythonVersion} Windows)"){
-                            buildPythonPkg(
-                                agent: [
-                                    dockerfile: [
-                                        label: 'windows && docker && x86_64',
-                                        filename: 'ci/docker/python/windows/tox/Dockerfile',
-                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv',
-                                        args: '--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython',
-                                    ]
-                                ],
-                                buildCmd: {
-                                    withEnv(["UV_PYTHON=${pythonVersion}"]){
-                                        bat(label: 'Build wheel',
-                                            script: '''py -m venv venv
-                                                       venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                       venv\\Scripts\\uv build --wheel --config-setting=conan_cache=c:\\users\\ContainerUser\\.conan"
-                                                       rmdir /S /Q venv
-                                                    '''
-                                        )
+                            node('windows && docker && x86_64'){
+                                def dockerImage
+                                def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
+                                checkout scm
+                                try{
+                                    lock("docker build-${env.NODE_NAME}"){
+                                        dockerImage = docker.build(dockerImageName, '-f ci/docker/python/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + ' .')
                                     }
-
-                                },
-                                post:[
-                                    cleanup: {
-                                        cleanWs(
-                                            patterns: [
-                                                    [pattern: 'venv/', type: 'INCLUDE'],
-                                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                                ],
-                                            notFailBuild: true,
-                                            deleteDirs: true
-                                        )
-                                    },
-                                    success: {
+                                    dockerImage.inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython'){
+                                        withEnv(["UV_PYTHON=${pythonVersion}"]){
+                                            bat(label: 'Build wheel',
+                                                script: '''py -m venv venv
+                                                           venv\\Scripts\\pip install --disable-pip-version-check uv
+                                                           venv\\Scripts\\uv build --wheel --config-setting=conan_cache=c:\\users\\ContainerUser\\.conan"
+                                                           rmdir /S /Q venv
+                                                        '''
+                                            )
+                                        }
                                         stash includes: 'dist/*.whl', name: "python${pythonVersion} windows wheel"
                                         wheelStashes << "python${pythonVersion} windows wheel"
                                         archiveArtifacts artifacts: 'dist/*.whl'
                                     }
-                                ]
-                            )
+                                } finally {
+                                    powershell(
+                                        label: "Untagging Docker Image used",
+                                        script: "docker image rm --no-prune ${dockerImage.imageName()}",
+                                        returnStatus: true
+                                    )
+                                    bat "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                }
+                            }
                         }
                         def wheelTestingStageName = "Test Wheel (${pythonVersion} Windows)"
                         stage(wheelTestingStageName){
-                            if(params.TEST_PACKAGES == true){
+                            if(testPackages == true){
                                 retry(2){
                                     node('windows && docker'){
-                                        docker.image('python').inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime'){
+                                        docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime'){
                                             checkout scm
                                             installMSVCRuntime('c:\\msvc_runtime\\')
                                             unstash "python${pythonVersion} windows wheel"
@@ -359,7 +351,7 @@ def windows_wheels(){
 }
 
 
-def linux_wheels(){
+def linux_wheels(pythonVersions, testPackages, params){
     def selectedArches = []
     def allValidArches = ['arm64', 'x86_64']
     if(params.INCLUDE_LINUX_ARM == true){
@@ -368,7 +360,7 @@ def linux_wheels(){
     if(params.INCLUDE_LINUX_X86_64 == true){
         selectedArches << 'x86_64'
     }
-    parallel([failFast: true] << SUPPORTED_LINUX_VERSIONS.collectEntries{ pythonVersion ->
+    parallel([failFast: true] << pythonVersions.collectEntries{ pythonVersion ->
         def newVersionStage = "Python ${pythonVersion} - Linux"
         return [
             "${newVersionStage}": {
@@ -431,7 +423,7 @@ def linux_wheels(){
                                         }
                                         def testWheelStageName = "Test Wheel (${pythonVersion} Linux ${arch})"
                                         stage(testWheelStageName){
-                                            if(params.TEST_PACKAGES == true){
+                                            if(testPackages == true){
                                                 retry(2){
                                                     node("docker && linux && ${arch}"){
                                                         checkout scm
@@ -1058,7 +1050,7 @@ pipeline {
                                  script{
                                      def envs = []
                                      node('docker && windows'){
-                                         docker.image('python').inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
+                                         docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
                                              try{
                                                  checkout scm
                                                  bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
@@ -1088,7 +1080,7 @@ pipeline {
                                                         def image
                                                         checkout scm
                                                         lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                            image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/python/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv .')
+                                                            image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/python/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                         }
                                                         try{
                                                             image.inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
@@ -1142,7 +1134,7 @@ pipeline {
                         }
                     }
                     steps{
-                        mac_wheels()
+                        mac_wheels(SUPPORTED_MAC_VERSIONS, params.TEST_PACKAGES, params)
                     }
                 }
                 stage('Platform Wheels: Windows'){
@@ -1150,7 +1142,7 @@ pipeline {
                         equals expected: true, actual: params.INCLUDE_WINDOWS_X86_64
                     }
                     steps{
-                        windows_wheels()
+                        windows_wheels(SUPPORTED_WINDOWS_VERSIONS, params.TEST_PACKAGES, params)
                     }
                 }
                 stage('Platform Wheels: Linux'){
@@ -1161,7 +1153,7 @@ pipeline {
                         }
                     }
                     steps{
-                        linux_wheels()
+                        linux_wheels(SUPPORTED_LINUX_VERSIONS, params.TEST_PACKAGES, params)
                     }
                 }
                 stage('Source Distribution Package'){
@@ -1284,45 +1276,36 @@ pipeline {
                                                     stage(newStageName){
                                                         if(selectedArches.contains(arch)){
                                                             retry(2){
-                                                                testPythonPkg(
-                                                                    agent: [
-                                                                        dockerfile: [
-                                                                            label: "windows && docker && ${arch}",
-                                                                            filename: 'ci/docker/python/windows/tox/Dockerfile',
-                                                                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv',
-                                                                            dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
-                                                                        ]
-                                                                    ],
-                                                                    testSetup: {
+                                                                node("windows && docker && ${arch}"){
+                                                                    def dockerImage
+                                                                    try{
+                                                                        def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
                                                                         checkout scm
-                                                                        unstash 'python sdist'
-                                                                    },
-                                                                    testCommand: {
-                                                                        findFiles(glob: 'dist/*.tar.gz').each{
-                                                                            bat(
-                                                                                label: 'Running Tox',
-                                                                                script: """py -m venv venv
-                                                                                           venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                                                           venv\\Scripts\\uvx --with-requirements requirements-dev.txt --with tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv
-                                                                                           rmdir /S /Q dist
-                                                                                        """
-                                                                            )
+                                                                        lock("docker build-${env.NODE_NAME}"){
+                                                                            dockerImage = docker.build(dockerImageName, '-f ci/docker/python/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                         }
-                                                                    },
-                                                                    post:[
-                                                                        cleanup: {
-                                                                            cleanWs(
-                                                                                patterns: [
-                                                                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                                                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                                                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                                    ],
-                                                                                notFailBuild: true,
-                                                                                deleteDirs: true
-                                                                            )
-                                                                        },
-                                                                    ]
-                                                                )
+                                                                        dockerImage.inside('--mount type=volume,source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython'){
+                                                                            unstash 'python sdist'
+                                                                            findFiles(glob: 'dist/*.tar.gz').each{
+                                                                                bat(
+                                                                                    label: 'Running Tox',
+                                                                                    script: """py -m venv venv
+                                                                                               venv\\Scripts\\pip install --disable-pip-version-check uv
+                                                                                               venv\\Scripts\\uvx --with-requirements requirements-dev.txt --with tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv
+                                                                                               rmdir /S /Q dist
+                                                                                            """
+                                                                                )
+                                                                            }
+                                                                        }
+                                                                    } finally {
+                                                                        powershell(
+                                                                            label: "Untagging Docker Image used",
+                                                                            script: "docker image rm --no-prune ${dockerImage.imageName()}",
+                                                                            returnStatus: true
+                                                                        )
+                                                                        bat "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                                    }
+                                                                }
                                                             }
                                                         } else {
                                                             Utils.markStageSkippedForConditional(newStageName)
