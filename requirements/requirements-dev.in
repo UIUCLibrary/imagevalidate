@@ -1,7 +1,7 @@
 build
 conan<2.0
 coverage[toml]
-cmake
+cmake<4.0
 delocate ; sys_platform == 'darwin'
 flake8
 gcovr

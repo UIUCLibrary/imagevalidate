@@ -4,19 +4,19 @@ alabaster==0.7.16
     # via sphinx
 altgraph==0.17.4 ; sys_platform == 'darwin'
     # via macholib
-babel==2.16.0
+babel==2.17.0
     # via sphinx
-backports-tarfile==1.2.0 ; python_full_version < '3.12'
+backports-tarfile==1.2.0 ; python_full_version < '3.12' and platform_machine != 'ppc64le' and platform_machine != 's390x'
     # via jaraco-context
-bcrypt==4.2.1
+bcrypt==4.3.0
     # via paramiko
 bottle==0.12.25
     # via conan
 build==1.2.2.post1
     # via -r requirements/requirements-dev.in
-cachetools==5.5.0
+cachetools==5.5.2
     # via tox
-certifi==2024.8.30
+certifi==2025.1.31
     # via requests
 cffi==1.17.1
     # via
@@ -24,9 +24,9 @@ cffi==1.17.1
     #   pynacl
 chardet==5.2.0
     # via tox
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
-cmake==3.31.0.1
+cmake==3.31.6
     # via
     #   -r requirements/requirements-dev.in
     #   uiucprescon-build
@@ -41,17 +41,17 @@ colorama==0.4.6
     #   tqdm
 colorlog==6.9.0
     # via gcovr
-conan==1.65.0
+conan==1.66.0
     # via
     #   -r requirements/requirements-dev.in
     #   uiucprescon-build
-coverage==7.6.7
+coverage==7.8.0
     # via -r requirements/requirements-dev.in
-cryptography==43.0.3
+cryptography==44.0.2
     # via
     #   paramiko
     #   secretstorage
-delocate==0.12.0 ; sys_platform == 'darwin'
+delocate==0.13.0 ; sys_platform == 'darwin'
     # via -r requirements/requirements-dev.in
 distlib==0.3.9
     # via virtualenv
@@ -65,44 +65,46 @@ exceptiongroup==1.2.2 ; python_full_version < '3.11'
     # via pytest
 fasteners==0.19
     # via conan
-filelock==3.16.1
+filelock==3.18.0
     # via
     #   tox
     #   virtualenv
-flake8==7.1.1
+flake8==7.2.0
     # via -r requirements/requirements-dev.in
-gcovr==8.2
+gcovr==8.3
     # via -r requirements/requirements-dev.in
+id==1.5.0
+    # via twine
 idna==3.10
     # via requests
 imagesize==1.4.1
     # via sphinx
-importlib-metadata==8.5.0
+importlib-metadata==8.6.1 ; python_full_version < '3.10.2' or (python_full_version < '3.12' and platform_machine != 'ppc64le' and platform_machine != 's390x')
     # via
     #   build
     #   keyring
     #   sphinx
     #   twine
-iniconfig==2.0.0
+iniconfig==2.1.0
     # via pytest
-jaraco-classes==3.4.0
+jaraco-classes==3.4.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
     # via keyring
-jaraco-context==6.0.1
+jaraco-context==6.0.1 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
     # via keyring
-jaraco-functools==4.1.0
+jaraco-functools==4.1.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
     # via keyring
-jeepney==0.8.0 ; sys_platform == 'linux'
+jeepney==0.9.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x' and sys_platform == 'linux'
     # via
     #   keyring
     #   secretstorage
-jinja2==3.1.4
+jinja2==3.1.6
     # via
     #   conan
     #   gcovr
     #   sphinx
-keyring==25.5.0
+keyring==25.6.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
     # via twine
-lxml==5.3.0
+lxml==5.3.1
     # via
     #   -r requirements/requirements-dev.in
     #   gcovr
@@ -116,17 +118,17 @@ mccabe==0.7.0
     # via flake8
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==10.5.0
+more-itertools==10.6.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
     # via
     #   jaraco-classes
     #   jaraco-functools
-mypy==1.13.0
+mypy==1.15.0
     # via -r requirements/requirements-dev.in
 mypy-extensions==1.0.0
     # via mypy
-nh3==0.2.18
+nh3==0.2.21
     # via readme-renderer
-ninja==1.11.1.1
+ninja==1.11.1.4
     # via -r requirements/requirements-dev.in
 node-semver==0.6.1
     # via conan
@@ -138,13 +140,12 @@ packaging==24.2
     #   pytest
     #   sphinx
     #   tox
-paramiko==3.5.0
+    #   twine
+paramiko==3.5.1
     # via -r requirements/requirements-dev.in
 patch-ng==1.17.4
     # via conan
-pkginfo==1.10.0
-    # via twine
-platformdirs==4.3.6
+platformdirs==4.3.7
     # via
     #   tox
     #   virtualenv
@@ -154,38 +155,38 @@ pluggy==1.5.0
     #   tox
 pluginbase==1.0.1
     # via conan
-py3exiv2bind==0.1.14
+py3exiv2bind==0.1.14.post1
     # via uiucprescon-imagevalidate (pyproject.toml)
 pybind11==2.10.4
     # via
     #   -r requirements/requirements-dev.in
     #   uiucprescon-build
-pycodestyle==2.12.1
+pycodestyle==2.13.0
     # via flake8
 pycparser==2.22
     # via cffi
-pyflakes==3.2.0
+pyflakes==3.3.2
     # via flake8
-pygments==2.18.0
+pygments==2.19.1
     # via
     #   conan
     #   gcovr
     #   readme-renderer
     #   rich
     #   sphinx
-pyjwt==2.10.0
+pyjwt==2.10.1
     # via conan
 pynacl==1.5.0
     # via paramiko
-pyproject-api==1.8.0
+pyproject-api==1.9.0
     # via tox
 pyproject-hooks==1.2.0
     # via build
-pytest==8.3.3
+pytest==8.3.5
     # via -r requirements/requirements-dev.in
 python-dateutil==2.9.0.post0
     # via conan
-pywin32-ctypes==0.2.3 ; sys_platform == 'win32'
+pywin32-ctypes==0.2.3 ; platform_machine != 'ppc64le' and platform_machine != 's390x' and sys_platform == 'win32'
     # via keyring
 pyyaml==6.0.2
     # via conan
@@ -194,6 +195,7 @@ readme-renderer==44.0
 requests==2.32.3
     # via
     #   conan
+    #   id
     #   requests-toolbelt
     #   sphinx
     #   twine
@@ -201,11 +203,11 @@ requests-toolbelt==1.0.0
     # via twine
 rfc3986==2.0.0
     # via twine
-rich==13.9.4
+rich==14.0.0
     # via twine
-secretstorage==3.3.3 ; sys_platform == 'linux'
+secretstorage==3.3.3 ; platform_machine != 'ppc64le' and platform_machine != 's390x' and sys_platform == 'linux'
     # via keyring
-setuptools==75.6.0
+setuptools==78.1.0
     # via uiucprescon-build
 six==1.16.0
     # via
@@ -231,7 +233,7 @@ toml==0.10.2
     # via
     #   -r requirements/requirements-dev.in
     #   uiucprescon-build
-tomli==2.1.0 ; python_full_version <= '3.11'
+tomli==2.2.1 ; python_full_version <= '3.11'
     # via
     #   build
     #   coverage
@@ -241,13 +243,13 @@ tomli==2.1.0 ; python_full_version <= '3.11'
     #   pytest
     #   sphinx
     #   tox
-tox==4.23.2
+tox==4.25.0
     # via -r requirements/requirements-dev.in
-tqdm==4.67.0
+tqdm==4.67.1
     # via conan
-twine==5.1.1
+twine==6.1.0
     # via -r requirements/requirements-dev.in
-typing-extensions==4.12.2
+typing-extensions==4.13.0
     # via
     #   delocate
     #   mypy
@@ -260,9 +262,9 @@ urllib3==1.26.20
     #   conan
     #   requests
     #   twine
-virtualenv==20.27.1
+virtualenv==20.30.0
     # via tox
-wheel==0.45.0
+wheel==0.45.1
     # via uiucprescon-build
-zipp==3.21.0
+zipp==3.21.0 ; python_full_version < '3.10.2' or (python_full_version < '3.12' and platform_machine != 'ppc64le' and platform_machine != 's390x')
     # via importlib-metadata
