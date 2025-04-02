@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools>=40.8.0",
+    "setuptools>=77.0",
     "wheel",
     "conan>=1.50.0,<2.0",
     "cmake<4.0",
@@ -19,7 +19,8 @@ dependencies = [
 ]
 requires-python = ">=3.9"
 readme = "README.rst"
-license = {text = "University of Illinois/NCSA Open Source License"}
+license = "NCSA"
+license-files = ["LICENSE"]
 authors = [
     {name = "University Library at The University of Illinois at Urbana Champaign: Preservation Services", email = "prescons@library.illinois.edu"},
 ]
@@ -29,7 +30,6 @@ maintainers = [
 description = "Validate image metadata"
 classifiers = [
     "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: University of Illinois/NCSA Open Source License",
     "Topic :: Multimedia :: Graphics",
     "Programming Language :: C++",
     "Programming Language :: Python :: 3.8",
