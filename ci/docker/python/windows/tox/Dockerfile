@@ -7,7 +7,7 @@ ARG PIP_EXTRA_INDEX_URL
 ARG UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv
 ARG CONAN_USER_HOME=c:/users/ContainerUser
 ARG PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip
-ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
+ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8.1
 
 FROM ${FROM_IMAGE} AS certsgen
 RUN certutil -generateSSTFromWU roots.sst
