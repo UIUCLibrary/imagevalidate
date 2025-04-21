@@ -4,7 +4,7 @@ ARG PIP_DOWNLOAD_CACHE=/.cache/pip
 ARG UV_CACHE_DIR=/.cache/uv
 ARG UV_EXTRA_INDEX_URL
 FROM ubuntu:22.04 AS wheel_builder_base
-COPY ci/docker/python/linux/tox/apt-packages.txt /tmp/apt-packages.txt
+COPY ci/docker/linux/tox/apt-packages.txt /tmp/apt-packages.txt
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN rm -f /etc/apt/apt.conf.d/docker-clean
 RUN --mount=type=cache,target=/var/cache/apt \
@@ -26,7 +26,7 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
-COPY ci/docker/python/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_compiler_support_by_conan.py
+COPY ci/docker/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_compiler_support_by_conan.py
 COPY conanfile.py /tmp/conanfile.py
 RUN python3 -m venv venv && \
     venv/bin/pip install --no-cache --disable-pip-version-check uv && \

@@ -1,6 +1,6 @@
 import os
 
-from conans import ConanFile, CMake
+from conan import ConanFile
 
 class ImageValidate(ConanFile):
     requires = [
@@ -8,7 +8,7 @@ class ImageValidate(ConanFile):
     ]
     settings = "os", "arch", "compiler", "build_type"
 
-    generators = ["json", "cmake_paths"]
+    generators = ["CMakeToolchain", "CMakeDeps"]
     default_options = {
         # "openjpeg:shared": True
     }

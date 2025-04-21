@@ -17,7 +17,7 @@ ARG PIP_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 
-COPY ci/docker/python/linux/package/conan/$TARGETARCH/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
+COPY ci/docker/linux/package/conan/$TARGETARCH/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 ARG UV_CACHE_DIR=/root/.cache/uv
 RUN --mount=type=cache,target=${UV_CACHE_DIR} \
