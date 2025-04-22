@@ -31,7 +31,7 @@ class Profile:
 
         """
         if not os.path.exists(file):
-            raise FileNotFoundError("Unable to locate {}".format(file))
+            raise FileNotFoundError(f"Unable to locate {file}")
         return self._profile.validate(file)
 
 
@@ -42,16 +42,28 @@ def available_profiles() -> Set[str]:
         List of available profiles accessible in this version
 
     """
-    return set(known_profiles.keys())
+    known_package_profiles: Dict[str, Type[profile_pkg.AbsProfile]] = \
+        get_profile_classes()
+
+    return set(known_package_profiles.keys())
 
 
 def get_profile(name: str) -> profile_pkg.AbsProfile:
     """Locate a profile based on the name of the class."""
-    return known_profiles[name]()
+    profiles = get_profile_classes()
+    return profiles[name]()
 
 
-profiles = inspect.getmembers(
-    profile_pkg, lambda m: inspect.isclass(m) and not inspect.isabstract(m))
+def get_profile_classes():
+    known_package_profiles: Dict[str, Type[profile_pkg.AbsProfile]] = {}
+    profiles = \
+        inspect.getmembers(
+            profile_pkg,
+            lambda m: inspect.isclass(m) and not inspect.isabstract(m)
+        )
 
-for profile in profiles:
-    known_profiles[profile[1].profile_name()] = profile[1]
+    for profile in profiles:
+        known_package_profiles[profile[1].profile_name()] = profile[1]
+    return known_package_profiles
+
+known_profiles = get_profile_classes()

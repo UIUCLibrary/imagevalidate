@@ -5,6 +5,10 @@ def test_get_all_profiles():
     profiles = imagevalidate.available_profiles()
     assert isinstance(profiles, set)
 
+def test_get_all_profiles_is_not_empty():
+    profiles = imagevalidate.available_profiles()
+    assert len(profiles) > 0
+
 
 #
 def test_get_hathi_tiff_profile():
