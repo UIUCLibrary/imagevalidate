@@ -266,30 +266,23 @@ def windows_wheels(pythonVersions, testPackages, params){
                     if(params.INCLUDE_WINDOWS_X86_64 == true){
                         stage("Build Wheel (${pythonVersion} Windows)"){
                             node('windows && docker && x86_64'){
-                                def dockerImage
                                 def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
-                                checkout scm
                                 try{
-                                    lock("docker build-${env.NODE_NAME}"){
-                                        dockerImage = docker.build(dockerImageName, '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + ' .')
-                                    }
-                                    dockerImage.inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython'){
-                                        withEnv(["UV_PYTHON=${pythonVersion}"]){
-                                            bat(label: 'Build wheel',
-                                                script: 'uv build --wheel --config-setting=conan_cache=c:\\users\\ContainerUser\\.conan"'
-                                            )
-                                        }
+                                    checkout scm
+                                    try{
+                                        powershell(label: 'Building Wheel for Windows', script: "contrib/build_windows.ps1 -PythonVersion ${pythonVersion} -DockerImageName ${dockerImageName}")
                                         stash includes: 'dist/*.whl', name: "python${pythonVersion} windows wheel"
                                         wheelStashes << "python${pythonVersion} windows wheel"
                                         archiveArtifacts artifacts: 'dist/*.whl'
+                                    } finally {
+                                        bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                     }
                                 } finally {
                                     powershell(
                                         label: "Untagging Docker Image used",
-                                        script: "docker image rm --no-prune ${dockerImage.imageName()}",
+                                        script: "docker image rm --no-prune ${dockerImageName}",
                                         returnStatus: true
                                     )
-                                    bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                 }
                             }
                         }
