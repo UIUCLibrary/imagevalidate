@@ -5,12 +5,8 @@ ARG VS_INSTALL_PATH="C:\BuildTools"
 
 ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
 
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 ARG UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv
-
-ARG PIPX_HOME=c:\pipx
+ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 
 ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
 ARG chocolateyVersion
@@ -18,21 +14,18 @@ ARG chocolateyVersion
 FROM ${FROM_IMAGE} AS certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
-FROM ${FROM_IMAGE} AS BASE_BUILDER
+FROM ${FROM_IMAGE} AS CHOCOLATEY_BASE
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
-COPY ci/docker/windows/tox/msvc/startup.bat c:/startup/startup.bat
 COPY ci/docker/windows/tox/msvc/visual_studio_config.json c:/setup/config.vsconfig
 COPY ci/docker/windows/tox/msvc/install_msvc.ps1 c:/scripts/install_msvc.ps1
 ARG VS_INSTALL_PATH
-
-RUN c:/scripts/install_msvc.ps1 ${Env:VS_INSTALL_PATH} c:/setup/config.vsconfig; `
-    Get-ChildItem C:\Users\ContainerAdministrator\AppData\Local\Temp | Remove-Item -Recurse -Force -Verbose
-
-FROM BASE_BUILDER AS CHOCOLATEY_BASE
-
-SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
+ARG VS_VERSION="2022"
+ARG VS_DevCmdArguments="-arch=amd64"
+ARG VS_DevPowershellArguments='-arch=amd64'
+RUN c:/scripts/install_msvc.ps1 -InstallPath ${Env:VS_INSTALL_PATH} -VSConfigFile c:/setup/config.vsconfig -DevCmdArguments ${Env:VS_DevCmdArguments} -DevPowershellArguments ${Env:VS_DevPowershellArguments} -VSVersion ${Env:VS_VERSION}; `
+    Write-Host "Note: Exporting This layer can take a while."
 
 ARG CHOCOLATEY_SOURCE
 ARG ChocolateyEnvironmentDebug=false
