@@ -276,11 +276,7 @@ def windows_wheels(pythonVersions, testPackages, params){
                                     dockerImage.inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython'){
                                         withEnv(["UV_PYTHON=${pythonVersion}"]){
                                             bat(label: 'Build wheel',
-                                                script: '''py -m venv venv
-                                                           venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                           venv\\Scripts\\uv build --wheel --config-setting=conan_cache=c:\\users\\ContainerUser\\.conan"
-                                                           rmdir /S /Q venv
-                                                        '''
+                                                script: 'uv build --wheel --config-setting=conan_cache=c:\\users\\ContainerUser\\.conan"'
                                             )
                                         }
                                         stash includes: 'dist/*.whl', name: "python${pythonVersion} windows wheel"
@@ -1088,12 +1084,10 @@ pipeline {
                                                                 try{
                                                                     retry(3){
                                                                         bat(label: 'Running Tox',
-                                                                             script: """python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                                                    venv\\Scripts\\uv python install cpython-${version}
-                                                                                    venv\\Scripts\\uvx -p ${version} --with-requirements requirements-dev.txt --with tox-uv tox run -e ${toxEnv}
-                                                                                    rmdir /S /Q .tox
-                                                                                    rmdir /S /Q venv
-                                                                                 """
+                                                                             script: """uv python install cpython-${version}
+                                                                                        uvx -p ${version} --with-requirements requirements-dev.txt --with tox-uv tox run -e ${toxEnv}
+                                                                                        rmdir /S /Q .tox
+                                                                                     """
                                                                         )
                                                                     }
                                                                 } finally{
@@ -1290,9 +1284,7 @@ pipeline {
                                                                             findFiles(glob: 'dist/*.tar.gz').each{
                                                                                 bat(
                                                                                     label: 'Running Tox',
-                                                                                    script: """py -m venv venv
-                                                                                               venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                                                               venv\\Scripts\\uvx --with-requirements requirements-dev.txt --with tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv
+                                                                                    script: """uvx --with-requirements requirements-dev.txt --with tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv
                                                                                                rmdir /S /Q dist
                                                                                             """
                                                                                 )

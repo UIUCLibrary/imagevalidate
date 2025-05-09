@@ -79,17 +79,11 @@ COPY requirements-dev.txt requirements-dev.txt
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/windows/tox/conan/profile.ini ${CONAN_USER_HOME}/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
-RUN python -m venv venv && `
-    venv\\Scripts\\pip install --disable-pip-version-check --no-cache-dir uv && `
-    venv\\Scripts\\uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan config home && `
-    venv\\Scripts\\uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match `
-      conan install c:/temp/ --build missing --build openjpeg --no-import -pr:b=default && `
-    venv\\Scripts\\uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match `
-      conan remove "*" -b --src -f && `
-    venv\\Scripts\\uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match `
-      conan remove --lock && `
-    venv\\Scripts\\uv cache clean && `
-    rmdir /S /Q venv
+RUN uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan config home && `
+    uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan install c:/temp/ --build missing --build openjpeg --no-import -pr:b=default && `
+    uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan remove "*" -b --src -f && `
+    uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan remove --lock && `
+    uv cache clean --no-progress
 # ==============================================================================
 
 FROM CHOCOLATEY_BASE
@@ -109,8 +103,8 @@ ENV UV_CACHE_DIR=${UV_CACHE_DIR}
 ARG PIP_DOWNLOAD_CACHE
 ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 
-RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force; `
-    New-Item -type directory -path ${Env:UV_CACHE_DIR} -Force
+RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force | Out-Null ; `
+    New-Item -type directory -path ${Env:UV_CACHE_DIR} -Force| Out-Null
 
 
 WORKDIR C:/src
