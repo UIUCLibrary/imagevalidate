@@ -280,7 +280,7 @@ def windows_wheels(pythonVersions, testPackages, params){
                                 } finally {
                                     powershell(
                                         label: "Untagging Docker Image used",
-                                        script: "docker image rm --no-prune ${dockerImageName}",
+                                        script: "docker image rm --no-prune ${dockerImage.imageName()}",
                                         returnStatus: true
                                     )
                                 }
@@ -1286,7 +1286,7 @@ pipeline {
                                                                     } finally {
                                                                         powershell(
                                                                             label: "Untagging Docker Image used",
-                                                                            script: "docker image rm --no-prune ${dockerImage.imageName()}",
+                                                                            script: "docker image rm --no-prune ${dockerImageName}",
                                                                             returnStatus: true
                                                                         )
                                                                         bat "${tool(name: 'Default', type: 'git')} clean -dfx"

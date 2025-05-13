@@ -255,7 +255,7 @@ typing-extensions==4.13.0
     #   mypy
     #   rich
     #   tox
-uiucprescon-build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.3.tar.gz
+uiucprescon-build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.5.tar.gz
     # via -r requirements/requirements-dev.in
 urllib3==1.26.20
     # via
