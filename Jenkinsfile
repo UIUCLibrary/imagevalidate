@@ -280,7 +280,7 @@ def windows_wheels(pythonVersions, testPackages, params){
                                 } finally {
                                     powershell(
                                         label: "Untagging Docker Image used",
-                                        script: "docker image rm --no-prune ${dockerImage.imageName()}",
+                                        script: "docker image rm --no-prune ${dockerImageName}",
                                         returnStatus: true
                                     )
                                 }
@@ -1267,26 +1267,28 @@ pipeline {
                                                                 node("windows && docker && ${arch}"){
                                                                     def dockerImage
                                                                     try{
-                                                                        def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
                                                                         checkout scm
                                                                         lock("docker build-${env.NODE_NAME}"){
+                                                                            def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
                                                                             dockerImage = docker.build(dockerImageName, '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                         }
-                                                                        dockerImage.inside('--mount type=volume,source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython'){
-                                                                            unstash 'python sdist'
-                                                                            findFiles(glob: 'dist/*.tar.gz').each{
-                                                                                bat(
-                                                                                    label: 'Running Tox',
-                                                                                    script: """uvx --with-requirements requirements-dev.txt --with tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv
-                                                                                               rmdir /S /Q dist
-                                                                                            """
-                                                                                )
+                                                                        withEnv(['UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython']){
+                                                                            dockerImage.inside('--mount type=volume,source=uv_python_install_dir,target=$UV_PYTHON_INSTALL_DIR'){
+                                                                                unstash 'python sdist'
+                                                                                findFiles(glob: 'dist/*.tar.gz').each{
+                                                                                    bat(
+                                                                                        label: 'Running Tox',
+                                                                                        script: """uvx --with-requirements requirements-dev.txt --with tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv
+                                                                                                   rmdir /S /Q dist
+                                                                                                """
+                                                                                    )
+                                                                                }
                                                                             }
                                                                         }
                                                                     } finally {
                                                                         powershell(
                                                                             label: "Untagging Docker Image used",
-                                                                            script: "docker image rm --no-prune ${dockerImageName}",
+                                                                            script: "docker image rm --no-prune ${dockerImage.imageName()}",
                                                                             returnStatus: true
                                                                         )
                                                                         bat "${tool(name: 'Default', type: 'git')} clean -dfx"
