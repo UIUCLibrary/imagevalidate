@@ -1073,24 +1073,18 @@ pipeline {
                                                             image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                         }
                                                         try{
-                                                            image.inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
+                                                            retry(3){
+                                                                checkout scm
                                                                 try{
-                                                                    retry(3){
-                                                                        bat(label: 'Running Tox',
+                                                                    image.inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
+                                                                        powershell(label: 'Running Tox',
                                                                              script: """uv python install cpython-${version}
-                                                                                        uvx -p ${version} --with-requirements requirements-dev.txt --with tox-uv tox run -e ${toxEnv}
-                                                                                        rmdir /S /Q .tox
+                                                                                        uvx -p ${version} --with \"\$(Get-Content requirements-dev.txt  | Where-Object { \$_ -like 'tox=*'})\" --with tox-uv tox run -e ${toxEnv}
                                                                                      """
                                                                         )
                                                                     }
                                                                 } finally{
-                                                                     cleanWs(
-                                                                         patterns: [
-                                                                             [pattern: 'venv/', type: 'INCLUDE'],
-                                                                             [pattern: '.tox', type: 'INCLUDE'],
-                                                                             [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                         ]
-                                                                     )
+                                                                     bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                                 }
                                                             }
                                                         } finally {
@@ -1276,11 +1270,9 @@ pipeline {
                                                                             dockerImage.inside('--mount type=volume,source=uv_python_install_dir,target=$UV_PYTHON_INSTALL_DIR'){
                                                                                 unstash 'python sdist'
                                                                                 findFiles(glob: 'dist/*.tar.gz').each{
-                                                                                    bat(
+                                                                                    powershell(
                                                                                         label: 'Running Tox',
-                                                                                        script: """uvx --with-requirements requirements-dev.txt --with tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv
-                                                                                                   rmdir /S /Q dist
-                                                                                                """
+                                                                                        script: "uvx --with \"\$(Get-Content requirements-dev.txt  | Where-Object { \$_ -like 'tox=*'})\" --with tox-uv tox run --workdir \${Env.TEMP}\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv"
                                                                                     )
                                                                                 }
                                                                             }
