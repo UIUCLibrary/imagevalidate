@@ -5,12 +5,8 @@ ARG VS_INSTALL_PATH="C:\BuildTools"
 
 ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
 
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 ARG UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv
-
-ARG PIPX_HOME=c:\pipx
+ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 
 ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
 ARG chocolateyVersion
@@ -18,21 +14,18 @@ ARG chocolateyVersion
 FROM ${FROM_IMAGE} AS certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
-FROM ${FROM_IMAGE} AS BASE_BUILDER
+FROM ${FROM_IMAGE} AS CHOCOLATEY_BASE
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
-COPY ci/docker/windows/tox/msvc/startup.bat c:/startup/startup.bat
 COPY ci/docker/windows/tox/msvc/visual_studio_config.json c:/setup/config.vsconfig
 COPY ci/docker/windows/tox/msvc/install_msvc.ps1 c:/scripts/install_msvc.ps1
 ARG VS_INSTALL_PATH
-
-RUN c:/scripts/install_msvc.ps1 ${Env:VS_INSTALL_PATH} c:/setup/config.vsconfig; `
-    Get-ChildItem C:\Users\ContainerAdministrator\AppData\Local\Temp | Remove-Item -Recurse -Force -Verbose
-
-FROM BASE_BUILDER AS CHOCOLATEY_BASE
-
-SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
+ARG VS_VERSION="2022"
+ARG VS_DevCmdArguments="-arch=amd64"
+ARG VS_DevPowershellArguments='-arch=amd64'
+RUN c:/scripts/install_msvc.ps1 -InstallPath ${Env:VS_INSTALL_PATH} -VSConfigFile c:/setup/config.vsconfig -DevCmdArguments ${Env:VS_DevCmdArguments} -DevPowershellArguments ${Env:VS_DevPowershellArguments} -VSVersion ${Env:VS_VERSION}; `
+    Write-Host "Note: Exporting This layer can take a while."
 
 ARG CHOCOLATEY_SOURCE
 ARG ChocolateyEnvironmentDebug=false
@@ -79,17 +72,11 @@ COPY requirements-dev.txt requirements-dev.txt
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/windows/tox/conan/profile.ini ${CONAN_USER_HOME}/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
-RUN python -m venv venv && `
-    venv\\Scripts\\pip install --disable-pip-version-check --no-cache-dir uv && `
-    venv\\Scripts\\uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan config home && `
-    venv\\Scripts\\uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match `
-      conan install c:/temp/ --build missing --build openjpeg --no-import -pr:b=default && `
-    venv\\Scripts\\uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match `
-      conan remove "*" -b --src -f && `
-    venv\\Scripts\\uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match `
-      conan remove --lock && `
-    venv\\Scripts\\uv cache clean && `
-    rmdir /S /Q venv
+RUN uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan config home && `
+    uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan install c:/temp/ --build missing --no-import -pr:b=default && `
+    uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan remove "*" -b --src -f && `
+    uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan remove --lock && `
+    uv cache clean --no-progress
 # ==============================================================================
 
 FROM CHOCOLATEY_BASE
@@ -109,8 +96,8 @@ ENV UV_CACHE_DIR=${UV_CACHE_DIR}
 ARG PIP_DOWNLOAD_CACHE
 ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 
-RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force; `
-    New-Item -type directory -path ${Env:UV_CACHE_DIR} -Force
+RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force | Out-Null ; `
+    New-Item -type directory -path ${Env:UV_CACHE_DIR} -Force| Out-Null
 
 
 WORKDIR C:/src

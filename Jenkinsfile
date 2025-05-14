@@ -266,34 +266,23 @@ def windows_wheels(pythonVersions, testPackages, params){
                     if(params.INCLUDE_WINDOWS_X86_64 == true){
                         stage("Build Wheel (${pythonVersion} Windows)"){
                             node('windows && docker && x86_64'){
-                                def dockerImage
                                 def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
-                                checkout scm
                                 try{
-                                    lock("docker build-${env.NODE_NAME}"){
-                                        dockerImage = docker.build(dockerImageName, '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + ' .')
-                                    }
-                                    dockerImage.inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython'){
-                                        withEnv(["UV_PYTHON=${pythonVersion}"]){
-                                            bat(label: 'Build wheel',
-                                                script: '''py -m venv venv
-                                                           venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                           venv\\Scripts\\uv build --wheel --config-setting=conan_cache=c:\\users\\ContainerUser\\.conan"
-                                                           rmdir /S /Q venv
-                                                        '''
-                                            )
-                                        }
+                                    checkout scm
+                                    try{
+                                        powershell(label: 'Building Wheel for Windows', script: "contrib/build_windows.ps1 -PythonVersion ${pythonVersion} -DockerImageName ${dockerImageName}")
                                         stash includes: 'dist/*.whl', name: "python${pythonVersion} windows wheel"
                                         wheelStashes << "python${pythonVersion} windows wheel"
                                         archiveArtifacts artifacts: 'dist/*.whl'
+                                    } finally {
+                                        bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                     }
                                 } finally {
                                     powershell(
                                         label: "Untagging Docker Image used",
-                                        script: "docker image rm --no-prune ${dockerImage.imageName()}",
+                                        script: "docker image rm --no-prune ${dockerImageName}",
                                         returnStatus: true
                                     )
-                                    bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                 }
                             }
                         }
@@ -1084,26 +1073,18 @@ pipeline {
                                                             image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                         }
                                                         try{
-                                                            image.inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
+                                                            retry(3){
+                                                                checkout scm
                                                                 try{
-                                                                    retry(3){
-                                                                        bat(label: 'Running Tox',
-                                                                             script: """python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                                                    venv\\Scripts\\uv python install cpython-${version}
-                                                                                    venv\\Scripts\\uvx -p ${version} --with-requirements requirements-dev.txt --with tox-uv tox run -e ${toxEnv}
-                                                                                    rmdir /S /Q .tox
-                                                                                    rmdir /S /Q venv
-                                                                                 """
+                                                                    image.inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
+                                                                        powershell(label: 'Running Tox',
+                                                                             script: """uv python install cpython-${version}
+                                                                                        uvx -p ${version} --with \"\$(Get-Content requirements-dev.txt  | Where-Object { \$_ -like 'tox=*'})\" --with tox-uv tox run -e ${toxEnv}
+                                                                                     """
                                                                         )
                                                                     }
                                                                 } finally{
-                                                                     cleanWs(
-                                                                         patterns: [
-                                                                             [pattern: 'venv/', type: 'INCLUDE'],
-                                                                             [pattern: '.tox', type: 'INCLUDE'],
-                                                                             [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                         ]
-                                                                     )
+                                                                     bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                                 }
                                                             }
                                                         } finally {
@@ -1280,22 +1261,20 @@ pipeline {
                                                                 node("windows && docker && ${arch}"){
                                                                     def dockerImage
                                                                     try{
-                                                                        def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
                                                                         checkout scm
                                                                         lock("docker build-${env.NODE_NAME}"){
+                                                                            def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
                                                                             dockerImage = docker.build(dockerImageName, '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                         }
-                                                                        dockerImage.inside('--mount type=volume,source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython'){
-                                                                            unstash 'python sdist'
-                                                                            findFiles(glob: 'dist/*.tar.gz').each{
-                                                                                bat(
-                                                                                    label: 'Running Tox',
-                                                                                    script: """py -m venv venv
-                                                                                               venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                                                               venv\\Scripts\\uvx --with-requirements requirements-dev.txt --with tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv
-                                                                                               rmdir /S /Q dist
-                                                                                            """
-                                                                                )
+                                                                        withEnv(['UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython']){
+                                                                            dockerImage.inside('--mount type=volume,source=uv_python_install_dir,target=$UV_PYTHON_INSTALL_DIR'){
+                                                                                unstash 'python sdist'
+                                                                                findFiles(glob: 'dist/*.tar.gz').each{
+                                                                                    powershell(
+                                                                                        label: 'Running Tox',
+                                                                                        script: "uvx --with \"\$(Get-Content requirements-dev.txt  | Where-Object { \$_ -like 'tox=*'})\" --with tox-uv tox run --workdir \${Env.TEMP}\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv"
+                                                                                    )
+                                                                                }
                                                                             }
                                                                         }
                                                                     } finally {
