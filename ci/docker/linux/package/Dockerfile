@@ -17,14 +17,15 @@ ARG PIP_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 
+COPY ci/docker/shared/conan/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json
 COPY ci/docker/linux/package/conan/$TARGETARCH/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 ARG UV_CACHE_DIR=/root/.cache/uv
 RUN --mount=type=cache,target=${UV_CACHE_DIR} \
-    uvx --index-strategy unsafe-best-match --with-requirements /tmp/requirements-dev.txt conan config home && \
-    uvx --index-strategy unsafe-best-match --with-requirements /tmp/requirements-dev.txt conan install /tmp --build outdated --no-import  && \
-    uvx --index-strategy unsafe-best-match --with-requirements /tmp/requirements-dev.txt conan remove "*" -b --src -f && \
-    uvx --index-strategy unsafe-best-match --with-requirements /tmp/requirements-dev.txt conan remove --locks
+    uvx --index-strategy unsafe-best-match --constraint /tmp/requirements-dev.txt --with cmake conan config home && \
+    uvx --index-strategy unsafe-best-match --constraint /tmp/requirements-dev.txt --with cmake conan install /tmp --build outdated --no-import  && \
+    uvx --index-strategy unsafe-best-match --constraint /tmp/requirements-dev.txt --with cmake conan remove "*" -b --src -f && \
+    uvx --index-strategy unsafe-best-match --constraint /tmp/requirements-dev.txt --with cmake conan remove --locks
 # ==============================================================================
 
 FROM base

@@ -72,10 +72,10 @@ COPY requirements-dev.txt requirements-dev.txt
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/windows/tox/conan/profile.ini ${CONAN_USER_HOME}/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
-RUN uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan config home && `
-    uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan install c:/temp/ --build missing --no-import -pr:b=default && `
-    uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan remove "*" -b --src -f && `
-    uvx --with-requirements requirements-dev.txt --index-strategy=unsafe-best-match conan remove --lock && `
+RUN uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan config home && `
+    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan install c:/temp/ --build missing --no-import -pr:b=default && `
+    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan remove "*" -b --src -f && `
+    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan remove --lock && `
     uv cache clean --no-progress
 # ==============================================================================
 

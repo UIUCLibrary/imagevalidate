@@ -1,3 +1,8 @@
+# /// script
+# dependencies = [
+#   "pyyaml",
+# ]
+# ///
 import yaml
 import argparse
 

@@ -30,16 +30,14 @@ COPY ci/docker/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_comp
 COPY conanfile.py /tmp/conanfile.py
 RUN python3 -m venv venv && \
     venv/bin/pip install --no-cache --disable-pip-version-check uv && \
-    . ./venv/bin/activate  && \
-    uv pip install --index-strategy=unsafe-best-match --no-cache -r /tmp/requirements-dev.txt && \
-    conan config init &&  \
-    python /tmp/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml  11.4 && \
-    cat $(conan config home)/settings.yml && \
-    conan config home && \
-    conan install /tmp --build outdated --build=openjpeg --no-import && \
-    conan remove "*" -b --src -f && \
-    conan remove --locks && \
-    deactivate && rm -rf venv
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config init &&  \
+    ./venv/bin/uv run /tmp/ensure_compiler_support_by_conan.py $(./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config home)/settings.yml  11.4 && \
+    cat $(./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config home)/settings.yml && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config home && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan install /tmp --build outdated --build=openjpeg --no-import && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove "*" -b --src -f && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove --locks && \
+    rm -rf venv
 # ==============================================================================
 
 FROM wheel_builder_base
