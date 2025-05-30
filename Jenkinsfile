@@ -116,7 +116,7 @@ def mac_wheels(pythonVersions, testPackages, params){
                                                                               trap "rm -rf venv" EXIT
                                                                               python -m pip install --disable-pip-version-check uv
                                                                               trap "rm -rf venv && rm -rf .tox" EXIT
-                                                                              UV_INDEX_STRATEGY=unsafe-best-match venv/bin/uvx --with-requirements=requirements-dev.txt --with tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                              UV_INDEX_STRATEGY=unsafe-best-match venv/bin/uvx --constraint requirements-dev.txt --with tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
                                                                           """
                                                                 )
                                                             }
@@ -169,7 +169,7 @@ def mac_wheels(pythonVersions, testPackages, params){
                                        script: """python${pythonVersion} -m venv venv
                                                   trap "rm -rf venv" EXIT
                                                   ./venv/bin/pip install --disable-pip-version-check uv
-                                                  ./venv/bin/uvx --index-strategy=unsafe-best-match --with-requirements requirements-dev.txt --from delocate delocate-merge  ${wheelNames.join(' ')} --verbose -w ./out/
+                                                  ./venv/bin/uvx --index-strategy=unsafe-best-match --constraint requirements-dev.txt --from delocate delocate-merge  ${wheelNames.join(' ')} --verbose -w ./out/
                                                   rm dist/*.whl
                                                """
                                        )
@@ -217,7 +217,7 @@ def mac_wheels(pythonVersions, testPackages, params){
                                                                           trap "rm -rf venv" EXIT
                                                                           ./venv/bin/python -m pip install --disable-pip-version-check uv
                                                                           trap "rm -rf venv && rm -rf .tox" EXIT
-                                                                          UV_INDEX_STRATEGY=unsafe-best-match CONAN_REVISIONS_ENABLED=1 venv/bin/uvx --with-requirements=requirements-dev.txt --with tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                          UV_INDEX_STRATEGY=unsafe-best-match CONAN_REVISIONS_ENABLED=1 venv/bin/uvx --constraint requirements-dev.txt --with tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
                                                                        """
                                                             )
                                                         }
@@ -383,7 +383,7 @@ def linux_wheels(pythonVersions, testPackages, params){
                                                            script: """python${pythonVersion} -m venv venv
                                                                       trap "rm -rf venv" EXIT
                                                                       venv/bin/pip install --disable-pip-version-check uv
-                                                                      venv/bin/uv build --python ${pythonVersion} --python-preference=system --wheel
+                                                                      venv/bin/uv build --python ${pythonVersion} --build-constraints requirements-dev.txt --python-preference=system --wheel
                                                                       auditwheel show ./dist/*.whl
                                                                       auditwheel -v repair ./dist/*.whl -w ./dist
                                                                       auditwheel show ./dist/*manylinux*.whl
@@ -544,7 +544,7 @@ pipeline {
                         dockerfile {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86_64'
-                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg UV_EXTRA_INDEX_URL'
+                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL'
                             args '--mount source=sonar-cache-uiucprescon-imagevalidate,target=/opt/sonar/.sonar/cache'
                         }
                     }
@@ -986,7 +986,7 @@ pipeline {
                                                         def image
                                                         retry(3){
                                                             lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                                image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv .')
+                                                                image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv --build-arg CONAN_CENTER_PROXY_V1_URL .')
                                                             }
                                                             try{
                                                                 image.inside('--mount source=python-tox-tmp-uiucpreson-imagevalidate,target=/tmp'){
@@ -1046,7 +1046,7 @@ pipeline {
                                                  bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
                                                  envs = bat(
                                                      label: 'Get tox environments',
-                                                     script: '@.\\venv\\Scripts\\uvx --quiet --with-requirements requirements-dev.txt --with tox-uv tox list -d --no-desc',
+                                                     script: '@.\\venv\\Scripts\\uvx --quiet --constraint requirements-dev.txt --with tox-uv tox list -d --no-desc',
                                                      returnStdout: true,
                                                  ).trim().split('\r\n')
                                              } finally{
@@ -1070,7 +1070,7 @@ pipeline {
                                                         def image
                                                         checkout scm
                                                         lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                            image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                            image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                         }
                                                         try{
                                                             retry(3){
@@ -1079,7 +1079,7 @@ pipeline {
                                                                     image.inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
                                                                         powershell(label: 'Running Tox',
                                                                              script: """uv python install cpython-${version}
-                                                                                        uvx -p ${version} --with \"\$(Get-Content requirements-dev.txt  | Where-Object { \$_ -like 'tox=*'})\" --with tox-uv tox run -e ${toxEnv}
+                                                                                        uvx -p ${version} --constraint requirements-dev.txt --with tox-uv tox run -e ${toxEnv}
                                                                                      """
                                                                         )
                                                                     }
@@ -1160,7 +1160,7 @@ pipeline {
                                             label: 'Package',
                                             script: '''python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv
                                                        trap "rm -rf venv" EXIT
-                                                       ./venv/bin/uv build --sdist
+                                                       ./venv/bin/uv build --build-constraints requirements-dev.txt --sdist
                                                     '''
                                         )
                                         stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'python sdist'
@@ -1216,7 +1216,7 @@ pipeline {
                                                                         sh(label: 'Running Tox',
                                                                            script: """python${pythonVersion} -m venv venv
                                                                                       venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                                      UV_INDEX_STRATEGY=unsafe-best-match CONAN_REVISIONS_ENABLED=1  venv/bin/uvx --with-requirements requirements-dev.txt --with tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                                      UV_INDEX_STRATEGY=unsafe-best-match CONAN_REVISIONS_ENABLED=1  venv/bin/uvx --constraint requirements-dev.txt --with tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
                                                                                       rm -rf ./.tox
                                                                                       rm -rf ./venv
                                                                                    """
@@ -1264,7 +1264,7 @@ pipeline {
                                                                         checkout scm
                                                                         lock("docker build-${env.NODE_NAME}"){
                                                                             def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
-                                                                            dockerImage = docker.build(dockerImageName, '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                            dockerImage = docker.build(dockerImageName, '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                         }
                                                                         withEnv(['UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython']){
                                                                             dockerImage.inside('--mount type=volume,source=uv_python_install_dir,target=$UV_PYTHON_INSTALL_DIR'){
@@ -1272,7 +1272,7 @@ pipeline {
                                                                                 findFiles(glob: 'dist/*.tar.gz').each{
                                                                                     powershell(
                                                                                         label: 'Running Tox',
-                                                                                        script: "uvx --with \"\$(Get-Content requirements-dev.txt  | Where-Object { \$_ -like 'tox=*'})\" --with tox-uv tox run --workdir \${Env.TEMP}\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv"
+                                                                                        script: "uvx --constraint requirements-dev.txt --with tox-uv tox run --workdir \${Env.TEMP}\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv"
                                                                                     )
                                                                                 }
                                                                             }
@@ -1315,7 +1315,7 @@ pipeline {
                                                                     dockerfile: [
                                                                         label: "linux && docker && ${arch}",
                                                                         filename: 'ci/docker/linux/tox/Dockerfile',
-                                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv'
+                                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv --build-arg CONAN_CENTER_PROXY_V1_URL'
                                                                     ]
                                                                 ],
                                                                 retries: 3,
@@ -1338,7 +1338,7 @@ pipeline {
                                                                                            trap "rm -rf venv" EXIT
                                                                                            venv/bin/pip install --disable-pip-version-check uv
                                                                                            trap "rm -rf venv && rm -rf .tox" EXIT
-                                                                                           venv/bin/uvx --with-requirements requirements-dev.txt --with tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '')}"""
+                                                                                           venv/bin/uvx --constraint requirements-dev.txt --with tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '')}"""
                                                                                 )
                                                                         }
                                                                     }
@@ -1437,7 +1437,7 @@ pipeline {
                                                    trap "rm -rf venv" EXIT
                                                    . ./venv/bin/activate
                                                    pip install --disable-pip-version-check uv
-                                                   uvx --with-requirements=requirements-dev.txt twine upload --disable-progress-bar --non-interactive dist/*
+                                                   uvx --constraint requirements-dev.txt twine upload --disable-progress-bar --non-interactive dist/*
                                                 '''
                                     )
                             }
@@ -1466,7 +1466,7 @@ pipeline {
                         dockerfile {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker'
-                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
+                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL'
                         }
                     }
                     options{

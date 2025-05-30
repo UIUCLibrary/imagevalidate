@@ -1,5 +1,10 @@
-ARG PIPX_HOME=/pipx
+
 ARG CONAN_USER_HOME=/conan
+
+# If you want to use a diffrent remote for Conan, such as a proxy. Set the CONAN_CENTER_PROXY_V1_URL
+# Not this is only for building the image. The actual conan center proxy URL is set in the remotes.json file.
+ARG CONAN_CENTER_PROXY_V1_URL
+
 ARG PIP_DOWNLOAD_CACHE=/.cache/pip
 ARG UV_CACHE_DIR=/.cache/uv
 ARG UV_EXTRA_INDEX_URL
@@ -27,19 +32,29 @@ ARG PIP_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 COPY ci/docker/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_compiler_support_by_conan.py
+COPY ci/docker/shared/conan/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json
+
 COPY conanfile.py /tmp/conanfile.py
+ARG CONAN_CENTER_PROXY_V1_URL
 RUN python3 -m venv venv && \
     venv/bin/pip install --no-cache --disable-pip-version-check uv && \
-    . ./venv/bin/activate  && \
-    uv pip install --index-strategy=unsafe-best-match --no-cache -r /tmp/requirements-dev.txt && \
-    conan config init &&  \
-    python /tmp/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml  11.4 && \
-    cat $(conan config home)/settings.yml && \
-    conan config home && \
-    conan install /tmp --build outdated --build=openjpeg --no-import && \
-    conan remove "*" -b --src -f && \
-    conan remove --locks && \
-    deactivate && rm -rf venv
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config init &&  \
+    ./venv/bin/uv run /tmp/ensure_compiler_support_by_conan.py $(./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config home)/settings.yml  11.4 && \
+    cat $(./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config home)/settings.yml && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config home && \
+    if [ -n "${CONAN_CENTER_PROXY_V1_URL}" ]; then \
+        echo 'Using a proxy for conan center' && \
+        cp ${CONAN_USER_HOME}/.conan/remotes.json /tmp/remotes.json && \
+        ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remote remove conan-center && \
+        ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remote add conan-center ${CONAN_CENTER_PROXY_V1_URL}; \
+    fi && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan install /tmp --build outdated --build=openjpeg --no-import && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove "*" -b --src -f && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove --locks && \
+    rm -rf venv && \
+    if [ -n "${CONAN_CENTER_PROXY_V1_URL}" ]; then \
+        mv -f /tmp/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json; \
+    fi
 # ==============================================================================
 
 FROM wheel_builder_base

@@ -23,6 +23,7 @@ function Build-DockerImage {
         "--build-arg UV_EXTRA_INDEX_URL",
         "--build-arg PIP_EXTRA_INDEX_URL",
         "--build-arg PIP_INDEX_URL",
+        "--build-arg CONAN_CENTER_PROXY_V1_URL",
         "--build-arg UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv",
         "-t", $ImageName,
         "."
