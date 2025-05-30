@@ -3,6 +3,10 @@ ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8.1
 
 ARG VS_INSTALL_PATH="C:\BuildTools"
 
+# If you want to use a diffrent remote for Conan, such as a proxy. Set the CONAN_CENTER_PROXY_V1_URL
+# Not this is only for building the image. The actual conan center proxy URL is set in the remotes.json file.
+ARG CONAN_CENTER_PROXY_V1_URL
+
 ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
 
 ARG UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv
@@ -71,12 +75,23 @@ ARG UV_EXTRA_INDEX_URL
 COPY requirements-dev.txt requirements-dev.txt
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/windows/tox/conan/profile.ini ${CONAN_USER_HOME}/.conan/profiles/default
-SHELL ["cmd", "/S", "/C" ]
-RUN uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan config home && `
-    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan install c:/temp/ --build missing --no-import -pr:b=default && `
-    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan remove "*" -b --src -f && `
-    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan remove --lock && `
-    uv cache clean --no-progress
+
+ARG CONAN_CENTER_PROXY_V1_URL
+
+RUN uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan config home ; `
+    { `
+          Copy-Item -Path "${Env:CONAN_USER_HOME}\.conan\remotes.json" -Destination "c:\remotes.json" ; `
+          uvx --constraint=requirements-dev.txt conan remote remove conan-center ; `
+          uvx --constraint=requirements-dev.txt conan remote add conan-center-proxy ${Env:CONAN_CENTER_PROXY_V1_URL} ; `
+    }; `
+    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan install c:/temp/ --build missing --no-import -pr:b=default ; `
+    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan remove "*" -b --src -f ; `
+    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan remove --lock ; `
+    uv cache clean --no-progress ; `
+    if ( -not ([string]::IsNullOrEmpty($Env:CONAN_CENTER_PROXY_V1_URL ))) `
+    {`
+      Move-Item -Path "c:\remotes.json" -Destination "${Env:CONAN_USER_HOME}\.conan\remotes.json" -Force ;`
+    }
 # ==============================================================================
 
 FROM CHOCOLATEY_BASE
