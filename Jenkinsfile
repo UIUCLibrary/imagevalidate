@@ -291,8 +291,8 @@ def windows_wheels(pythonVersions, testPackages, params){
                             if(testPackages == true){
                                 retry(2){
                                     node('windows && docker'){
+                                        checkout scm
                                         docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime'){
-                                            checkout scm
                                             installMSVCRuntime('c:\\msvc_runtime\\')
                                             unstash "python${pythonVersion} windows wheel"
                                             try{
@@ -919,24 +919,24 @@ pipeline {
                                 script{
                                     def envs = []
                                     node('docker && linux'){
-                                        docker.image('python').inside('--mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp'){
-                                            try{
-                                                checkout scm
+                                        try{
+                                            checkout scm
+                                            docker.image('python').inside('--mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp'){
                                                 sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
                                                 envs = sh(
                                                     label: 'Get tox environments',
                                                     script: './venv/bin/uvx --quiet --with tox-uv tox list -d --no-desc',
                                                     returnStdout: true,
                                                 ).trim().split('\n')
-                                            } finally{
-                                                cleanWs(
-                                                    patterns: [
-                                                        [pattern: 'venv/', type: 'INCLUDE'],
-                                                        [pattern: '.tox', type: 'INCLUDE'],
-                                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                    ]
-                                                )
                                             }
+                                        } finally{
+                                            cleanWs(
+                                                patterns: [
+                                                    [pattern: 'venv/', type: 'INCLUDE'],
+                                                    [pattern: '.tox', type: 'INCLUDE'],
+                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                ]
+                                            )
                                         }
                                     }
                                     parallel(
@@ -1004,24 +1004,24 @@ pipeline {
                                  script{
                                      def envs = []
                                      node('docker && windows'){
-                                         docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
-                                             try{
-                                                 checkout scm
+                                         try{
+                                             checkout scm
+                                             docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
                                                  bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
                                                  envs = bat(
                                                      label: 'Get tox environments',
                                                      script: '@.\\venv\\Scripts\\uvx --quiet --constraint requirements-dev.txt --with tox-uv tox list -d --no-desc',
                                                      returnStdout: true,
                                                  ).trim().split('\r\n')
-                                             } finally{
-                                                 cleanWs(
-                                                     patterns: [
-                                                         [pattern: 'venv/', type: 'INCLUDE'],
-                                                         [pattern: '.tox', type: 'INCLUDE'],
-                                                         [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                     ]
-                                                 )
-                                             }
+                                            }
+                                         } finally{
+                                             cleanWs(
+                                                 patterns: [
+                                                     [pattern: 'venv/', type: 'INCLUDE'],
+                                                     [pattern: '.tox', type: 'INCLUDE'],
+                                                     [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                 ]
+                                             )
                                          }
                                      }
                                      parallel(
