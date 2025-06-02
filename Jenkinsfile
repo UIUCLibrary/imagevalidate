@@ -44,7 +44,7 @@ def getPypiConfig() {
     }
 }
 
-def mac_wheels(pythonVersions, testPackages, params){
+def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
     def selectedArches = []
     def allValidArches = ['arm64', 'x86_64']
     if(params.INCLUDE_MACOS_X86_64 == true){
@@ -226,7 +226,7 @@ def mac_wheels(pythonVersions, testPackages, params){
     )
 }
 
-def windows_wheels(pythonVersions, testPackages, params){
+def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
     parallel([failFast: true] << pythonVersions.collectEntries{ pythonVersion ->
         def newStage = "Python ${pythonVersion} - Windows"
         [
@@ -300,7 +300,7 @@ def windows_wheels(pythonVersions, testPackages, params){
 }
 
 
-def linux_wheels(pythonVersions, testPackages, params){
+def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
     def selectedArches = []
     def allValidArches = ['arm64', 'x86_64']
     if(params.INCLUDE_LINUX_ARM == true){
@@ -387,7 +387,7 @@ def linux_wheels(pythonVersions, testPackages, params){
     })
 }
 
-wheelStashes = []
+def wheelStashes = []
 
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
@@ -1015,7 +1015,7 @@ pipeline {
                         }
                     }
                     steps{
-                        mac_wheels(SUPPORTED_MAC_VERSIONS, params.TEST_PACKAGES, params)
+                        mac_wheels(SUPPORTED_MAC_VERSIONS, params.TEST_PACKAGES, params, wheelStashes)
                     }
                 }
                 stage('Platform Wheels: Windows'){
@@ -1023,7 +1023,7 @@ pipeline {
                         equals expected: true, actual: params.INCLUDE_WINDOWS_X86_64
                     }
                     steps{
-                        windows_wheels(SUPPORTED_WINDOWS_VERSIONS, params.TEST_PACKAGES, params)
+                        windows_wheels(SUPPORTED_WINDOWS_VERSIONS, params.TEST_PACKAGES, params, wheelStashes)
                     }
                 }
                 stage('Platform Wheels: Linux'){
@@ -1034,7 +1034,7 @@ pipeline {
                         }
                     }
                     steps{
-                        linux_wheels(SUPPORTED_LINUX_VERSIONS, params.TEST_PACKAGES, params)
+                        linux_wheels(SUPPORTED_LINUX_VERSIONS, params.TEST_PACKAGES, params, wheelStashes)
                     }
                 }
                 stage('Source Distribution Package'){
