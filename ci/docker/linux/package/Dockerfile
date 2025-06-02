@@ -9,10 +9,8 @@ ARG UV_CACHE_DIR=/.cache/uv
 ARG PIP_DOWNLOAD_CACHE=/.cache/pip
 FROM ${manylinux_image} AS base
 
-RUN yum install -y openjpeg2-devel ca-certificates
-
 # ==============================================================================
-
+RUN pipx install "uv>=0.6.5" --force
 FROM base AS conan_builder
 COPY requirements-dev.txt /tmp/requirements-dev.txt
 ARG CONAN_USER_HOME
