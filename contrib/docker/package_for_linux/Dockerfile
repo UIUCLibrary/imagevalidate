@@ -10,7 +10,13 @@ ARG PIP_DOWNLOAD_CACHE=/.cache/pip
 FROM ${manylinux_image} AS base
 
 # ==============================================================================
-RUN pipx install "uv>=0.6.5" --force
+RUN --mount=type=cache,target=/var/cache/yum \
+    yum install -y lndir
+
+# This needed to use uvx with --constraint option
+RUN --mount=type=cache,target=/path/to/pipx/cache \
+    pipx install "uv>=0.6.5" --force
+
 FROM base AS conan_builder
 COPY requirements-dev.txt /tmp/requirements-dev.txt
 ARG CONAN_USER_HOME
@@ -21,7 +27,7 @@ ARG UV_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 
 COPY ci/docker/shared/conan/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json
-COPY ci/docker/linux/package/conan/$TARGETARCH/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
+COPY contrib/docker/package_for_linux/conan/$TARGETARCH/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 
 ARG CONAN_CENTER_PROXY_V1_URL

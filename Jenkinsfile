@@ -361,54 +361,18 @@ def linux_wheels(pythonVersions, testPackages, params){
                                 stage(newStage){
                                     if(selectedArches.contains(arch)){
                                         stage("Build Wheel (${pythonVersion} Linux ${arch})"){
-                                            buildPythonPkg(
-                                                agent: [
-                                                    dockerfile: [
-                                                        label: "linux && docker && ${arch}",
-                                                        filename: 'ci/docker/linux/package/Dockerfile',
-                                                        additionalBuildArgs: "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg manylinux_image=${arch=='x86_64'? 'quay.io/pypa/manylinux2014_x86_64': 'quay.io/pypa/manylinux2014_aarch64'} --build-arg UV_CACHE_DIR=/.cache/uv",
-                                                        args: '--mount source=python-package-tmp-uiucpreson-imagevalidate,target=/tmp',
-                                                    ]
-                                                ],
-                                                retries: 3,
-                                                buildCmd: {
-                                                    withEnv([
-                                                        'PIP_CACHE_DIR=/tmp/pipcache',
-                                                        'UV_INDEX_STRATEGY=unsafe-best-match',
-                                                        'UV_TOOL_DIR=/tmp/uvtools',
-                                                        'UV_PYTHON_INSTALL_DIR=/tmp/uvpython',
-                                                        'UV_CACHE_DIR=/tmp/uvcache',
-                                                    ]){
-                                                        sh(label: 'Building python wheel',
-                                                           script: """python${pythonVersion} -m venv venv
-                                                                      trap "rm -rf venv" EXIT
-                                                                      venv/bin/pip install --disable-pip-version-check uv
-                                                                      venv/bin/uv build --python ${pythonVersion} --build-constraints requirements-dev.txt --python-preference=system --wheel
-                                                                      auditwheel show ./dist/*.whl
-                                                                      auditwheel -v repair ./dist/*.whl -w ./dist
-                                                                      auditwheel show ./dist/*manylinux*.whl
-                                                                   """
-                                                           )
-                                                   }
-                                                },
-                                                post:[
-                                                    cleanup: {
-                                                        cleanWs(
-                                                            patterns: [
-                                                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                ],
-                                                            notFailBuild: true,
-                                                            deleteDirs: true
-                                                        )
-                                                    },
-                                                    success: {
-                                                        stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux-${arch} wheel"
-                                                        wheelStashes << "python${pythonVersion} linux-${arch} wheel"
-                                                        archiveArtifacts artifacts: 'dist/*.whl'
-                                                    }
-                                                ]
-                                            )
+                                            def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
+                                            node("docker && linux && ${arch}"){
+                                                checkout scm
+                                                try{
+                                                    sh(label: 'Build manylinux Python wheel', script: "contrib/build_linux_wheels.sh --python-version=${pythonVersion} --docker-image-name=${dockerImageName}")
+                                                    stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux-${arch} wheel"
+                                                    wheelStashes << "python${pythonVersion} linux-${arch} wheel"
+                                                    archiveArtifacts artifacts: 'dist/*.whl'
+                                                } finally{
+                                                    sh "docker rmi --no-prune ${dockerImageName}"
+                                                }
+                                            }
                                         }
                                         def testWheelStageName = "Test Wheel (${pythonVersion} Linux ${arch})"
                                         stage(testWheelStageName){
