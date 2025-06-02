@@ -44,7 +44,7 @@ def getPypiConfig() {
     }
 }
 
-def mac_wheels(pythonVersions, testPackages, params){
+def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
     def selectedArches = []
     def allValidArches = ['arm64', 'x86_64']
     if(params.INCLUDE_MACOS_X86_64 == true){
@@ -79,14 +79,7 @@ def mac_wheels(pythonVersions, testPackages, params){
                                                     },
                                                     post:[
                                                         cleanup: {
-                                                            cleanWs(
-                                                                patterns: [
-                                                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                                                        [pattern: 'venv/', type: 'INCLUDE'],
-                                                                    ],
-                                                                notFailBuild: true,
-                                                                deleteDirs: true
-                                                            )
+                                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                         },
                                                         success: {
                                                             stash includes: 'dist/*.whl', name: "python${pythonVersion} mac ${arch} wheel"
@@ -123,15 +116,7 @@ def mac_wheels(pythonVersions, testPackages, params){
                                                         },
                                                         post:[
                                                             cleanup: {
-                                                                cleanWs(
-                                                                    patterns: [
-                                                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                                                            [pattern: '.tox/', type: 'INCLUDE'],
-                                                                        ],
-                                                                    notFailBuild: true,
-                                                                    deleteDirs: true
-                                                                )
+                                                                sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                             },
                                                             success: {
                                                                  archiveArtifacts artifacts: 'dist/*.whl'
@@ -181,15 +166,7 @@ def mac_wheels(pythonVersions, testPackages, params){
                                    wheelStashes << "python${pythonVersion} mac-universal2 wheel"
                                    archiveArtifacts artifacts: 'dist/*.whl'
                                 } finally {
-                                    cleanWs(
-                                        patterns: [
-                                                [pattern: 'out/', type: 'INCLUDE'],
-                                                [pattern: 'dist/', type: 'INCLUDE'],
-                                                [pattern: 'venv/', type: 'INCLUDE'],
-                                            ],
-                                        notFailBuild: true,
-                                        deleteDirs: true
-                                    )
+                                    sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                }
                             }
                         }
@@ -224,15 +201,7 @@ def mac_wheels(pythonVersions, testPackages, params){
                                                     },
                                                     post:[
                                                         cleanup: {
-                                                            cleanWs(
-                                                                patterns: [
-                                                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                                                        [pattern: 'venv/', type: 'INCLUDE'],
-                                                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                                                    ],
-                                                                notFailBuild: true,
-                                                                deleteDirs: true
-                                                            )
+                                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                         },
                                                         success: {
                                                              archiveArtifacts artifacts: 'dist/*.whl'
@@ -257,7 +226,7 @@ def mac_wheels(pythonVersions, testPackages, params){
     )
 }
 
-def windows_wheels(pythonVersions, testPackages, params){
+def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
     parallel([failFast: true] << pythonVersions.collectEntries{ pythonVersion ->
         def newStage = "Python ${pythonVersion} - Windows"
         [
@@ -291,11 +260,11 @@ def windows_wheels(pythonVersions, testPackages, params){
                             if(testPackages == true){
                                 retry(2){
                                     node('windows && docker'){
-                                        docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime'){
-                                            checkout scm
-                                            installMSVCRuntime('c:\\msvc_runtime\\')
-                                            unstash "python${pythonVersion} windows wheel"
-                                            try{
+                                        checkout scm
+                                        try{
+                                            docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime'){
+                                                installMSVCRuntime('c:\\msvc_runtime\\')
+                                                unstash "python${pythonVersion} windows wheel"
                                                 withEnv([
                                                     'PIP_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\pipcache',
                                                     'UV_TOOL_DIR=C:\\Users\\ContainerUser\\Documents\\uvtools',
@@ -311,18 +280,9 @@ def windows_wheels(pythonVersions, testPackages, params){
                                                             """
                                                     }
                                                 }
-                                            } finally {
-                                                cleanWs(
-                                                    patterns: [
-                                                            [pattern: '.tox/', type: 'INCLUDE'],
-                                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                        ],
-                                                    notFailBuild: true,
-                                                    deleteDirs: true
-                                                )
-
                                             }
+                                        } finally {
+                                            bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                         }
                                     }
                                 }
@@ -340,7 +300,7 @@ def windows_wheels(pythonVersions, testPackages, params){
 }
 
 
-def linux_wheels(pythonVersions, testPackages, params){
+def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
     def selectedArches = []
     def allValidArches = ['arm64', 'x86_64']
     if(params.INCLUDE_LINUX_ARM == true){
@@ -361,54 +321,19 @@ def linux_wheels(pythonVersions, testPackages, params){
                                 stage(newStage){
                                     if(selectedArches.contains(arch)){
                                         stage("Build Wheel (${pythonVersion} Linux ${arch})"){
-                                            buildPythonPkg(
-                                                agent: [
-                                                    dockerfile: [
-                                                        label: "linux && docker && ${arch}",
-                                                        filename: 'ci/docker/linux/package/Dockerfile',
-                                                        additionalBuildArgs: "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg manylinux_image=${arch=='x86_64'? 'quay.io/pypa/manylinux2014_x86_64': 'quay.io/pypa/manylinux2014_aarch64'} --build-arg UV_CACHE_DIR=/.cache/uv",
-                                                        args: '--mount source=python-package-tmp-uiucpreson-imagevalidate,target=/tmp',
-                                                    ]
-                                                ],
-                                                retries: 3,
-                                                buildCmd: {
-                                                    withEnv([
-                                                        'PIP_CACHE_DIR=/tmp/pipcache',
-                                                        'UV_INDEX_STRATEGY=unsafe-best-match',
-                                                        'UV_TOOL_DIR=/tmp/uvtools',
-                                                        'UV_PYTHON_INSTALL_DIR=/tmp/uvpython',
-                                                        'UV_CACHE_DIR=/tmp/uvcache',
-                                                    ]){
-                                                        sh(label: 'Building python wheel',
-                                                           script: """python${pythonVersion} -m venv venv
-                                                                      trap "rm -rf venv" EXIT
-                                                                      venv/bin/pip install --disable-pip-version-check uv
-                                                                      venv/bin/uv build --python ${pythonVersion} --build-constraints requirements-dev.txt --python-preference=system --wheel
-                                                                      auditwheel show ./dist/*.whl
-                                                                      auditwheel -v repair ./dist/*.whl -w ./dist
-                                                                      auditwheel show ./dist/*manylinux*.whl
-                                                                   """
-                                                           )
-                                                   }
-                                                },
-                                                post:[
-                                                    cleanup: {
-                                                        cleanWs(
-                                                            patterns: [
-                                                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                ],
-                                                            notFailBuild: true,
-                                                            deleteDirs: true
-                                                        )
-                                                    },
-                                                    success: {
-                                                        stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux-${arch} wheel"
-                                                        wheelStashes << "python${pythonVersion} linux-${arch} wheel"
-                                                        archiveArtifacts artifacts: 'dist/*.whl'
-                                                    }
-                                                ]
-                                            )
+                                            def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
+                                            node("docker && linux && ${arch}"){
+                                                checkout scm
+                                                try{
+                                                    sh(label: 'Build manylinux Python wheel', script: "contrib/build_linux_wheels.sh --python-version=${pythonVersion} --docker-image-name=${dockerImageName}")
+                                                    stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux-${arch} wheel"
+                                                    wheelStashes << "python${pythonVersion} linux-${arch} wheel"
+                                                    archiveArtifacts artifacts: 'dist/*.whl'
+                                                } finally{
+                                                    sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                    sh "docker rmi --no-prune ${dockerImageName}"
+                                                }
+                                            }
                                         }
                                         def testWheelStageName = "Test Wheel (${pythonVersion} Linux ${arch})"
                                         stage(testWheelStageName){
@@ -441,14 +366,7 @@ def linux_wheels(pythonVersions, testPackages, params){
                                                                 }
                                                             }
                                                         } finally {
-                                                            cleanWs(
-                                                                patterns: [
-                                                                    [pattern: '.tox/', type: 'INCLUDE'],
-                                                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                                                    [pattern: 'venv/', type: 'INCLUDE'],
-                                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                    ]
-                                                            )
+                                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                         }
                                                     }
                                                 }
@@ -469,7 +387,7 @@ def linux_wheels(pythonVersions, testPackages, params){
     })
 }
 
-wheelStashes = []
+def wheelStashes = []
 
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
@@ -564,7 +482,6 @@ pipeline {
                                 stage('Loading Reference Build Information'){
                                     steps{
                                         mineRepository()
-                                        discoverGitReferenceBuild()
                                     }
                                 }
                                 stage('Setup Testing Environment'){
@@ -955,24 +872,18 @@ pipeline {
                                 script{
                                     def envs = []
                                     node('docker && linux'){
-                                        docker.image('python').inside('--mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp'){
-                                            try{
-                                                checkout scm
+                                        try{
+                                            checkout scm
+                                            docker.image('python').inside('--mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp'){
                                                 sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
                                                 envs = sh(
                                                     label: 'Get tox environments',
                                                     script: './venv/bin/uvx --quiet --with tox-uv tox list -d --no-desc',
                                                     returnStdout: true,
                                                 ).trim().split('\n')
-                                            } finally{
-                                                cleanWs(
-                                                    patterns: [
-                                                        [pattern: 'venv/', type: 'INCLUDE'],
-                                                        [pattern: '.tox', type: 'INCLUDE'],
-                                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                    ]
-                                                )
                                             }
+                                        } finally{
+                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                         }
                                     }
                                     parallel(
@@ -1003,17 +914,10 @@ pipeline {
                                                                               '''
                                                                                 )
                                                                         throw e
-                                                                    } finally{
-                                                                        cleanWs(
-                                                                            patterns: [
-                                                                                [pattern: 'venv/', type: 'INCLUDE'],
-                                                                                [pattern: '.tox', type: 'INCLUDE'],
-                                                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                            ]
-                                                                        )
                                                                     }
                                                                 }
                                                             } finally {
+                                                                sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                                 sh "docker rmi ${image.id}"
                                                             }
                                                         }
@@ -1040,24 +944,18 @@ pipeline {
                                  script{
                                      def envs = []
                                      node('docker && windows'){
-                                         docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
-                                             try{
-                                                 checkout scm
+                                         try{
+                                             checkout scm
+                                             docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
                                                  bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
                                                  envs = bat(
                                                      label: 'Get tox environments',
                                                      script: '@.\\venv\\Scripts\\uvx --quiet --constraint requirements-dev.txt --with tox-uv tox list -d --no-desc',
                                                      returnStdout: true,
                                                  ).trim().split('\r\n')
-                                             } finally{
-                                                 cleanWs(
-                                                     patterns: [
-                                                         [pattern: 'venv/', type: 'INCLUDE'],
-                                                         [pattern: '.tox', type: 'INCLUDE'],
-                                                         [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                     ]
-                                                 )
-                                             }
+                                            }
+                                         } finally{
+                                             bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                          }
                                      }
                                      parallel(
@@ -1070,7 +968,7 @@ pipeline {
                                                         def image
                                                         checkout scm
                                                         lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                            image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                            image = docker.build(UUID.randomUUID().toString(), '-f contrib/docker/windows/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                         }
                                                         try{
                                                             retry(3){
@@ -1116,7 +1014,7 @@ pipeline {
                         }
                     }
                     steps{
-                        mac_wheels(SUPPORTED_MAC_VERSIONS, params.TEST_PACKAGES, params)
+                        mac_wheels(SUPPORTED_MAC_VERSIONS, params.TEST_PACKAGES, params, wheelStashes)
                     }
                 }
                 stage('Platform Wheels: Windows'){
@@ -1124,7 +1022,7 @@ pipeline {
                         equals expected: true, actual: params.INCLUDE_WINDOWS_X86_64
                     }
                     steps{
-                        windows_wheels(SUPPORTED_WINDOWS_VERSIONS, params.TEST_PACKAGES, params)
+                        windows_wheels(SUPPORTED_WINDOWS_VERSIONS, params.TEST_PACKAGES, params, wheelStashes)
                     }
                 }
                 stage('Platform Wheels: Linux'){
@@ -1135,7 +1033,7 @@ pipeline {
                         }
                     }
                     steps{
-                        linux_wheels(SUPPORTED_LINUX_VERSIONS, params.TEST_PACKAGES, params)
+                        linux_wheels(SUPPORTED_LINUX_VERSIONS, params.TEST_PACKAGES, params, wheelStashes)
                     }
                 }
                 stage('Source Distribution Package'){
@@ -1167,13 +1065,7 @@ pipeline {
                                         archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
                                         wheelStashes << 'python sdist'
                                     } finally {
-                                        cleanWs(
-                                            patterns: [
-                                                [pattern: 'dist/', type: 'INCLUDE'],
-                                            ],
-                                            notFailBuild: true,
-                                            deleteDirs: true
-                                        )
+                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                     }
                                 }
                             }
@@ -1225,15 +1117,7 @@ pipeline {
                                                                 },
                                                                 post:[
                                                                     cleanup: {
-                                                                        cleanWs(
-                                                                            patterns: [
-                                                                                [pattern: 'dist/', type: 'INCLUDE'],
-                                                                                [pattern: 'venv/', type: 'INCLUDE'],
-                                                                                [pattern: '.tox/', type: 'INCLUDE'],
-                                                                            ],
-                                                                            notFailBuild: true,
-                                                                            deleteDirs: true
-                                                                        )
+                                                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                                     },
                                                                 ]
                                                             )
@@ -1264,7 +1148,7 @@ pipeline {
                                                                         checkout scm
                                                                         lock("docker build-${env.NODE_NAME}"){
                                                                             def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
-                                                                            dockerImage = docker.build(dockerImageName, '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                            dockerImage = docker.build(dockerImageName, '-f contrib/docker/windows/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                         }
                                                                         withEnv(['UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython']){
                                                                             dockerImage.inside('--mount type=volume,source=uv_python_install_dir,target=$UV_PYTHON_INSTALL_DIR'){

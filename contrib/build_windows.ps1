@@ -6,7 +6,7 @@ param (
 function Build-DockerImage {
     [CmdletBinding()]
     param (
-        [string]$DockerfilePath = "ci/docker/windows/tox/Dockerfile",
+        [string]$DockerfilePath = "contrib/docker/windows/Dockerfile",
         [string]$ImageName = "uiucprescon_imagevalidate_builder",
         [string]$DockerExec = "docker.exe",
         [string]$DockerIsolation = "process"

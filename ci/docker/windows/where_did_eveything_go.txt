@@ -1,0 +1,2 @@
+The contents of ci/docker/windows was moved to contrib/docker/windows as it more closely aligns with the purpose of the
+of building wheels.
