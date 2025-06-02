@@ -79,14 +79,7 @@ def mac_wheels(pythonVersions, testPackages, params){
                                                     },
                                                     post:[
                                                         cleanup: {
-                                                            cleanWs(
-                                                                patterns: [
-                                                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                                                        [pattern: 'venv/', type: 'INCLUDE'],
-                                                                    ],
-                                                                notFailBuild: true,
-                                                                deleteDirs: true
-                                                            )
+                                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                         },
                                                         success: {
                                                             stash includes: 'dist/*.whl', name: "python${pythonVersion} mac ${arch} wheel"
@@ -123,15 +116,7 @@ def mac_wheels(pythonVersions, testPackages, params){
                                                         },
                                                         post:[
                                                             cleanup: {
-                                                                cleanWs(
-                                                                    patterns: [
-                                                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                                                            [pattern: '.tox/', type: 'INCLUDE'],
-                                                                        ],
-                                                                    notFailBuild: true,
-                                                                    deleteDirs: true
-                                                                )
+                                                                sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                             },
                                                             success: {
                                                                  archiveArtifacts artifacts: 'dist/*.whl'
@@ -181,15 +166,7 @@ def mac_wheels(pythonVersions, testPackages, params){
                                    wheelStashes << "python${pythonVersion} mac-universal2 wheel"
                                    archiveArtifacts artifacts: 'dist/*.whl'
                                 } finally {
-                                    cleanWs(
-                                        patterns: [
-                                                [pattern: 'out/', type: 'INCLUDE'],
-                                                [pattern: 'dist/', type: 'INCLUDE'],
-                                                [pattern: 'venv/', type: 'INCLUDE'],
-                                            ],
-                                        notFailBuild: true,
-                                        deleteDirs: true
-                                    )
+                                    sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                }
                             }
                         }
@@ -224,15 +201,7 @@ def mac_wheels(pythonVersions, testPackages, params){
                                                     },
                                                     post:[
                                                         cleanup: {
-                                                            cleanWs(
-                                                                patterns: [
-                                                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                                                        [pattern: 'venv/', type: 'INCLUDE'],
-                                                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                                                    ],
-                                                                notFailBuild: true,
-                                                                deleteDirs: true
-                                                            )
+                                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                         },
                                                         success: {
                                                              archiveArtifacts artifacts: 'dist/*.whl'
@@ -292,10 +261,10 @@ def windows_wheels(pythonVersions, testPackages, params){
                                 retry(2){
                                     node('windows && docker'){
                                         checkout scm
-                                        docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime'){
-                                            installMSVCRuntime('c:\\msvc_runtime\\')
-                                            unstash "python${pythonVersion} windows wheel"
-                                            try{
+                                        try{
+                                            docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime'){
+                                                installMSVCRuntime('c:\\msvc_runtime\\')
+                                                unstash "python${pythonVersion} windows wheel"
                                                 withEnv([
                                                     'PIP_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\pipcache',
                                                     'UV_TOOL_DIR=C:\\Users\\ContainerUser\\Documents\\uvtools',
@@ -311,18 +280,9 @@ def windows_wheels(pythonVersions, testPackages, params){
                                                             """
                                                     }
                                                 }
-                                            } finally {
-                                                cleanWs(
-                                                    patterns: [
-                                                            [pattern: '.tox/', type: 'INCLUDE'],
-                                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                        ],
-                                                    notFailBuild: true,
-                                                    deleteDirs: true
-                                                )
-
                                             }
+                                        } finally {
+                                            bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                         }
                                     }
                                 }
@@ -370,6 +330,7 @@ def linux_wheels(pythonVersions, testPackages, params){
                                                     wheelStashes << "python${pythonVersion} linux-${arch} wheel"
                                                     archiveArtifacts artifacts: 'dist/*.whl'
                                                 } finally{
+                                                    sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                     sh "docker rmi --no-prune ${dockerImageName}"
                                                 }
                                             }
@@ -405,14 +366,7 @@ def linux_wheels(pythonVersions, testPackages, params){
                                                                 }
                                                             }
                                                         } finally {
-                                                            cleanWs(
-                                                                patterns: [
-                                                                    [pattern: '.tox/', type: 'INCLUDE'],
-                                                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                                                    [pattern: 'venv/', type: 'INCLUDE'],
-                                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                    ]
-                                                            )
+                                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                         }
                                                     }
                                                 }
@@ -930,13 +884,7 @@ pipeline {
                                                 ).trim().split('\n')
                                             }
                                         } finally{
-                                            cleanWs(
-                                                patterns: [
-                                                    [pattern: 'venv/', type: 'INCLUDE'],
-                                                    [pattern: '.tox', type: 'INCLUDE'],
-                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                ]
-                                            )
+                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                         }
                                     }
                                     parallel(
@@ -967,17 +915,10 @@ pipeline {
                                                                               '''
                                                                                 )
                                                                         throw e
-                                                                    } finally{
-                                                                        cleanWs(
-                                                                            patterns: [
-                                                                                [pattern: 'venv/', type: 'INCLUDE'],
-                                                                                [pattern: '.tox', type: 'INCLUDE'],
-                                                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                            ]
-                                                                        )
                                                                     }
                                                                 }
                                                             } finally {
+                                                                sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                                 sh "docker rmi ${image.id}"
                                                             }
                                                         }
@@ -1015,13 +956,7 @@ pipeline {
                                                  ).trim().split('\r\n')
                                             }
                                          } finally{
-                                             cleanWs(
-                                                 patterns: [
-                                                     [pattern: 'venv/', type: 'INCLUDE'],
-                                                     [pattern: '.tox', type: 'INCLUDE'],
-                                                     [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                 ]
-                                             )
+                                             bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                          }
                                      }
                                      parallel(
@@ -1131,13 +1066,7 @@ pipeline {
                                         archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
                                         wheelStashes << 'python sdist'
                                     } finally {
-                                        cleanWs(
-                                            patterns: [
-                                                [pattern: 'dist/', type: 'INCLUDE'],
-                                            ],
-                                            notFailBuild: true,
-                                            deleteDirs: true
-                                        )
+                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                     }
                                 }
                             }
@@ -1189,15 +1118,7 @@ pipeline {
                                                                 },
                                                                 post:[
                                                                     cleanup: {
-                                                                        cleanWs(
-                                                                            patterns: [
-                                                                                [pattern: 'dist/', type: 'INCLUDE'],
-                                                                                [pattern: 'venv/', type: 'INCLUDE'],
-                                                                                [pattern: '.tox/', type: 'INCLUDE'],
-                                                                            ],
-                                                                            notFailBuild: true,
-                                                                            deleteDirs: true
-                                                                        )
+                                                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                                     },
                                                                 ]
                                                             )
