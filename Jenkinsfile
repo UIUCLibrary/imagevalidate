@@ -482,7 +482,6 @@ pipeline {
                                 stage('Loading Reference Build Information'){
                                     steps{
                                         mineRepository()
-                                        discoverGitReferenceBuild()
                                     }
                                 }
                                 stage('Setup Testing Environment'){
