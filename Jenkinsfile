@@ -74,7 +74,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                     buildCmd: {
                                                         checkout scm
                                                         sh(label: 'Building wheel',
-                                                           script: "sh ./contrib/build_mac_wheel.sh . ${pythonVersion}"
+                                                           script: "sh ./scripts/build_mac_wheel.sh . ${pythonVersion}"
                                                            )
                                                     },
                                                     post:[
@@ -239,7 +239,7 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                                 try{
                                     checkout scm
                                     try{
-                                        powershell(label: 'Building Wheel for Windows', script: "contrib/build_windows.ps1 -PythonVersion ${pythonVersion} -DockerImageName ${dockerImageName}")
+                                        powershell(label: 'Building Wheel for Windows', script: "scripts/build_windows.ps1 -PythonVersion ${pythonVersion} -DockerImageName ${dockerImageName}")
                                         stash includes: 'dist/*.whl', name: "python${pythonVersion} windows wheel"
                                         wheelStashes << "python${pythonVersion} windows wheel"
                                         archiveArtifacts artifacts: 'dist/*.whl'
@@ -325,7 +325,7 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
                                             node("docker && linux && ${arch}"){
                                                 checkout scm
                                                 try{
-                                                    sh(label: 'Build manylinux Python wheel', script: "contrib/build_linux_wheels.sh --python-version=${pythonVersion} --docker-image-name=${dockerImageName}")
+                                                    sh(label: 'Build manylinux Python wheel', script: "scripts/build_linux_wheels.sh --python-version=${pythonVersion} --docker-image-name=${dockerImageName}")
                                                     stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux-${arch} wheel"
                                                     wheelStashes << "python${pythonVersion} linux-${arch} wheel"
                                                     archiveArtifacts artifacts: 'dist/*.whl'
@@ -946,7 +946,7 @@ pipeline {
                                                             def image
                                                             checkout scm
                                                             lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                                image = docker.build(UUID.randomUUID().toString(), '-f contrib/docker/windows/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                             }
                                                             try{
                                                                 checkout scm
@@ -1125,7 +1125,7 @@ pipeline {
                                                                         checkout scm
                                                                         lock("docker build-${env.NODE_NAME}"){
                                                                             def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
-                                                                            dockerImage = docker.build(dockerImageName, '-f contrib/docker/windows/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                            dockerImage = docker.build(dockerImageName, '-f scripts/resources/windows/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                         }
                                                                         withEnv(['UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython']){
                                                                             dockerImage.inside('--mount type=volume,source=uv_python_install_dir,target=$UV_PYTHON_INSTALL_DIR'){

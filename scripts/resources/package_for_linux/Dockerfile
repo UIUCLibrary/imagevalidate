@@ -27,7 +27,7 @@ ARG UV_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 
 COPY ci/docker/shared/conan/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json
-COPY contrib/docker/package_for_linux/conan/$TARGETARCH/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
+COPY scripts/resources/package_for_linux/conan/$TARGETARCH/profile.ini  $CONAN_USER_HOME/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 
 ARG CONAN_CENTER_PROXY_V1_URL
