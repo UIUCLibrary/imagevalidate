@@ -798,6 +798,7 @@ pipeline {
                                                     mv *.gcov build/coverage/
                                                     """
                                         )
+                                        milestone 1
                                         script{
                                             withSonarQubeEnv(installationName:'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
                                                 if (env.CHANGE_ID){
