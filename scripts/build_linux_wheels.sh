@@ -4,7 +4,7 @@ set -e
 scriptDir=$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")
 PROJECT_ROOT=$(realpath "$scriptDir/..")
 DEFAULT_PYTHON_VERSION="3.10"
-DOCKERFILE=$(realpath "$scriptDir/docker/package_for_linux/Dockerfile")
+DOCKERFILE=$(realpath "$scriptDir/resources/package_for_linux/Dockerfile")
 DEFAULT_DOCKER_IMAGE_NAME="uiucprescon_imagevalidate_builder"
 OUTPUT_PATH="$PROJECT_ROOT/dist"
 arch=$(uname -m)
