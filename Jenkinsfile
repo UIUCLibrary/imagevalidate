@@ -892,10 +892,10 @@ pipeline {
                                             [
                                                 "Tox Environment: ${toxEnv}",
                                                 {
-                                                    node('docker && linux'){
-                                                        checkout scm
-                                                        def image
-                                                        retry(3){
+                                                    retry(3){
+                                                        node('docker && linux'){
+                                                            def image
+                                                            checkout scm
                                                             lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
                                                                 image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv --build-arg CONAN_CENTER_PROXY_V1_URL .')
                                                             }
@@ -964,14 +964,14 @@ pipeline {
                                              [
                                                  "Tox Environment: ${toxEnv}",
                                                  {
-                                                     node('docker && windows'){
-                                                        def image
-                                                        checkout scm
-                                                        lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                            image = docker.build(UUID.randomUUID().toString(), '-f contrib/docker/windows/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
-                                                        }
-                                                        try{
-                                                            retry(3){
+                                                    retry(3){
+                                                         node('docker && windows'){
+                                                            def image
+                                                            checkout scm
+                                                            lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
+                                                                image = docker.build(UUID.randomUUID().toString(), '-f contrib/docker/windows/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                            }
+                                                            try{
                                                                 checkout scm
                                                                 try{
                                                                     image.inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
@@ -984,9 +984,9 @@ pipeline {
                                                                 } finally{
                                                                      bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                                 }
+                                                            } finally {
+                                                                bat "docker rmi --no-prune ${image.id}"
                                                             }
-                                                        } finally {
-                                                            bat "docker rmi --no-prune ${image.id}"
                                                         }
                                                      }
                                                  }
