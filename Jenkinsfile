@@ -788,6 +788,7 @@ pipeline {
                                                 return true
                                             }
                                         }
+                                        beforeOptions true
                                     }
                                     steps{
                                         sh(
