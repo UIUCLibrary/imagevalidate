@@ -274,7 +274,7 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                 ]){
                                                     findFiles(glob: 'dist/*.whl').each{
                                                         bat """python -m pip install --disable-pip-version-check uv
-                                                               uvx -p ${pythonVersion} --with tox-uv tox run -e py${pythonVersion.replace('.', '')}  --installpkg ${it.path}
+                                                               uvx -p ${pythonVersion} --constraint requirements-dev.txt --with tox-uv tox run -e py${pythonVersion.replace('.', '')}  --installpkg ${it.path}
                                                                rmdir /s /q .tox
                                                                rmdir /s /q dist
                                                             """
@@ -359,7 +359,7 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                                                    . ./venv/bin/activate
                                                                                    trap "rm -rf venv" EXIT
                                                                                    pip install --disable-pip-version-check uv
-                                                                                   uvx --with tox-uv tox
+                                                                                   uvx --constraint requirements-dev.txt --with tox-uv tox
                                                                                    rm -rf .tox
                                                                                 '''
                                                                     )
@@ -855,7 +855,7 @@ pipeline {
                                                 sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
                                                 envs = sh(
                                                     label: 'Get tox environments',
-                                                    script: './venv/bin/uvx --quiet --with tox-uv tox list -d --no-desc',
+                                                    script: './venv/bin/uvx --quiet --constraint requirements-dev.txt --with tox-uv tox list -d --no-desc',
                                                     returnStdout: true,
                                                 ).trim().split('\n')
                                             }
@@ -882,7 +882,7 @@ pipeline {
                                                                         sh( label: 'Running Tox',
                                                                             script: """python3 -m venv /tmp/venv && /tmp/venv/bin/pip install --disable-pip-version-check uv
                                                                                        . /tmp/venv/bin/activate
-                                                                                       uvx -p ${version} --with tox-uv tox run -e ${toxEnv} -vvv
+                                                                                       uvx -p ${version} --constraint requirements-dev.txt --with tox-uv tox run -e ${toxEnv} -vvv
                                                                                     """
                                                                             )
                                                                     } catch(e) {
