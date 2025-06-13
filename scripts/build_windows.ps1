@@ -6,7 +6,7 @@ param (
 function Build-DockerImage {
     [CmdletBinding()]
     param (
-        [string]$DockerfilePath = "contrib/docker/windows/Dockerfile",
+        [string]$DockerfilePath = (Join-Path -Path (Get-Item $PSScriptRoot).FullName -ChildPath "resources/windows/Dockerfile"),
         [string]$ImageName = "uiucprescon_imagevalidate_builder",
         [string]$DockerExec = "docker.exe",
         [string]$DockerIsolation = "process"

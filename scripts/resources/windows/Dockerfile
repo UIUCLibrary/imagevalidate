@@ -22,8 +22,8 @@ FROM ${FROM_IMAGE} AS CHOCOLATEY_BASE
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
-COPY contrib/docker/windows/msvc/visual_studio_config.json c:/setup/config.vsconfig
-COPY contrib/docker/windows/msvc/install_msvc.ps1 c:/scripts/install_msvc.ps1
+COPY scripts/resources/windows/msvc/visual_studio_config.json c:/setup/config.vsconfig
+COPY scripts/resources/windows/msvc/install_msvc.ps1 c:/scripts/install_msvc.ps1
 ARG VS_INSTALL_PATH
 ARG VS_VERSION="2022"
 ARG VS_DevCmdArguments="-arch=amd64"
@@ -34,8 +34,8 @@ RUN c:/scripts/install_msvc.ps1 -InstallPath ${Env:VS_INSTALL_PATH} -VSConfigFil
 ARG CHOCOLATEY_SOURCE
 ARG ChocolateyEnvironmentDebug=false
 ARG chocolateyVersion
-COPY contrib/docker/windows/chocolatey/install.ps1 c:/choco/install.ps1
-COPY contrib/docker/windows/chocolatey/get_latest_chocolatey_url.ps1 c:/choco/get_latest_chocolatey_url.ps1
+COPY scripts/resources/windows/chocolatey/install.ps1 c:/choco/install.ps1
+COPY scripts/resources/windows/chocolatey/get_latest_chocolatey_url.ps1 c:/choco/get_latest_chocolatey_url.ps1
 RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
     $chocolateyDownloadUrl = c:/choco/get_latest_chocolatey_url.ps1 -packageRepo $env:CHOCOLATEY_SOURCE; `
     c:/choco/install.ps1 -ChocolateyDownloadUrl $chocolateyDownloadUrl;`
@@ -49,7 +49,7 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
     choco cache remove --confirm
 
 
-COPY contrib/docker/windows/chocolatey/packages.config choco/packages.config
+COPY scripts/resources/windows/chocolatey/packages.config choco/packages.config
 RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose choco/packages.config ;`
     refreshenv ; `
@@ -74,7 +74,7 @@ ARG UV_EXTRA_INDEX_URL
 
 COPY requirements-dev.txt requirements-dev.txt
 COPY conanfile.py c:/temp/conanfile.py
-COPY contrib/docker/windows/conan/profile.ini ${CONAN_USER_HOME}/.conan/profiles/default
+COPY scripts/resources/windows/conan/profile.ini ${CONAN_USER_HOME}/.conan/profiles/default
 
 ARG CONAN_CENTER_PROXY_V1_URL
 
