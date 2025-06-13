@@ -21,6 +21,12 @@ case "$arch" in
     ;;
 esac
 
+REMOVE_DIRS_FIRST=( \
+  'uiucprescon.imagevalidate.egg-info' \
+  'cmake-build-debug' \
+  '.tox' \
+  'build' \
+  )
 
 BUILD_CONSTRAINTS="requirements-dev.txt"
 
@@ -54,13 +60,20 @@ generate_wheel(){
 
     mkdir -p "$OUTPUT_PATH"
     echo "Building wheels for Python versions: ${python_versions_to_use[*]}"
-
+    CONTAINER_WORKSPACE=/tmp/workspace
     COMMAND="echo 'Making a shadow copy to prevent modifying files' && \
-            mkdir -p /tmp/build && \
-            lndir -silent /project/ /tmp/build && \
+            mkdir -p ${CONTAINER_WORKSPACE} && \
+            lndir -silent /project/ ${CONTAINER_WORKSPACE} && \
+            for d in "${REMOVE_DIRS_FIRST[@]}"; do
+                OFFENDING_PATH=${CONTAINER_WORKSPACE}/\$d
+                if [ -d \"\$OFFENDING_PATH\" ]; then
+                  echo \"Removing copy from temporary working path to avoid issues: \$OFFENDING_PATH\";
+                  rm -rf \$OFFENDING_PATH;
+                fi; \
+            done && \
             for i in "${python_versions_to_use[@]}"; do
                 echo \"Creating wheel for Python version: \$i\";
-                uv build --python=\$i --python-preference=system --build-constraints=/project/$BUILD_CONSTRAINTS --wheel --out-dir=/tmp/dist /tmp/build;
+                uv build --python=\$i --python-preference=system --build-constraints=/project/$BUILD_CONSTRAINTS --wheel --out-dir=/tmp/dist ${CONTAINER_WORKSPACE};
             done && \
             auditwheel -v repair /tmp/dist/*.whl -w /dist/;
             for file in /dist/*manylinux*.whl; do
