@@ -2,9 +2,11 @@
 requires = [
     "setuptools>=77.0",
     "wheel",
-    "conan>=1.50.0,<2.0",
     "cmake<4.0",
-    'uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.5.tar.gz'
+    'uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/0.2.6a1.tar.gz',
+#    'uiucprescon.build @ /Users/hborcher/CLionProjects/henryborchers/uiucprescon_build',
+#    "conan>=1.50.0,<2.0",
+    "conan>=2.7",
 
 ]
 

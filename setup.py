@@ -26,6 +26,8 @@ try:
     class BuildPybind11Extensions(BuildPybind11Extension):
 
         def run(self):
+            conan_cmd = self.get_finalized_command("build_conan")
+            conan_cmd.run()
             super().run()
             from uiucprescon.build.deps import get_win_deps
 
