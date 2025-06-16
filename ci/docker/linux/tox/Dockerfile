@@ -36,21 +36,21 @@ COPY ci/docker/shared/conan/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json
 
 COPY conanfile.py /tmp/conanfile.py
 ARG CONAN_CENTER_PROXY_V1_URL
+ENV UV_CONSTRAINT=/tmp/requirements-dev.txt
 RUN python3 -m venv venv && \
-    venv/bin/pip install --no-cache --disable-pip-version-check uv && \
-    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config init &&  \
-    ./venv/bin/uv run /tmp/ensure_compiler_support_by_conan.py $(./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config home)/settings.yml  11.4 && \
-    cat $(./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config home)/settings.yml && \
-    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config home && \
+    ./venv/bin/pip install --no-cache --disable-pip-version-check uv && \
+    ./venv/bin/uvx --with cmake conan profile detect --exist-ok &&  \
+    ./venv/bin/uv run /tmp/ensure_compiler_support_by_conan.py $(./venv/bin/uvx --with cmake conan config home)/settings.yml  11.4 && \
+    cat $(./venv/bin/uvx --with cmake conan config home)/settings.yml && \
+    ./venv/bin/uvx --with cmake conan config home && \
     if [ -n "${CONAN_CENTER_PROXY_V1_URL}" ]; then \
         echo 'Using a proxy for conan center' && \
         cp ${CONAN_USER_HOME}/.conan/remotes.json /tmp/remotes.json && \
-        ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remote remove conan-center && \
-        ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remote add conan-center ${CONAN_CENTER_PROXY_V1_URL}; \
+        ./venv/bin/uvx --with cmake conan remote remove conan-center && \
+        ./venv/bin/uvx --with cmake conan remote add conan-center ${CONAN_CENTER_PROXY_V1_URL}; \
     fi && \
-    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan install /tmp --build outdated --build=openjpeg --no-import && \
-    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove "*" -b --src -f && \
-    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove --locks && \
+    ./venv/bin/uvx --with cmake conan install /tmp --build outdated --build=openjpeg && \
+    ./venv/bin/uvx --with cmake conan cache clean "*" -b --source --build --temp && \
     rm -rf venv && \
     if [ -n "${CONAN_CENTER_PROXY_V1_URL}" ]; then \
         mv -f /tmp/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json; \

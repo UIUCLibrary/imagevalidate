@@ -1,5 +1,5 @@
 build
-conan<2.0
+conan>=2.0
 coverage[toml]
 cmake<4.0
 delocate ; sys_platform == 'darwin'

@@ -72,21 +72,20 @@ ARG PIP_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
 
-COPY requirements-dev.txt requirements-dev.txt
+COPY requirements-dev.txt c:/temp/requirements-dev.txt
 COPY conanfile.py c:/temp/conanfile.py
 COPY scripts/resources/windows/conan/profile.ini ${CONAN_USER_HOME}/.conan/profiles/default
 
 ARG CONAN_CENTER_PROXY_V1_URL
-
-RUN uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan config home ; `
+ENV UV_CONSTRAINT=c:/temp/requirements-dev.txt
+RUN uvx --with cmake --index-strategy=unsafe-best-match conan config home ; `
     { `
           Copy-Item -Path "${Env:CONAN_USER_HOME}\.conan\remotes.json" -Destination "c:\remotes.json" ; `
-          uvx --constraint=requirements-dev.txt conan remote remove conan-center ; `
-          uvx --constraint=requirements-dev.txt conan remote add conan-center-proxy ${Env:CONAN_CENTER_PROXY_V1_URL} ; `
+          uvx conan remote remove conan-center ; `
+          uvx conan remote add conan-center-proxy ${Env:CONAN_CENTER_PROXY_V1_URL} ; `
     }; `
-    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan install c:/temp/ --build missing --no-import -pr:b=default ; `
-    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan remove "*" -b --src -f ; `
-    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan remove --lock ; `
+    uvx --with cmake --index-strategy=unsafe-best-match conan install c:/temp/ --build missing -pr:b=default ; `
+    uvx --with cmake --index-strategy=unsafe-best-match cache clean "*" -b --source --build --temp ; `
     uv cache clean --no-progress ; `
     if ( -not ([string]::IsNullOrEmpty($Env:CONAN_CENTER_PROXY_V1_URL ))) `
     {`

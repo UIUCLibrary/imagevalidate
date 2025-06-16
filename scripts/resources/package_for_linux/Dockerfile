@@ -51,16 +51,15 @@ COPY ${UV_CONSTRAINT} /tmp/${UV_CONSTRAINT}
 ENV UV_CONSTRAINT=/tmp/${UV_CONSTRAINT}
 RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=cache,target=${UV_CACHE_DIR} \
-    uvx --with cmake conan config init && \
+    uvx --with cmake conan profile detect --exist-ok &&  \
     if [ -n "${CONAN_CENTER_PROXY_V1_URL}" ]; then \
       echo 'Using a proxy for conan center' && \
       cp ${CONAN_USER_HOME}/.conan/remotes.json /tmp/remotes.json && \
       uvx --with cmake conan remote remove conan-center && \
       uvx --with cmake conan remote add conan-center ${CONAN_CENTER_PROXY_V1_URL}; \
     fi && \
-    uvx --with cmake conan install /tmp --build outdated --no-import  && \
-    uvx --with cmake conan remove "*" -b --src -f && \
-    uvx --with cmake conan remove --locks && \
+    uvx --with cmake conan install /tmp --build missing && \
+    uvx --with cmake conan cache clean "*" -b --source --build --temp && \
     uv cache prune && \
     if [ -n "${CONAN_CENTER_PROXY_V1_URL}" ]; then \
         mv -f /tmp/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json; \

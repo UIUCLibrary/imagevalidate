@@ -75,21 +75,21 @@ COPY requirements-dev.txt /tmp/requirements-dev.txt
 ARG UV_CACHE_DIR
 ARG PIP_DOWNLOAD_CACHE
 ARG CONAN_CENTER_PROXY_V1_URL
+ENV UV_CONSTRAINT=/tmp/requirements-dev.txt
 RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=cache,target=${UV_CACHE_DIR} \
     python3 -m venv venv && \
     venv/bin/pip install --no-cache --disable-pip-version-check uv && \
-    venv/bin/uvx --constraint /tmp/requirements-dev.txt --with cmake conan config init &&  \
-    python3 /tmp/ensure_compiler_support_by_conan.py $(venv/bin/uvx --constraint /tmp/requirements-dev.txt --with cmake conan config home)/settings.yml  11.4 && \
+    venv/bin/uvx --with cmake conan profile detect --exist-ok &&  \
+    python3 /tmp/ensure_compiler_support_by_conan.py $(venv/bin/uvx --with cmake conan config home)/settings.yml  11.4 && \
     if [ -n "${CONAN_CENTER_PROXY_V1_URL}" ]; then \
         echo 'Using a proxy for conan center' && \
         cp ${CONAN_USER_HOME}/.conan/remotes.json /tmp/remotes.json && \
-        ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remote remove conan-center && \
-        ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remote add conan-center ${CONAN_CENTER_PROXY_V1_URL}; \
+        ./venv/bin/uvx --with cmake conan remote remove conan-center && \
+        ./venv/bin/uvx --with cmake conan remote add conan-center ${CONAN_CENTER_PROXY_V1_URL}; \
     fi && \
-    venv/bin/uvx --constraint /tmp/requirements-dev.txt --with cmake conan install /tmp --build outdated --no-import -pr:b=default && \
-    venv/bin/uvx --constraint /tmp/requirements-dev.txt --with cmake conan remove "*" -b --src -f && \
-    venv/bin/uvx --constraint /tmp/requirements-dev.txt --with cmake conan remove --locks && \
+    venv/bin/uvx --with cmake conan install /tmp --build outdated -pr:b=default && \
+    venv/bin/uvx --with cmake conan cache clean "*" -b --source --build --temp && \
     rm -rf venv && \
     if [ -n "${CONAN_CENTER_PROXY_V1_URL}" ]; then \
         mv -f /tmp/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json; \
