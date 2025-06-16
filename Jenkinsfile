@@ -529,8 +529,8 @@ pipeline {
                                         tee('logs/cmake-build.log'){
                                             sh(label: 'Compiling CPP Code',
                                                script: '''. ./venv/bin/activate
-                                                          conan install . -if build/cpp --build=missing -pr:b=default
-                                                          cmake --preset release -B build/cpp \
+                                                          conan install conanfile.py -of build/cpp --build=missing -pr:b=default
+                                                          cmake --preset conan-release -B build/cpp \
                                                             -Wdev \
                                                             -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON \
                                                             -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true \

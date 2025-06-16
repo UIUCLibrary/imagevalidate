@@ -2,9 +2,10 @@
 requires = [
     "setuptools>=77.0",
     "wheel",
-    "conan>=1.50.0,<2.0",
     "cmake<4.0",
-    'uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.5.tar.gz'
+    'uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.2.6/uiucprescon_build-0.2.6-py3-none-any.whl',
+#    "conan>=1.50.0,<2.0",
+    "conan>=2.7",
 
 ]
 
@@ -129,3 +130,6 @@ CONAN_USER_HOME="/tmp/conan"
 CONAN_DEFAULT_PROFILE_PATH="/tmp/conan/.conan/profiles/default"
 CONAN_BUILD_INFO_DIR="/tmp/conan/build/"
 PYTHONFAULTHANDLER="True"
+
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { file = "requirements-dev.txt" }, { file = "setup.py" }, { dir = "/Users/hborcher/CLionProjects/henryborchers/uiucprescon_build" }]

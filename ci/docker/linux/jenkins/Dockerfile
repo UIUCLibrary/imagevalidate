@@ -1,14 +1,16 @@
 ARG CONAN_USER_HOME=/conan
 
-# If you want to use a diffrent remote for Conan, such as a proxy. Set the CONAN_CENTER_PROXY_V1_URL
+ARG CONAN_HOME=${CONAN_USER_HOME}/.conan2
+
+ARG CONAN_CENTER_PROXY_V2_URL=https://center2.conan.io
+# If you want to use a diffrent remote for Conan, such as a proxy. Set the CONAN_CENTER_PROXY_V2_URL
 # Not this is only for building the image. The actual conan center proxy URL is set in the remotes.json file.
-ARG CONAN_CENTER_PROXY_V1_URL
 
-# PIP Cache directory. Change this only if you need to override the default location.
 ARG PIP_DOWNLOAD_CACHE=/.cache/pip
+# PIP Cache directory. Change this only if you need to override the default location.
 
-# UV Cache directory. Change this only if you need to override the default location.
 ARG UV_CACHE_DIR=/.cache/uv
+# UV Cache directory. Change this only if you need to override the default location.
 
 
 FROM ubuntu:22.04 AS base_image
@@ -30,6 +32,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
         python3-venv \
         ca-certificates \
         software-properties-common \
+        jq \
         unzip && \
      rm -rf /var/lib/apt/lists/*
 
@@ -67,32 +70,33 @@ ARG PIP_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 
-COPY ci/docker/shared/conan/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json
-COPY ci/docker/linux/jenkins/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 COPY ci/docker/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_compiler_support_by_conan.py
 COPY requirements-dev.txt /tmp/requirements-dev.txt
 ARG UV_CACHE_DIR
 ARG PIP_DOWNLOAD_CACHE
-ARG CONAN_CENTER_PROXY_V1_URL
+ARG CONAN_CENTER_PROXY_V2_URL
+ARG CONAN_HOME
+ENV UV_CONSTRAINT=/tmp/requirements-dev.txt
+
+COPY ci/docker/linux/jenkins/conan/profile.ini  ${CONAN_HOME}/profiles/default
+COPY ci/docker/shared/conan/remotes.json ${CONAN_HOME}/remotes.json
 RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=cache,target=${UV_CACHE_DIR} \
     python3 -m venv venv && \
     venv/bin/pip install --no-cache --disable-pip-version-check uv && \
-    venv/bin/uvx --constraint /tmp/requirements-dev.txt --with cmake conan config init &&  \
-    python3 /tmp/ensure_compiler_support_by_conan.py $(venv/bin/uvx --constraint /tmp/requirements-dev.txt --with cmake conan config home)/settings.yml  11.4 && \
-    if [ -n "${CONAN_CENTER_PROXY_V1_URL}" ]; then \
-        echo 'Using a proxy for conan center' && \
-        cp ${CONAN_USER_HOME}/.conan/remotes.json /tmp/remotes.json && \
-        ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remote remove conan-center && \
-        ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remote add conan-center ${CONAN_CENTER_PROXY_V1_URL}; \
+    venv/bin/uvx --with cmake conan profile detect --exist-ok &&  \
+    python3 /tmp/ensure_compiler_support_by_conan.py $(venv/bin/uvx --with cmake conan config home)/settings.yml  11.4 && \
+    if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
+        echo "Setting the conan center url for building cache: ${CONAN_CENTER_PROXY_V2_URL}" && \
+        cp ${CONAN_HOME}/remotes.json /tmp/remotes.json && \
+        ./venv/bin/uvx --with cmake conan remote update conan-center --url ${CONAN_CENTER_PROXY_V2_URL}; \
     fi && \
-    venv/bin/uvx --constraint /tmp/requirements-dev.txt --with cmake conan install /tmp --build outdated --no-import -pr:b=default && \
-    venv/bin/uvx --constraint /tmp/requirements-dev.txt --with cmake conan remove "*" -b --src -f && \
-    venv/bin/uvx --constraint /tmp/requirements-dev.txt --with cmake conan remove --locks && \
+    venv/bin/uvx --with cmake conan install /tmp --build missing -pr:b=default && \
+    venv/bin/uvx --with cmake conan cache clean "*" -b --source --build --temp && \
     rm -rf venv && \
-    if [ -n "${CONAN_CENTER_PROXY_V1_URL}" ]; then \
-        mv -f /tmp/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json; \
+    if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
+        mv -f /tmp/remotes.json ${CONAN_HOME}/remotes.json; \
     fi
 
 
@@ -126,6 +130,8 @@ ENV PIP_NO_CACHE_DIR=1
 
 ARG CONAN_USER_HOME
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
-COPY --from=conan_builder ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
-RUN chmod -R 777 ${CONAN_USER_HOME}
+ARG CONAN_HOME
+ENV CONAN_HOME=${CONAN_HOME}
+COPY --from=conan_builder ${CONAN_HOME} ${CONAN_HOME}
+RUN chmod -R 777 ${CONAN_HOME}
 ENV TZ=UTC

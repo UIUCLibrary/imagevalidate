@@ -3,11 +3,12 @@ ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8.1
 
 ARG VS_INSTALL_PATH="C:\BuildTools"
 
-# If you want to use a diffrent remote for Conan, such as a proxy. Set the CONAN_CENTER_PROXY_V1_URL
+# If you want to use a diffrent remote for Conan, such as a proxy. Set the CONAN_CENTER_PROXY_V2_URL
 # Not this is only for building the image. The actual conan center proxy URL is set in the remotes.json file.
-ARG CONAN_CENTER_PROXY_V1_URL
+ARG CONAN_CENTER_PROXY_V2_URL=https://center2.conan.io
 
 ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
+ARG CONAN_HOME=${CONAN_USER_HOME}/.conan2
 
 ARG UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv
 ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
@@ -65,32 +66,33 @@ RUN New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
     -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
 FROM CHOCOLATEY_BASE AS CONAN_BUILDER
-ARG CONAN_USER_HOME
+ARG CONAN_HOME
 
 ARG PIP_INDEX_URL
 ARG PIP_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
 
-COPY requirements-dev.txt requirements-dev.txt
+COPY requirements-dev.txt c:/temp/requirements-dev.txt
 COPY conanfile.py c:/temp/conanfile.py
-COPY scripts/resources/windows/conan/profile.ini ${CONAN_USER_HOME}/.conan/profiles/default
-
-ARG CONAN_CENTER_PROXY_V1_URL
-
-RUN uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan config home ; `
-    { `
-          Copy-Item -Path "${Env:CONAN_USER_HOME}\.conan\remotes.json" -Destination "c:\remotes.json" ; `
-          uvx --constraint=requirements-dev.txt conan remote remove conan-center ; `
-          uvx --constraint=requirements-dev.txt conan remote add conan-center-proxy ${Env:CONAN_CENTER_PROXY_V1_URL} ; `
+COPY scripts/resources/windows/conan/profile.ini ${CONAN_HOME}/profiles/default
+COPY ci/docker/shared/conan/remotes.json ${CONAN_HOME}/remotes.json
+ARG CONAN_CENTER_PROXY_V2_URL
+ENV UV_INDEX_STRATEGY=unsafe-best-match`
+    UV_CONSTRAINT=c:/temp/requirements-dev.txt
+RUN uvx --with cmake conan profile detect --exist-ok ; `
+    if (${env:CONAN_CENTER_PROXY_V2_URL} -ne $(Get-Content -Raw -Path ${Env:CONAN_HOME}\remotes.json)) { `
+          Copy-Item -Path "${Env:CONAN_HOME}\remotes.json" -Destination "c:\remotes.json" ; `
+          uvx --with cmake conan remote update conan-center --url ${env:CONAN_CENTER_PROXY_V2_URL}; `
     }; `
-    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan install c:/temp/ --build missing --no-import -pr:b=default ; `
-    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan remove "*" -b --src -f ; `
-    uvx --constraint=requirements-dev.txt --with cmake --index-strategy=unsafe-best-match conan remove --lock ; `
+    uvx --with cmake conan install c:/temp/ --build missing -pr:b=default ; `
+    if ($LASTEXITCODE -ne 0) { `
+          throw \"Command 'conan install' failed with exit code: $LASTEXITCODE\"`
+    } ;`
+    uvx --with cmake conan cache clean "*" -b --source --build --temp ; `
     uv cache clean --no-progress ; `
-    if ( -not ([string]::IsNullOrEmpty($Env:CONAN_CENTER_PROXY_V1_URL ))) `
-    {`
-      Move-Item -Path "c:\remotes.json" -Destination "${Env:CONAN_USER_HOME}\.conan\remotes.json" -Force ;`
+    if (${env:CONAN_CENTER_PROXY_V2_URL} -ne $(Get-Content -Raw -Path ${Env:CONAN_HOME}\remotes.json)) { `
+      Move-Item -Path "c:\remotes.json" -Destination "${Env:CONAN_HOME}\remotes.json" -Force ;`
     }
 # ==============================================================================
 
@@ -100,20 +102,17 @@ RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
 
 ARG CONAN_USER_HOME
-COPY --from=CONAN_BUILDER ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
-ENV CONAN_USER_HOME=${CONAN_USER_HOME}
-
-ENV UV_INDEX_STRATEGY=unsafe-best-match
-
+ARG CONAN_HOME
+COPY --from=CONAN_BUILDER ${CONAN_HOME}/ ${CONAN_HOME}/
 ARG UV_CACHE_DIR
-ENV UV_CACHE_DIR=${UV_CACHE_DIR}
-
 ARG PIP_DOWNLOAD_CACHE
-ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 
 RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force | Out-Null ; `
     New-Item -type directory -path ${Env:UV_CACHE_DIR} -Force| Out-Null
 
+ENV CONAN_USER_HOME=${CONAN_USER_HOME}`
+    CONAN_HOME=${CONAN_HOME}`
+    UV_INDEX_STRATEGY=unsafe-best-match`
+    UV_CACHE_DIR=${UV_CACHE_DIR}`
+    PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 
-WORKDIR C:/src
-CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate -p=auto
