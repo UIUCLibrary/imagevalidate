@@ -55,7 +55,7 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
         cp ${CONAN_HOME}/remotes.json /tmp/remotes.json && \
         ./venv/bin/uvx --with cmake conan remote update conan-center --url ${CONAN_CENTER_PROXY_V2_URL}; \
     fi && \
-    ./venv/bin/uvx --with cmake conan install /tmp --build outdated --build=openjpeg && \
+    ./venv/bin/uvx --with cmake conan install /tmp --build missing --build=openjpeg && \
     ./venv/bin/uvx --with cmake conan cache clean "*" -b --source --build --temp && \
     rm -rf venv && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
@@ -80,6 +80,3 @@ RUN chmod -R 777 ${CONAN_HOME} && \
     mkdir -p ${UV_CACHE_DIR} && \
     chmod -R 777 ${UV_CACHE_DIR}
 
-
-WORKDIR /src
-CMD ["tox", "--workdir", "/tmp/tox", "--recreate"]

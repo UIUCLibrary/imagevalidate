@@ -78,8 +78,8 @@ COPY conanfile.py c:/temp/conanfile.py
 COPY scripts/resources/windows/conan/profile.ini ${CONAN_HOME}/profiles/default
 COPY ci/docker/shared/conan/remotes.json ${CONAN_HOME}/remotes.json
 ARG CONAN_CENTER_PROXY_V2_URL
-ENV UV_INDEX_STRATEGY=unsafe-best-match
-ENV UV_CONSTRAINT=c:/temp/requirements-dev.txt
+ENV UV_INDEX_STRATEGY=unsafe-best-match`
+    UV_CONSTRAINT=c:/temp/requirements-dev.txt
 RUN uvx --with cmake conan profile detect --exist-ok ; `
     if (${env:CONAN_CENTER_PROXY_V2_URL} -ne $(Get-Content -Raw -Path ${Env:CONAN_HOME}\remotes.json)) { `
           Copy-Item -Path "${Env:CONAN_HOME}\remotes.json" -Destination "c:\remotes.json" ; `
@@ -89,7 +89,7 @@ RUN uvx --with cmake conan profile detect --exist-ok ; `
     if ($LASTEXITCODE -ne 0) { `
           throw \"Command 'conan install' failed with exit code: $LASTEXITCODE\"`
     } ;`
-    uvx --with cmake cache clean "*" -b --source --build --temp ; `
+    uvx --with cmake conan cache clean "*" -b --source --build --temp ; `
     uv cache clean --no-progress ; `
     if (${env:CONAN_CENTER_PROXY_V2_URL} -ne $(Get-Content -Raw -Path ${Env:CONAN_HOME}\remotes.json)) { `
       Move-Item -Path "c:\remotes.json" -Destination "${Env:CONAN_HOME}\remotes.json" -Force ;`
@@ -104,16 +104,15 @@ RUN certutil -addstore -f root roots.sst ; `
 ARG CONAN_USER_HOME
 ARG CONAN_HOME
 COPY --from=CONAN_BUILDER ${CONAN_HOME}/ ${CONAN_HOME}/
-ENV CONAN_USER_HOME=${CONAN_USER_HOME}
-ENV CONAN_HOME=${CONAN_HOME}
-
-ENV UV_INDEX_STRATEGY=unsafe-best-match
-
 ARG UV_CACHE_DIR
-ENV UV_CACHE_DIR=${UV_CACHE_DIR}
-
 ARG PIP_DOWNLOAD_CACHE
-ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 
 RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force | Out-Null ; `
     New-Item -type directory -path ${Env:UV_CACHE_DIR} -Force| Out-Null
+
+ENV CONAN_USER_HOME=${CONAN_USER_HOME}`
+    CONAN_HOME=${CONAN_HOME}`
+    UV_INDEX_STRATEGY=unsafe-best-match`
+    UV_CACHE_DIR=${UV_CACHE_DIR}`
+    PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
+
