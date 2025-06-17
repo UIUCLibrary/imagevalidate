@@ -184,7 +184,9 @@ python-dateutil==2.9.0.post0
 pywin32-ctypes==0.2.3 ; platform_machine != 'ppc64le' and platform_machine != 's390x' and sys_platform == 'win32'
     # via keyring
 pyyaml==6.0.2
-    # via conan
+    # via
+    #   conan
+    #   uiucprescon-build
 readme-renderer==44.0
     # via twine
 requests==2.32.4
@@ -253,7 +255,7 @@ typing-extensions==4.14.0
     #   mypy
     #   rich
     #   tox
-uiucprescon-build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.5.tar.gz
+uiucprescon-build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/0.2.6a1.tar.gz
     # via -r requirements/requirements-dev.in
 urllib3==2.0.7
     # via

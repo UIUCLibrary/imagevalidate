@@ -11,3 +11,4 @@ python3.12-venv
 python3.13-dev
 python3.13-venv
 git
+jq

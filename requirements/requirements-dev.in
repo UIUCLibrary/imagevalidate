@@ -15,4 +15,4 @@ sphinx
 twine
 toml
 tox
-uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.5.tar.gz
+uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/0.2.6a1.tar.gz
