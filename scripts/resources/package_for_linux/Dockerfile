@@ -35,6 +35,9 @@ RUN --mount=type=cache,target=/path/to/pipx/cache \
 
 # ==============================================================================
 FROM base AS conan_builder
+RUN --mount=type=cache,target=/var/cache/yum \
+    yum install -y jq
+
 ARG CONAN_USER_HOME
 ARG CONAN_HOME
 ARG TARGETARCH
