@@ -1,5 +1,5 @@
 build
-conan<2.0
+conan>=2.0
 coverage[toml]
 cmake<4.0
 delocate ; sys_platform == 'darwin'
@@ -15,4 +15,4 @@ sphinx
 twine
 toml
 tox
-uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.5.tar.gz
+uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.2.6/uiucprescon_build-0.2.6-py3-none-any.whl
