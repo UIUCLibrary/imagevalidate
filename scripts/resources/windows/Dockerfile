@@ -37,9 +37,12 @@ ARG ChocolateyEnvironmentDebug=false
 ARG chocolateyVersion
 COPY scripts/resources/windows/chocolatey/install.ps1 c:/choco/install.ps1
 COPY scripts/resources/windows/chocolatey/get_latest_chocolatey_url.ps1 c:/choco/get_latest_chocolatey_url.ps1
+COPY scripts/resources/windows/chocolatey/packages.config choco/packages.config
+COPY scripts/resources/windows/chocolatey/verifyenv.ps1 c:/verifyenv.ps1
 RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
     $chocolateyDownloadUrl = c:/choco/get_latest_chocolatey_url.ps1 -packageRepo $env:CHOCOLATEY_SOURCE; `
     c:/choco/install.ps1 -ChocolateyDownloadUrl $chocolateyDownloadUrl;`
+    . $profile;`
     if( -not ([string]::IsNullOrEmpty($Env:CHOCOLATEY_SOURCE ))) `
     { `
         Write-Host "Adding $env:CHOCOLATEY_SOURCE to chocolatey sources" ; `
@@ -47,24 +50,19 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
     }; `
     Write-Host "Disabling Showing Download Progress" ; `
     choco feature disable -n=showDownloadProgress ; `
-    choco cache remove --confirm
-
-
-COPY scripts/resources/windows/chocolatey/packages.config choco/packages.config
-RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
-    C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose choco/packages.config ;`
+    choco sources ; `
+    choco install -y --stoponfirstfailure --no-progress --verbose choco/packages.config ;`
     refreshenv ; `
     choco cache remove --confirm;`
-    if (!(Test-Path 'C:\Program Files\nasm\nasm.exe')) `
-    { `
-        throw 'nasm.exe not found' ; `
-    }; `
-    uv python update-shell ; `
-    Write-Host "Finished install packages with Chocolatey"
+    Write-Host "Finished install packages with Chocolatey"; `
+    Write-Host "Verifying installed packages" ;`
+    c:/verifyenv.ps1
+
 
 RUN New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
     -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
+FROM chocolatey_base AS CONAN_BUILDER
 FROM chocolatey_base AS conan_builder
 ARG CONAN_HOME
 
