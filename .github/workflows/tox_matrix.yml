@@ -88,8 +88,9 @@ jobs:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
         if: "!contains(matrix.os, 'windows') && steps.cache-conan.outputs.cache-hit != 'true'"
         run: |
-          uv run --only-group=conan conan profile detect --exist-ok
-          uv run --only-group=conan conan install conanfile.py --build  missing
+          uvx --with cmake conan profile detect --exist-ok
+          uvx --with cmake conan install conanfile.py --build missing -of /tmp/ciwheelbuilder -pr:b=default
+          
 
       - name: Run Tox (Windows)
         if: contains(matrix.os, 'windows')
