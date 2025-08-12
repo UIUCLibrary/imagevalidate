@@ -82,54 +82,45 @@ skip = [
 ]
 build-verbosity = 1
 environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_USER_HOME", "PIP_EXTRA_INDEX_URL", "UV_EXTRA_INDEX_URL", "UV_INDEX_STRATEGY"]
-
+environment = { UV_CONSTRAINT = "requirements-dev.txt"}
 [tool.cibuildwheel.windows]
 before-all = [
-    "pip install wheel",
-    "pip install -r requirements-dev.txt uv",
-    "conan profile new default --detect --force",
-    "conan profile update settings.compiler.version=%CONAN_COMPILER_VERSION% default",
-    "conan install ./ --build missing",
+    "python -m venv %TEMP\\cibuildwheelvenv",
+    "%TEMP\\cibuildwheelvenv\\Scripts\\pip install --disable-pip-version-check uv",
+    "%TEMP\\cibuildwheelvenv\\Scripts\\uvx --with cmake conan profile detect --exist-ok",
+    "%TEMP\\cibuildwheelvenv\\Scripts\\uvx --with cmake conan install conanfile.py --build missing -of=%TEMP\\conandelme",
 ]
 [tool.cibuildwheel.windows.environment]
 CONAN_USER_HOME="$TEMP/conan"
 
 [tool.cibuildwheel.macos]
 before-all = [
-    "pip3 install -r requirements-dev.txt uv",
-    "conan profile new $ENVTMPDIR/.conan/profiles/default --detect --force",
-    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
-    "conan install ./ --build missing --install-folder=$CONAN_BUILD_INFO_DIR"
+    "python3 -m venv /tmp/cibuildwheelvenv",
+    "/tmp/cibuildwheelvenv/bin/pip install --disable-pip-version-check uv",
+    "/tmp/cibuildwheelvenv/bin/uvx --with 'cmake<4.0' conan profile detect --exist-ok",
+    "trap 'rm -rf /tmp/conandelme' EXIT && /tmp/cibuildwheelvenv/bin/uvx --with 'cmake<4.0'  conan install conanfile.py --build missing -of=/tmp/conandelme"
 ]
 environment-pass = ["CONAN_COMPILER_VERSION", "CONAN_USER_HOME"]
 repair-wheel-command = [
-  "delocate-listdeps {wheel}",
-  "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}",
+  "/tmp/cibuildwheelvenv/bin/uvx --from delocate delocate-listdeps {wheel}",
+  "/tmp/cibuildwheelvenv/bin/uvx --from delocate delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}",
 ]
 
 [tool.cibuildwheel.macos.environment]
 ENVTMPDIR="/tmp/conan"
 CONAN_USER_HOME="/tmp/conan"
-CONAN_DEFAULT_PROFILE_PATH="/tmp/conan/.conan/profiles/default"
-CONAN_BUILD_INFO_DIR="/tmp/conan/build/"
 
 
 [tool.cibuildwheel.linux]
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 before-all = [
     "cc --version", "cc -dumpfullversion -dumpversion",
-    "uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt)  conan profile new /tmp/conan/.conan/profiles/default --detect",
-    "if [ -z \"$CONAN_COMPILER_LIBCXX\" ];  then : ; else uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX   default; fi",
-    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
-    "uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan profile show default",
-    "uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan install ./ --build missing -pr:b=default",
-
+    "uvx --with cmake conan profile detect --exist-ok",
+    "trap 'rm -rf /tmp/conandelme' EXIT && uvx --with 'cmake<4.0' conan install conanfile.py --build missing -pr:b=default -of /tmp/conandelme",
 ]
 [tool.cibuildwheel.linux.environment]
 CONAN_USER_HOME="/tmp/conan"
-CONAN_DEFAULT_PROFILE_PATH="/tmp/conan/.conan/profiles/default"
-CONAN_BUILD_INFO_DIR="/tmp/conan/build/"
 PYTHONFAULTHANDLER="True"
 
 [tool.uv]
-cache-keys = [{ file = "pyproject.toml" }, { file = "requirements-dev.txt" }, { file = "setup.py" }, { dir = "/Users/hborcher/CLionProjects/henryborchers/uiucprescon_build" }]
+cache-keys = [{ file = "pyproject.toml" }, { file = "requirements-dev.txt" }, { file = "setup.py" }]
