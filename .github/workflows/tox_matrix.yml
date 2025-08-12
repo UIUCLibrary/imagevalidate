@@ -63,7 +63,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install uv
-
       - name: Remove Strawberry Perl (Windows only)
         if: contains(matrix.os, 'windows')
         run: Remove-Item –path C:\\Strawberry –recurse –force
@@ -81,9 +80,8 @@ jobs:
         env:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          uv run --only-group=conan conan profile detect
-          uv run --only-group=conan conan install . --build  missing 
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uv run --only-group=conan conan profile detect
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uv run --only-group=conan conan install . --build  missing 
 
       - name: Prebuild Conan packages
         env:
@@ -97,8 +95,7 @@ jobs:
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          uv run --only-group tox --with tox-uv tox run
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uv run --only-group tox --with tox-uv tox run
         env:
           TOX_ENV: "${{ steps.tox-env.outputs.result }}"
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
