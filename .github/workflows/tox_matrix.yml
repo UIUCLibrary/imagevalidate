@@ -15,19 +15,11 @@ jobs:
     env:
       PIP_EXTRA_INDEX_URL: ${{vars.PIP_EXTRA_INDEX_URL}}
       UV_EXTRA_INDEX_URL: ${{vars.PIP_EXTRA_INDEX_URL}}
+      UV_CONSTRAINT: requirements-dev.txt
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2019]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-        include:
-          - os: macos-latest
-            compiler_version: 14
-            compiler_libcxx: libc++
-          - os: ubuntu-latest
-            compiler_version: 11.4
-            compiler_libcxx: libstdc++11
-          - os: windows-2019
-            compiler_version: 16
       fail-fast: false
     name: Python ${{ matrix.python-version }} ${{ matrix.os }} build
 
@@ -37,7 +29,7 @@ jobs:
         with:
           result-encoding: string
           script: |
-            if ('${{matrix.os}}' === 'windows-2019'){
+            if ('${{matrix.os}}' === 'windows-latest'){
               return 'C:/Users/runneradmin'
             }
             if ('${{matrix.os}}' === 'ubuntu-latest'){
@@ -68,24 +60,12 @@ jobs:
             requirements/requirements-*.txt
       - name: Install dependencies
         run: |
-          pip install -r requirements-dev.txt
-      - name: Ensure conan settings has current compiler as valid
-        if: "!contains(matrix.os, 'windows')"
-        env:
-          CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
-        run: |
-          conan config init
-          python ci/docker/linux/shared/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml $(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)")
-          conan profile update settings.compiler.version=${{matrix.compiler_version}} default
-
-      - name: Remove Strawberry Perl (Windows only)
-        if: contains(matrix.os, 'windows')
-        run: Remove-Item –path C:\\Strawberry –recurse –force
+          pip install uv
       - name: Cache Conan
         id: cache-conan
         uses: actions/cache@v3
         with:
-          path: "${{steps.conan-path-script.outputs.result}}/.conan"
+          path: "${{steps.conan-path-script.outputs.result}}/.conan2"
           key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.py') }}
 
       - name: Prebuild Conan packages (Windows)
@@ -95,39 +75,37 @@ jobs:
         env:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          conan profile new default --detect
-          conan install . --build  missing --no-import
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --with cmake conan profile detect --exist-ok
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --with cmake conan install conanfile.py --build missing -of %TEMP%\ciwheelbuilder -pr:b=default
 
       - name: Prebuild Conan packages
         env:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
         if: "!contains(matrix.os, 'windows') && steps.cache-conan.outputs.cache-hit != 'true'"
         run: |
-          conan install . --build  missing --no-import
+          uvx --with cmake conan profile detect --exist-ok
+          uvx --with cmake conan install conanfile.py --build missing -of /tmp/ciwheelbuilder -pr:b=default
+          
 
       - name: Run Tox (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          tox run
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --with tox-uv tox run
         env:
           TOX_ENV: "${{ steps.tox-env.outputs.result }}"
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
       - name: Run Tox
         if: "!contains(matrix.os, 'windows')"
-        run: cc --version &&  cc -dumpfullversion -dumpversion && tox run -vvv
+        run: cc --version &&  cc -dumpfullversion -dumpversion && uvx --with tox-uv tox run -vvv
         env:
           TOX_ENV: "${{ steps.tox-env.outputs.result }}"
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
-          CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
-          CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
 
         #   CIBW_SOME_OPTION: value
       - uses: actions/upload-artifact@v4
         if:  ${{ inputs.save }}
         with:
-          name: uiucprescon.ocr-wheels
+          name: uiucprescon.imagevalidate-wheels
           path: ./wheelhouse/*.whl
 
