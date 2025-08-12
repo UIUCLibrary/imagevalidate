@@ -74,7 +74,7 @@ jobs:
         id: cache-conan
         uses: actions/cache@v3
         with:
-          path: "${{steps.conan-path-script.outputs.result}}/.conan"
+          path: "${{steps.conan-path-script.outputs.result}}/.conan2"
           key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.py') }}
 
       - name: Prebuild Conan packages (Windows)
@@ -84,16 +84,16 @@ jobs:
         env:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
         run: |
-          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --index-strategy unsafe-best-match --with cmake conan profile detect --exist-ok
-          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --index-strategy unsafe-best-match --with cmake conan install conanfile.py --build missing -of %TEMP%\ciwheelbuilder -pr:b=default
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --with cmake conan profile detect --exist-ok
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --with cmake conan install conanfile.py --build missing -of %TEMP%\ciwheelbuilder -pr:b=default
 
       - name: Prebuild Conan packages
         env:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
         if: "!contains(matrix.os, 'windows') && steps.cache-conan.outputs.cache-hit != 'true'"
         run: |
-          uvx --index-strategy unsafe-best-match --with cmake conan profile detect --exist-ok
-          uvx --index-strategy unsafe-best-match --with cmake conan install conanfile.py --build missing -of /tmp/ciwheelbuilder -pr:b=default
+          uvx --with cmake conan profile detect --exist-ok
+          uvx --with cmake conan install conanfile.py --build missing -of /tmp/ciwheelbuilder -pr:b=default
           
 
       - name: Run Tox (Windows)
