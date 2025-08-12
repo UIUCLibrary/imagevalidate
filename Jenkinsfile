@@ -868,20 +868,24 @@ pipeline {
                                                         node('docker && linux'){
                                                             def image
                                                             checkout scm
-                                                            lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                                image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv --build-arg CONAN_CENTER_PROXY_V1_URL .')
+                                                            timeout(60){
+                                                                lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
+                                                                    image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv --build-arg CONAN_CENTER_PROXY_V1_URL .')
+                                                                }
                                                             }
                                                             try{
-                                                                image.inside{
-                                                                    try{
-                                                                        sh( label: 'Running Tox',
-                                                                            script: """python3 -m venv /tmp/venv && /tmp/venv/bin/pip install --disable-pip-version-check uv
-                                                                                       /tmp/venv/bin/uv run --only-group tox --with tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
-                                                                                    """
-                                                                            )
-                                                                    } catch(e) {
-                                                                        sh(script: './venv/bin/uv python list')
-                                                                        throw e
+                                                                timeout(30){
+                                                                    image.inside{
+                                                                        try{
+                                                                            sh( label: 'Running Tox',
+                                                                                script: """python3 -m venv /tmp/venv && /tmp/venv/bin/pip install --disable-pip-version-check uv
+                                                                                           /tmp/venv/bin/uv run --only-group tox --with tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
+                                                                                        """
+                                                                                )
+                                                                        } catch(e) {
+                                                                            sh(script: './venv/bin/uv python list')
+                                                                            throw e
+                                                                        }
                                                                     }
                                                                 }
                                                             } finally {
@@ -914,13 +918,15 @@ pipeline {
                                      node('docker && windows'){
                                          try{
                                              checkout scm
-                                             docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
-                                                 bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
-                                                 envs = bat(
-                                                     label: 'Get tox environments',
-                                                     script: '@.\\venv\\Scripts\\uv run --quiet --only-group tox --with tox-uv tox list -d --no-desc',
-                                                     returnStdout: true,
-                                                 ).trim().split('\r\n')
+                                             timeout(10){
+                                                 docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
+                                                     bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
+                                                     envs = bat(
+                                                         label: 'Get tox environments',
+                                                         script: '@.\\venv\\Scripts\\uv run --quiet --only-group tox --with tox-uv tox list -d --no-desc',
+                                                         returnStdout: true,
+                                                     ).trim().split('\r\n')
+                                                }
                                             }
                                          } finally{
                                              bat "${tool(name: 'Default', type: 'git')} clean -dfx"
@@ -936,18 +942,22 @@ pipeline {
                                                          node('docker && windows'){
                                                             def image
                                                             checkout scm
-                                                            lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                                image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                            timeout(60){
+                                                                lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
+                                                                    image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                }
                                                             }
                                                             try{
                                                                 checkout scm
                                                                 try{
-                                                                    image.inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
-                                                                        powershell(label: 'Running Tox',
-                                                                             script: """uv python install cpython-${version}
-                                                                                        uv run --only-group tox --with tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
-                                                                                     """
-                                                                        )
+                                                                    timeout(30){
+                                                                        image.inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
+                                                                            powershell(label: 'Running Tox',
+                                                                                 script: """uv python install cpython-${version}
+                                                                                            uv run --only-group tox --with tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
+                                                                                         """
+                                                                            )
+                                                                        }
                                                                     }
                                                                 } finally{
                                                                      bat "${tool(name: 'Default', type: 'git')} clean -dfx"
