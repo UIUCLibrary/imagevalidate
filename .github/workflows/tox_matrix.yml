@@ -63,9 +63,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install uv
-      - name: Remove Strawberry Perl (Windows only)
-        if: contains(matrix.os, 'windows')
-        run: Remove-Item –path C:\\Strawberry –recurse –force
       - name: Cache Conan
         id: cache-conan
         uses: actions/cache@v3
