@@ -18,17 +18,14 @@ jobs:
       UV_CONSTRAINT: requirements-dev.txt
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2019]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
         include:
           - os: macos-latest
-            compiler_version: 14
             compiler_libcxx: libc++
           - os: ubuntu-latest
-            compiler_version: 11.4
             compiler_libcxx: libstdc++11
-          - os: windows-2019
-            compiler_version: 16
+          - os: windows-latest
       fail-fast: false
     name: Python ${{ matrix.python-version }} ${{ matrix.os }} build
 
@@ -38,7 +35,7 @@ jobs:
         with:
           result-encoding: string
           script: |
-            if ('${{matrix.os}}' === 'windows-2019'){
+            if ('${{matrix.os}}' === 'windows-latest'){
               return 'C:/Users/runneradmin'
             }
             if ('${{matrix.os}}' === 'ubuntu-latest'){
@@ -87,9 +84,8 @@ jobs:
         env:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          uvx --index-strategy unsafe-best-match --with cmake conan profile detect --exist-ok
-          uvx --index-strategy unsafe-best-match --with cmake conan install conanfile.py --build missing -of %TEMP%\ciwheelbuilder -pr:b=default
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --index-strategy unsafe-best-match --with cmake conan profile detect --exist-ok
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --index-strategy unsafe-best-match --with cmake conan install conanfile.py --build missing -of %TEMP%\ciwheelbuilder -pr:b=default
 
       - name: Prebuild Conan packages
         env:
@@ -104,8 +100,7 @@ jobs:
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          tox run
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --with tox-uv tox run
         env:
           TOX_ENV: "${{ steps.tox-env.outputs.result }}"
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
@@ -114,9 +109,7 @@ jobs:
         run: cc --version &&  cc -dumpfullversion -dumpversion && uvx --with tox-uv tox run -vvv
         env:
           TOX_ENV: "${{ steps.tox-env.outputs.result }}"
-          UV_CONSTRAINT: requirements-dev.txt
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
-          CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
           CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
 
         #   CIBW_SOME_OPTION: value
