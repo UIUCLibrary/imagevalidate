@@ -116,6 +116,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if:  ${{ inputs.save }}
         with:
-          name: uiucprescon.ocr-wheels
+          name: uiucprescon.imagevalidate-wheels
           path: ./wheelhouse/*.whl
 
