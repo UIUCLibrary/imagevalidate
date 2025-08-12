@@ -34,7 +34,7 @@ jobs:
         with:
           result-encoding: string
           script: |
-            if ('${{matrix.os}}' === 'windows-2019'){
+            if ('${{matrix.os}}' === 'windows-latest'){
               return 'C:/Users/runneradmin'
             }
             if ('${{matrix.os}}' === 'ubuntu-latest'){
@@ -70,7 +70,7 @@ jobs:
         id: cache-conan
         uses: actions/cache@v3
         with:
-          path: "${{steps.conan-path-script.outputs.result}}/.conan"
+          path: "${{steps.conan-path-script.outputs.result}}/.conan2"
           key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.py') }}
 
       - name: Prebuild Conan packages (Windows)
@@ -88,8 +88,8 @@ jobs:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
         if: "!contains(matrix.os, 'windows') && steps.cache-conan.outputs.cache-hit != 'true'"
         run: |
-          uv run --only-group=conan conan profile detect
-          uv run --only-group=conan conan install . --build  missing
+          uv run --only-group=conan conan profile detect --exist-ok
+          uv run --only-group=conan conan install conanfile.py --build  missing
 
       - name: Run Tox (Windows)
         if: contains(matrix.os, 'windows')
