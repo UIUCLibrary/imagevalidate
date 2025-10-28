@@ -69,20 +69,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip' # caching pip dependencies
-          cache-dependency-path: |
-            requirements-dev.txt
-            requirements/requirements-*.txt
       - name: Install dependencies
         run: |
-          pip install -r requirements-dev.txt
-      - name: Ensure conan settings has current compiler as valid
-        if: "!contains(matrix.os, 'windows')"
-        env:
-          CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
-        run: |
-          conan config init
-          python ci/docker/linux/shared/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml $(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)")
-          conan profile update settings.compiler.version=${{matrix.compiler_version}} default
+          pip install uv
 
       - name: Remove Strawberry Perl (Windows only)
         if: contains(matrix.os, 'windows')
@@ -102,28 +91,29 @@ jobs:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          conan profile new default --detect
-          conan install . --build  missing --no-import
+          uv run --only-group=conan conan profile detect
+          uv run --only-group=conan conan install . --build  missing 
 
       - name: Prebuild Conan packages
         env:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
         if: "!contains(matrix.os, 'windows') && steps.cache-conan.outputs.cache-hit != 'true'"
         run: |
-          conan install . --build  missing --no-import
+          uv run --only-group=conan conan profile detect
+          uv run --only-group=conan conan install . --build  missing
 
       - name: Run Tox (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          tox run
+          uv run --only-group tox --with tox-uv tox run
         env:
           TOX_ENV: "${{ steps.tox-env.outputs.result }}"
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
       - name: Run Tox
         if: "!contains(matrix.os, 'windows')"
-        run: cc --version &&  cc -dumpfullversion -dumpversion && tox run -vvv
+        run: cc --version &&  cc -dumpfullversion -dumpversion && uv run --only-group tox --with tox-uv tox run -vvv
         env:
           TOX_ENV: "${{ steps.tox-env.outputs.result }}"
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"

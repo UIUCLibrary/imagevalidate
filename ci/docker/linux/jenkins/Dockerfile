@@ -12,6 +12,7 @@ ARG PIP_DOWNLOAD_CACHE=/.cache/pip
 ARG UV_CACHE_DIR=/.cache/uv
 # UV Cache directory. Change this only if you need to override the default location.
 
+FROM ghcr.io/astral-sh/uv:latest AS uv_builder
 
 FROM ubuntu:22.04 AS base_image
 RUN rm -f /etc/apt/apt.conf.d/docker-clean
@@ -37,7 +38,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
      rm -rf /var/lib/apt/lists/*
 
 #==============================================================================
-FROM base_image AS DR_MEMORY_BUILDER
+FROM base_image AS dr_memory_builder
 RUN apt-get update &&  \
     apt-get install -y --no-install-recommends wget
 
@@ -48,7 +49,7 @@ RUN wget --no-verbose https://github.com/DynamoRIO/drmemory/releases/download/re
     drmemory -version
 
 
-FROM base_image AS SONAR_BUILDER
+FROM base_image AS sonar_builder
 
 RUN case $(uname -m) in \
     x86_64) URL=https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip ;; \
@@ -70,30 +71,30 @@ ARG PIP_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 
-COPY conanfile.py /tmp/conanfile.py
+COPY --from=uv_builder /uv /uvx /bin/
 COPY ci/docker/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_compiler_support_by_conan.py
-COPY requirements-dev.txt /tmp/requirements-dev.txt
 ARG UV_CACHE_DIR
 ARG PIP_DOWNLOAD_CACHE
 ARG CONAN_CENTER_PROXY_V2_URL
 ARG CONAN_HOME
-ENV UV_CONSTRAINT=/tmp/requirements-dev.txt
-
+ENV UV_PROJECT=/tmp/uv
+ENV UV_FROZEN=1
 COPY ci/docker/linux/jenkins/conan/profile.ini  ${CONAN_HOME}/profiles/default
 COPY ci/docker/shared/conan/remotes.json ${CONAN_HOME}/remotes.json
 RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=cache,target=${UV_CACHE_DIR} \
-    python3 -m venv venv && \
-    venv/bin/pip install --no-cache --disable-pip-version-check uv && \
-    venv/bin/uvx --with cmake conan profile detect --exist-ok &&  \
-    python3 /tmp/ensure_compiler_support_by_conan.py $(venv/bin/uvx --with cmake conan config home)/settings.yml  11.4 && \
+    --mount=type=bind,source=pyproject.toml,target=${UV_PROJECT}/pyproject.toml \
+    --mount=type=bind,source=uv.lock,target=${UV_PROJECT}/uv.lock \
+    --mount=type=bind,source=conanfile.py,target=/tmp/conanfile.py \
+    uv run --only-group=conan conan profile detect --exist-ok &&  \
+    python3 /tmp/ensure_compiler_support_by_conan.py $(uv run --only-group=conan conan config home)/settings.yml  11.4 && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
         echo "Setting the conan center url for building cache: ${CONAN_CENTER_PROXY_V2_URL}" && \
         cp ${CONAN_HOME}/remotes.json /tmp/remotes.json && \
-        ./venv/bin/uvx --with cmake conan remote update conan-center --url ${CONAN_CENTER_PROXY_V2_URL}; \
+        uv run --only-group=conan conan remote update conan-center --url ${CONAN_CENTER_PROXY_V2_URL}; \
     fi && \
-    venv/bin/uvx --with cmake conan install /tmp --build missing -pr:b=default && \
-    venv/bin/uvx --with cmake conan cache clean "*" -b --source --build --temp && \
+    uv run --only-group=conan conan install /tmp --build missing -pr:b=default && \
+    uv run --only-group=conan conan cache clean "*" -b --source --build --temp && \
     rm -rf venv && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
         mv -f /tmp/remotes.json ${CONAN_HOME}/remotes.json; \
@@ -108,7 +109,7 @@ FROM base_image
 # Install sonar build-wrapper
 # -----------------------------------------------------------------------------
 
-COPY --from=SONAR_BUILDER /opt/build-wrapper-linux /opt/build-wrapper-linux/
+COPY --from=sonar_builder /opt/build-wrapper-linux /opt/build-wrapper-linux/
 
 RUN case $(uname -m) in \
         x86_64) ln -s /opt/build-wrapper-linux/build-wrapper-linux-x86/build-wrapper-linux-x86-64 /usr/local/bin/build-wrapper-linux  ;; \
@@ -120,7 +121,7 @@ ENV SONAR_SCANNER_OPTS="-server"
 # -----------------------------------------------------------------------------
 # Install Doctor memory
 # -----------------------------------------------------------------------------
-COPY --from=DR_MEMORY_BUILDER /opt/drmemory /opt/drmemory/
+COPY --from=dr_memory_builder /opt/drmemory /opt/drmemory/
 RUN ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
     drmemory -version
 
@@ -132,6 +133,5 @@ ARG CONAN_USER_HOME
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 ARG CONAN_HOME
 ENV CONAN_HOME=${CONAN_HOME}
-COPY --from=conan_builder ${CONAN_HOME} ${CONAN_HOME}
-RUN chmod -R 777 ${CONAN_HOME}
+COPY --from=conan_builder --chmod=777 ${CONAN_HOME} ${CONAN_HOME}
 ENV TZ=UTC

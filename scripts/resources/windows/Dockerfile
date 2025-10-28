@@ -72,24 +72,24 @@ ARG PIP_INDEX_URL
 ARG PIP_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
-
-COPY requirements-dev.txt c:/temp/requirements-dev.txt
+ENV UV_PROJECT=c:/temp/uv
 COPY conanfile.py c:/temp/conanfile.py
+COPY pyproject.toml uv.lock ${UV_PROJECT}/
 COPY scripts/resources/windows/conan/profile.ini ${CONAN_HOME}/profiles/default
 COPY ci/docker/shared/conan/remotes.json ${CONAN_HOME}/remotes.json
 ARG CONAN_CENTER_PROXY_V2_URL
-ENV UV_INDEX_STRATEGY=unsafe-best-match`
-    UV_CONSTRAINT=c:/temp/requirements-dev.txt
-RUN uvx --with cmake conan profile detect --exist-ok ; `
+ENV UV_FROZEN=1
+RUN uv run --only-group conan --with ninja conan profile detect --exist-ok ; `
     if (${env:CONAN_CENTER_PROXY_V2_URL} -ne $(Get-Content -Raw -Path ${Env:CONAN_HOME}\remotes.json)) { `
           Copy-Item -Path "${Env:CONAN_HOME}\remotes.json" -Destination "c:\remotes.json" ; `
-          uvx --with cmake conan remote update conan-center --url ${env:CONAN_CENTER_PROXY_V2_URL}; `
+          uv run --only-group conan --with ninja conan remote update conan-center --url ${env:CONAN_CENTER_PROXY_V2_URL}; `
     }; `
-    uvx --with cmake conan install c:/temp/ --build missing -pr:b=default ; `
+    uv run --only-group conan --with ninja conan install c:/temp/ --build missing -pr:b=default --conf=tools.cmake.cmaketoolchain:generator=Ninja ; `
     if ($LASTEXITCODE -ne 0) { `
           throw \"Command 'conan install' failed with exit code: $LASTEXITCODE\"`
     } ;`
-    uvx --with cmake conan cache clean "*" -b --source --build --temp ; `
+    uv run --only-group conan --with ninja conan cache clean "*" -b --source --build --temp ; `
+    Remove-Item -Path \"${Env:UV_PROJECT}\\.venv\" -Recurse -Force ; `
     uv cache clean --no-progress ; `
     if (${env:CONAN_CENTER_PROXY_V2_URL} -ne $(Get-Content -Raw -Path ${Env:CONAN_HOME}\remotes.json)) { `
       Move-Item -Path "c:\remotes.json" -Destination "${Env:CONAN_HOME}\remotes.json" -Force ;`

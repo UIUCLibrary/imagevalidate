@@ -3,7 +3,7 @@ requires = [
     "setuptools>=77.0",
     "wheel",
     "cmake<4.0",
-    'uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.2.6/uiucprescon_build-0.2.6-py3-none-any.whl',
+    'uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.4.0/uiucprescon_build-0.4.0-py3-none-any.whl',
 #    "conan>=1.50.0,<2.0",
     "conan>=2.7",
 
@@ -39,6 +39,37 @@ classifiers = [
 Documentation = "https://www.library.illinois.edu/dccdocs/imagevalidate"
 Download = "https://github.com/UIUCLibrary/imagevalidate"
 
+[dependency-groups]
+docs = ["sphinx"]
+type_checking = [
+    "mypy",
+    "lxml",
+]
+lint = [
+    {include-group = "type_checking"},
+    "bandit",
+    "flake8",
+    "pylint",
+    "pydocstyle"
+]
+tox = ["tox"]
+test = ["coverage[toml]", "gcovr", "pytest"]
+conan = ["conan>=2.0", "cmake<4.0"]
+dev = [
+    {include-group = "conan"},
+    {include-group = "docs"},
+    {include-group = "lint"},
+    {include-group = "test"},
+]
+release = ["twine"]
+ci = [
+    {include-group = "release"},
+    {include-group = "dev"},
+    "pysonar",
+]
+package = ["delocate ; sys_platform == 'darwin'"]
+cibuildwheel = ['cibuildwheel']
+
 [tool.setuptools]
 packages = [
     "uiucprescon.imagevalidate",
@@ -66,15 +97,14 @@ markers = "integration"
 junit_family="xunit2"
 
 [tool.cibuildwheel]
-test-requires = "pytest"
+test-groups = ["test"]
 test-command = "pytest {project}/tests"
-manylinux-x86_64-image = "manylinux2014"
+manylinux-x86_64-image = "manylinux_2_28"
 build-frontend = "build[uv]"
 skip = [
-    "cp36-*",
-    "cp37-*",
     "cp38-*",
-    "pp*",
+    "cp314-*",
+    "cp314t-*",
     "*-win32",
     "*-musllinux*",
     "*-manylinux_i686"
@@ -84,51 +114,67 @@ environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_US
 
 [tool.cibuildwheel.windows]
 before-all = [
-    "pip install wheel",
-    "pip install -r requirements-dev.txt uv",
-    "conan profile new default --detect --force",
-    "conan profile update settings.compiler.version=%CONAN_COMPILER_VERSION% default",
-    "conan install ./ --build missing",
+    'echo Conan user home: %CONAN_USER_HOME%',
+    'echo Conan home: %CONAN_HOME%',
+    'uv run --only-group=conan --with ninja --isolated conan profile detect --exist-ok',
+    'uv run --only-group=conan --with ninja --isolated conan install conanfile.py --build missing --conf=tools.cmake.cmaketoolchain:generator=Ninja',
 ]
 [tool.cibuildwheel.windows.environment]
 CONAN_USER_HOME="$TEMP/conan"
 
 [tool.cibuildwheel.macos]
 before-all = [
-    "pip3 install -r requirements-dev.txt uv",
-    "conan profile new $ENVTMPDIR/.conan/profiles/default --detect --force",
-    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
-    "conan install ./ --build missing --install-folder=$CONAN_BUILD_INFO_DIR"
+    'echo "Conan user home: $CONAN_USER_HOME"',
+    'echo "Conan home: $CONAN_HOME"',
+    'uv run --only-group=conan --with ninja --isolated conan profile detect --exist-ok',
+    "uv run --only-group=conan --with ninja --isolated conan install conanfile.py -pr:h {package}/ci/cibuildwheel/conan_profiles/Macos/mac_host_profile.ini --build missing -of=/tmp/ciwheelbuilder/uiucprescon_imagevalidate/tmp --conf=tools.cmake.cmaketoolchain:generator=Ninja"
 ]
 environment-pass = ["CONAN_COMPILER_VERSION", "CONAN_USER_HOME"]
 repair-wheel-command = [
   "delocate-listdeps {wheel}",
   "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}",
 ]
-
 [tool.cibuildwheel.macos.environment]
 ENVTMPDIR="/tmp/conan"
-CONAN_USER_HOME="/tmp/conan"
+CONAN_USER_HOME="$(bash -c 'echo ${CONAN_USER_HOME:-${CIBW_CACHE_PATH:-$HOME/Library/Caches/cibuildwheel}/conan/macos}')"
+CONAN_HOME="$(bash -c 'echo ${CONAN_HOME:-${CIBW_CACHE_PATH:-$HOME/Library/Caches/cibuildwheel}/conan/macos/.conan2}')"
 CONAN_DEFAULT_PROFILE_PATH="/tmp/conan/.conan/profiles/default"
 CONAN_BUILD_INFO_DIR="/tmp/conan/build/"
-
+MACOSX_DEPLOYMENT_TARGET='11.0'
 
 [tool.cibuildwheel.linux]
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 before-all = [
     "cc --version", "cc -dumpfullversion -dumpversion",
-    "uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt)  conan profile new /tmp/conan/.conan/profiles/default --detect",
-    "if [ -z \"$CONAN_COMPILER_LIBCXX\" ];  then : ; else uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX   default; fi",
-    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
-    "uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan profile show default",
-    "uvx --index-strategy=unsafe-first-match --with $(grep ^conan requirements-dev.txt) conan install ./ --build missing -pr:b=default",
+    'echo "Conan user home: $CONAN_USER_HOME"',
+    'echo "Conan home: $CONAN_HOME"',
+    'uv run --only-group=conan --with ninja --isolated conan profile detect --exist-ok',
+    'uv run --only-group=conan --with ninja --isolated conan install conanfile.py -pr:h {package}/ci/cibuildwheel/conan_profiles/Linux/linux_build_profile.ini --build missing -of /tmp/ciwheelbuilder/uiucprescon_orc/tmp --conf=tools.cmake.cmaketoolchain:generator=Ninja',
 
 ]
 [tool.cibuildwheel.linux.environment]
-CONAN_USER_HOME="/tmp/conan"
-CONAN_DEFAULT_PROFILE_PATH="/tmp/conan/.conan/profiles/default"
-CONAN_BUILD_INFO_DIR="/tmp/conan/build/"
 PYTHONFAULTHANDLER="True"
+CONAN_USER_HOME="/tmp/conan/manylinux"
+CONAN_HOME="/tmp/conan/manylinux/.conan2"
 
 [tool.uv]
-cache-keys = [{ file = "pyproject.toml" }, { file = "requirements-dev.txt" }, { file = "setup.py" }, { dir = "/Users/hborcher/CLionProjects/henryborchers/uiucprescon_build" }]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "conanfile.py" },
+    { file = "setup.py" },
+    { file = "uiucprescon/imagevalidate/CMakeLists.txt" },
+    { file = "uiucprescon/**/*.h" },
+    { file = "uiucprescon/**/*.cpp" }
+]
+
+[tool.uv.sources]
+py3exiv2bind = {index = "uiuc_prescon_python"}
+
+[[tool.uv.index]]
+url = "https://pypi.org/simple"
+default = true
+
+[[tool.uv.index]]
+name = "uiuc_prescon_python"
+url = "https://nexus.library.illinois.edu/repository/uiuc_prescon_python/simple"
+explicit = true
