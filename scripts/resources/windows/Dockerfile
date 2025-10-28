@@ -19,7 +19,7 @@ ARG chocolateyVersion
 FROM ${FROM_IMAGE} AS certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
-FROM ${FROM_IMAGE} AS CHOCOLATEY_BASE
+FROM ${FROM_IMAGE} AS chocolatey_base
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
@@ -59,13 +59,13 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     { `
         throw 'nasm.exe not found' ; `
     }; `
+    uv python update-shell ; `
     Write-Host "Finished install packages with Chocolatey"
-
 
 RUN New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
     -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
-FROM CHOCOLATEY_BASE AS CONAN_BUILDER
+FROM chocolatey_base AS conan_builder
 ARG CONAN_HOME
 
 ARG PIP_INDEX_URL
@@ -96,14 +96,14 @@ RUN uvx --with cmake conan profile detect --exist-ok ; `
     }
 # ==============================================================================
 
-FROM CHOCOLATEY_BASE
+FROM chocolatey_base
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
 
 ARG CONAN_USER_HOME
 ARG CONAN_HOME
-COPY --from=CONAN_BUILDER ${CONAN_HOME}/ ${CONAN_HOME}/
+COPY --from=conan_builder ${CONAN_HOME}/ ${CONAN_HOME}/
 ARG UV_CACHE_DIR
 ARG PIP_DOWNLOAD_CACHE
 
