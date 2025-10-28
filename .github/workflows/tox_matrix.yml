@@ -8,6 +8,12 @@ on:
         default: false
         type: boolean
 
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
 name: Multi-platform Compatibility Test (Tox)
 jobs:
   build:
