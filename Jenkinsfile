@@ -5,9 +5,9 @@ library identifier: 'JenkinsPythonHelperLibrary@2024.2.0', retriever: modernSCM(
    ])
 
 
-def SUPPORTED_MAC_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
-def SUPPORTED_LINUX_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
-def SUPPORTED_WINDOWS_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
+def SUPPORTED_MAC_VERSIONS = ['3.10', '3.11', '3.12', '3.13']
+def SUPPORTED_LINUX_VERSIONS = ['3.10', '3.11', '3.12', '3.13']
+def SUPPORTED_WINDOWS_VERSIONS = ['3.10', '3.11', '3.12', '3.13']
 def SHARED_PIP_CACHE_VOLUME_NAME = 'pipcache'
 def installMSVCRuntime(cacheLocation){
     def cachedFile = "${cacheLocation}\\vc_redist.x64.exe".replaceAll(/\\\\+/, '\\\\')

@@ -18,7 +18,7 @@ version = "0.1.10.dev4"
 dependencies = [
     "py3exiv2bind>=0.1.9"
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 readme = "README.rst"
 license = "NCSA"
 license-files = ["LICENSE"]
@@ -33,8 +33,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Topic :: Multimedia :: Graphics",
     "Programming Language :: C++",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
 ]
 [project.urls]
 Documentation = "https://www.library.illinois.edu/dccdocs/imagevalidate"
