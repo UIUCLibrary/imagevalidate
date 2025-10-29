@@ -23,17 +23,8 @@ jobs:
       UV_EXTRA_INDEX_URL: ${{vars.PIP_EXTRA_INDEX_URL}}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2019]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.10', '3.11', '3.12', '3.13']
-        include:
-          - os: macos-latest
-            compiler_version: 14
-            compiler_libcxx: libc++
-          - os: ubuntu-latest
-            compiler_version: 11.4
-            compiler_libcxx: libstdc++11
-          - os: windows-2019
-            compiler_version: 16
       fail-fast: false
     name: Python ${{ matrix.python-version }} ${{ matrix.os }} build
 
@@ -117,8 +108,6 @@ jobs:
         env:
           TOX_ENV: "${{ steps.tox-env.outputs.result }}"
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
-          CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
-          CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
 
         #   CIBW_SOME_OPTION: value
       - uses: actions/upload-artifact@v4
