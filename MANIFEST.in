@@ -10,7 +10,7 @@ include cmake/fixup.cmake
 # C++ Source files
 include CMakeLists.txt
 include conanfile.py
-recursive-include uiucprescon/imagevalidate CMakeLists.txt *.cpp *.h
+recursive-include src/uiucprescon/imagevalidate CMakeLists.txt *.cpp *.h
 
 # Tox configuration setting
 include tox.ini

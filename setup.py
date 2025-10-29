@@ -21,9 +21,9 @@ class BuildPybind11Extensions(BuildPybind11Extension):
 open_jpeg_extension = Pybind11Extension(
     "uiucprescon.imagevalidate.openjp2wrap",
     sources=[
-        "uiucprescon/imagevalidate/glue.cpp",
-        "uiucprescon/imagevalidate/openjp2wrap.cpp",
-        "uiucprescon/imagevalidate/opj_colorspace_checker.cpp"
+        "src/uiucprescon/imagevalidate/glue.cpp",
+        "src/uiucprescon/imagevalidate/openjp2wrap.cpp",
+        "src/uiucprescon/imagevalidate/opj_colorspace_checker.cpp"
     ],
     language="c++",
     libraries=["openjp2"],

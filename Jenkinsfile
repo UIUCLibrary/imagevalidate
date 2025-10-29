@@ -589,7 +589,7 @@ pipeline {
                                                        ]
                                                    )
                                                    sh '''. ./venv/bin/activate
-                                                         mkdir -p reports && gcovr --filter uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml
+                                                         mkdir -p reports && gcovr --filter src/uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml
                                                       '''
                                                    stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
                                                 }
@@ -598,7 +598,7 @@ pipeline {
                                         stage('Clang Tidy Analysis') {
                                             steps{
                                                 tee('logs/clang-tidy.log') {
-                                                    sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary $(which clang-tidy) -p $WORKSPACE/build/cpp/ ./uiucprescon/imagevalidate' )
+                                                    sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary $(which clang-tidy) -p $WORKSPACE/build/cpp/ ./src/uiucprescon/imagevalidate' )
                                                 }
                                             }
                                             post{
@@ -663,7 +663,7 @@ pipeline {
                                                     sh(
                                                         label: 'Running Pytest',
                                                         script:'''mkdir -p reports/coverage
-                                                                  ./venv/bin/uv run coverage run --parallel-mode --source=uiucprescon -m pytest --junitxml=reports/pytest.xml --integration
+                                                                  ./venv/bin/uv run coverage run --parallel-mode --source=src -m pytest --junitxml=reports/pytest.xml --integration
                                                                '''
                                                    )
                                                }
@@ -678,7 +678,7 @@ pipeline {
                                            steps {
                                                catchError(buildResult: 'SUCCESS', message: 'Doctest found issues', stageResult: 'UNSTABLE') {
                                                    sh( label: 'Running Doctest',
-                                                       script: '''./venv/bin/uv run coverage run --parallel-mode --source=uiucprescon -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v
+                                                       script: '''./venv/bin/uv run coverage run --parallel-mode --source=src -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v
                                                                   mkdir -p reports
                                                                   mv build/docs/output.txt reports/doctest.txt
                                                                   '''
@@ -688,7 +688,7 @@ pipeline {
                                         }
                                         stage('Task Scanner'){
                                             steps{
-                                                recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'uiucprescon/**/*.py', normalTags: 'TODO')])
+                                                recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'src/**/*.py', normalTags: 'TODO')])
                                             }
                                         }
                                         stage('Run MyPy Static Analysis') {
@@ -697,7 +697,7 @@ pipeline {
                                                     sh(
                                                         label: 'Running Mypy',
                                                         script: '''mkdir -p logs
-                                                                   ./venv/bin/uv run mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log
+                                                                   ./venv/bin/uv run mypy -p uiucprescon.imagevalidate --html-report reports/mypy/html > logs/mypy.log
                                                                 '''
                                                    )
                                                 }
@@ -714,7 +714,7 @@ pipeline {
                                                 catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
                                                     sh '''. ./venv/bin/activate
                                                           mkdir -p logs
-                                                          flake8 uiucprescon --format=pylint --tee --output-file=logs/flake8.log
+                                                          flake8 src --format=pylint --tee --output-file=logs/flake8.log
                                                           '''
                                                 }
                                             }
@@ -730,7 +730,7 @@ pipeline {
                                             sh(label: 'combining coverage data',
                                                script: '''./venv/bin/uv run coverage combine
                                                           ./venv/bin/uv run coverage xml -o ./reports/coverage-python.xml
-                                                          ./venv/bin/uv run gcovr --filter uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
+                                                          ./venv/bin/uv run gcovr --filter src/uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
                                                           '''
                                             )
                                             recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage*.xml']])

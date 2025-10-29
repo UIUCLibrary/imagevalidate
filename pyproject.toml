@@ -75,6 +75,8 @@ packages = [
     "uiucprescon.imagevalidate",
     "uiucprescon.imagevalidate.profiles",
 ]
+package-dir = {"uiucprescon.imagevalidate" = "src/uiucprescon/imagevalidate"}
+
 include-package-data = false
 
 [tool.setuptools.package-data]
@@ -84,10 +86,9 @@ include-package-data = false
 relative_files = true
 branch = true
 
-
 [tool.mypy]
 ignore_missing_imports = true
-
+mypy_path = "src"
 
 [tool.pytest.ini_options]
 testpaths = "tests"
@@ -162,9 +163,9 @@ cache-keys = [
     { file = "pyproject.toml" },
     { file = "conanfile.py" },
     { file = "setup.py" },
-    { file = "uiucprescon/imagevalidate/CMakeLists.txt" },
-    { file = "uiucprescon/**/*.h" },
-    { file = "uiucprescon/**/*.cpp" }
+    { file = "src/uiucprescon/imagevalidate/CMakeLists.txt" },
+    { file = "src/**/*.h" },
+    { file = "src/**/*.cpp" }
 ]
 
 [tool.uv.sources]

@@ -15,6 +15,6 @@ FetchContent_Declare(libpybind11
 
 FetchContent_MakeAvailable(libpybind11)
 
-add_subdirectory(uiucprescon/imagevalidate)
+add_subdirectory(src/uiucprescon/imagevalidate)
 include(CTest)
 add_subdirectory(tests)
