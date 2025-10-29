@@ -62,7 +62,6 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
 RUN New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
     -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
-FROM chocolatey_base AS CONAN_BUILDER
 FROM chocolatey_base AS conan_builder
 ARG CONAN_HOME
 

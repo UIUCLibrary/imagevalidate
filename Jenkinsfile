@@ -846,13 +846,15 @@ pipeline {
                                     node('docker && linux'){
                                         try{
                                             checkout scm
-                                            docker.image('python').inside{
-                                                sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
-                                                envs = sh(
-                                                    label: 'Get tox environments',
-                                                    script: './venv/bin/uv run --quiet --only-group tox --with tox-uv --isolated tox list -d --no-desc',
-                                                    returnStdout: true,
-                                                ).trim().split('\n')
+                                            timeout(10){
+                                                docker.image('python').inside{
+                                                    sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
+                                                    envs = sh(
+                                                        label: 'Get tox environments',
+                                                        script: './venv/bin/uv run --quiet --only-group tox --with tox-uv --isolated tox list -d --no-desc',
+                                                        returnStdout: true,
+                                                    ).trim().split('\n')
+                                                }
                                             }
                                         } finally{
                                             sh "${tool(name: 'Default', type: 'git')} clean -dfx"
