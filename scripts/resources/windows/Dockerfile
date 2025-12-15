@@ -71,9 +71,10 @@ ARG UV_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
 ENV UV_PROJECT=c:/temp/uv
 COPY conanfile.py c:/temp/conanfile.py
-COPY pyproject.toml uv.lock ${UV_PROJECT}/
+COPY pyproject.toml uv.lock conan.lock ${UV_PROJECT}/
 COPY scripts/resources/windows/conan/profile.ini ${CONAN_HOME}/profiles/default
 COPY ci/docker/shared/conan/remotes.json ${CONAN_HOME}/remotes.json
+
 ARG CONAN_CENTER_PROXY_V2_URL
 ENV UV_FROZEN=1
 RUN uv run --only-group conan --with ninja conan profile detect --exist-ok ; `

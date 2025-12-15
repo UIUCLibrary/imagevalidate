@@ -46,6 +46,7 @@ RUN --mount=type=cache,target=${UV_CACHE_DIR} \
     --mount=type=bind,source=pyproject.toml,target=${UV_PROJECT}/pyproject.toml \
     --mount=type=bind,source=uv.lock,target=${UV_PROJECT}/uv.lock \
     --mount=type=bind,source=conanfile.py,target=/tmp/conanfile.py \
+    --mount=type=bind,source=conan.lock,target=${UV_PROJECT}/conan.lock \
     uv run --only-group=conan conan profile detect --exist-ok &&  \
     cat $(uv run --only-group=conan conan config home)/settings.yml && \
     uv run --only-group=conan conan config home && \

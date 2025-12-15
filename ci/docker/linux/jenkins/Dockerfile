@@ -95,6 +95,7 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=bind,source=pyproject.toml,target=${UV_PROJECT}/pyproject.toml \
     --mount=type=bind,source=uv.lock,target=${UV_PROJECT}/uv.lock \
     --mount=type=bind,source=conanfile.py,target=/tmp/conanfile.py \
+    --mount=type=bind,source=conan.lock,target=${UV_PROJECT}/conan.lock \
     --mount=type=tmpfs,target=${UV_PROJECT_ENVIRONMENT} \
     uv run --only-group=conan conan profile detect --exist-ok &&  \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
