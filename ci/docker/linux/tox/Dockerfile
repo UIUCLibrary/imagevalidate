@@ -13,18 +13,17 @@ ARG UV_EXTRA_INDEX_URL
 
 FROM ghcr.io/astral-sh/uv:latest AS uv_builder
 
-FROM ubuntu:22.04 AS wheel_builder_base
-COPY ci/docker/linux/tox/apt-packages.txt /tmp/apt-packages.txt
+FROM ubuntu:24.04 AS wheel_builder_base
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN rm -f /etc/apt/apt.conf.d/docker-clean
-RUN --mount=type=cache,target=/var/cache/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    --mount=type=bind,source=ci/docker/linux/tox/apt-packages.txt,target=/tmp/apt-packages.txt \
     apt-get update && \
     apt-get install -yqq --no-install-recommends software-properties-common gpg-agent && \
     add-apt-repository ppa:deadsnakes/ppa && \
     DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -yqq install --no-install-recommends tzdata && \
     apt-get update && \
-     < /tmp/apt-packages.txt xargs apt-get install -yqq --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
+     < /tmp/apt-packages.txt xargs apt-get install -yqq --no-install-recommends
 
 ARG CONAN_USER_HOME
 RUN mkdir -p ${CONAN_USER_HOME}
@@ -33,23 +32,21 @@ FROM wheel_builder_base AS conan_builder
 COPY --from=uv_builder /uv /uvx /bin/
 ARG CONAN_USER_HOME
 ARG CONAN_HOME
-COPY ci/docker/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_compiler_support_by_conan.py
 COPY ci/docker/shared/conan/remotes.json ${CONAN_HOME}/remotes.json
 COPY conanfile.py /tmp/conanfile.py
 ARG CONAN_CENTER_PROXY_V2_URL
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
-ARG PIP_DOWNLOAD_CACHE
 ARG UV_CACHE_DIR
 ENV UV_PROJECT=/tmp/uv
 ENV UV_FROZEN=1
-RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
-    --mount=type=cache,target=${UV_CACHE_DIR} \
+ENV UV_PROJECT_ENVIRONMENT=/tmp/uv/venv
+RUN --mount=type=cache,target=${UV_CACHE_DIR} \
+    --mount=type=tmpfs,target=${UV_PROJECT_ENVIRONMENT} \
     --mount=type=bind,source=pyproject.toml,target=${UV_PROJECT}/pyproject.toml \
     --mount=type=bind,source=uv.lock,target=${UV_PROJECT}/uv.lock \
     --mount=type=bind,source=conanfile.py,target=/tmp/conanfile.py \
+    --mount=type=bind,source=conan.lock,target=${UV_PROJECT}/conan.lock \
     uv run --only-group=conan conan profile detect --exist-ok &&  \
     cat $(uv run --only-group=conan conan config home)/settings.yml && \
     uv run --only-group=conan conan config home && \
@@ -68,7 +65,7 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
 
 FROM wheel_builder_base
 
-
+COPY --from=uv_builder /uv /uvx /bin/
 ARG CONAN_USER_HOME
 ARG CONAN_HOME
 COPY --from=conan_builder --chmod=777 ${CONAN_HOME} ${CONAN_HOME}

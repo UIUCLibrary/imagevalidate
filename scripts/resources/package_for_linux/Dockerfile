@@ -69,6 +69,7 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=bind,source=pyproject.toml,target=${UV_PROJECT}/pyproject.toml \
     --mount=type=bind,source=uv.lock,target=${UV_PROJECT}/uv.lock \
     --mount=type=bind,source=conanfile.py,target=/tmp/conanfile.py \
+    --mount=type=bind,source=conan.lock,target=/tmp/conan.lock \
     uv run --only-group conan --with ninja conan profile detect --exist-ok &&  \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
       echo "Setting the conan center url for building cache: ${CONAN_CENTER_PROXY_V2_URL}" && \

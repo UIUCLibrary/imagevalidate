@@ -9,7 +9,7 @@ include cmake/fixup.cmake
 
 # C++ Source files
 include CMakeLists.txt
-include conanfile.py
+include conanfile.py conan.lock
 recursive-include src/uiucprescon/imagevalidate CMakeLists.txt *.cpp *.h
 
 # Tox configuration setting

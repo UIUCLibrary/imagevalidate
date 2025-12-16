@@ -1,0 +1,9 @@
+{
+    "version": "0.5",
+    "requires": [
+        "openjpeg/2.3.1#ada21840f723c5410056aa68f0b23c61%1765835638.220325"
+    ],
+    "build_requires": [],
+    "python_requires": [],
+    "config_requires": []
+}

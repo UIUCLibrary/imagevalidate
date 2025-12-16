@@ -68,7 +68,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: "${{steps.conan-path-script.outputs.result}}/.conan2"
-          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.py') }}
+          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.py') }}-${{ hashFiles('conan.lock') }}
 
       - name: Prebuild Conan packages (Windows)
         if: |
@@ -85,8 +85,8 @@ jobs:
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
         if: "!contains(matrix.os, 'windows') && steps.cache-conan.outputs.cache-hit != 'true'"
         run: |
-          uvx --with cmake conan profile detect --exist-ok
-          uvx --with cmake conan install conanfile.py --build missing -of /tmp/ciwheelbuilder -pr:b=default
+          uv run --only-group=conan --frozen conan profile detect --exist-ok
+          uv run --only-group=conan --frozen conan install conanfile.py --build missing -of /tmp/ciwheelbuilder -pr:b=default
           
 
       - name: Run Tox (Windows)

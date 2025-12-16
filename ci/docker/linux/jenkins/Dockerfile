@@ -14,9 +14,9 @@ ARG UV_CACHE_DIR=/.cache/uv
 
 FROM ghcr.io/astral-sh/uv:latest AS uv_builder
 
-FROM ubuntu:22.04 AS base_image
-RUN rm -f /etc/apt/apt.conf.d/docker-clean
-RUN --mount=type=cache,target=/var/cache/apt \
+FROM ubuntu:24.04 AS base_image
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
     DEBIAN_FRONTEND="noninteractive" apt-get update &&  \
     apt-get install -yqq software-properties-common gpg-agent --no-install-recommends && \
     apt-get -yqq install tzdata && \
@@ -32,14 +32,14 @@ RUN --mount=type=cache,target=/var/cache/apt \
         python3-pip \
         python3-venv \
         ca-certificates \
-        software-properties-common \
-        jq \
-        unzip && \
-     rm -rf /var/lib/apt/lists/*
+        software-properties-common
+
 
 #==============================================================================
 FROM base_image AS dr_memory_builder
-RUN apt-get update &&  \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update &&  \
     apt-get install -y --no-install-recommends wget
 
 WORKDIR /drmemory
@@ -50,6 +50,10 @@ RUN wget --no-verbose https://github.com/DynamoRIO/drmemory/releases/download/re
 
 
 FROM base_image AS sonar_builder
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update &&  \
+    apt-get install -yqq --no-install-recommends unzip
 
 RUN case $(uname -m) in \
     x86_64) URL=https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip ;; \
@@ -65,6 +69,11 @@ RUN case $(uname -m) in \
 
 
 FROM base_image AS conan_builder
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    DEBIAN_FRONTEND="noninteractive" apt-get update &&  \
+    apt-get install -yqq --no-install-recommends jq
+
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
@@ -72,13 +81,13 @@ ARG UV_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 
 COPY --from=uv_builder /uv /uvx /bin/
-COPY ci/docker/linux/shared/ensure_compiler_support_by_conan.py /tmp/ensure_compiler_support_by_conan.py
 ARG UV_CACHE_DIR
 ARG PIP_DOWNLOAD_CACHE
 ARG CONAN_CENTER_PROXY_V2_URL
 ARG CONAN_HOME
 ENV UV_PROJECT=/tmp/uv
 ENV UV_FROZEN=1
+ENV UV_PROJECT_ENVIRONMENT=/tmp/uv/venv
 COPY ci/docker/linux/jenkins/conan/profile.ini  ${CONAN_HOME}/profiles/default
 COPY ci/docker/shared/conan/remotes.json ${CONAN_HOME}/remotes.json
 RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
@@ -86,8 +95,9 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=bind,source=pyproject.toml,target=${UV_PROJECT}/pyproject.toml \
     --mount=type=bind,source=uv.lock,target=${UV_PROJECT}/uv.lock \
     --mount=type=bind,source=conanfile.py,target=/tmp/conanfile.py \
+    --mount=type=bind,source=conan.lock,target=${UV_PROJECT}/conan.lock \
+    --mount=type=tmpfs,target=${UV_PROJECT_ENVIRONMENT} \
     uv run --only-group=conan conan profile detect --exist-ok &&  \
-    python3 /tmp/ensure_compiler_support_by_conan.py $(uv run --only-group=conan conan config home)/settings.yml  11.4 && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
         echo "Setting the conan center url for building cache: ${CONAN_CENTER_PROXY_V2_URL}" && \
         cp ${CONAN_HOME}/remotes.json /tmp/remotes.json && \
@@ -95,7 +105,6 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     fi && \
     uv run --only-group=conan conan install /tmp --build missing -pr:b=default && \
     uv run --only-group=conan conan cache clean "*" -b --source --build --temp && \
-    rm -rf venv && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
         mv -f /tmp/remotes.json ${CONAN_HOME}/remotes.json; \
     fi
@@ -104,7 +113,7 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
 # shared files are needed to run the Build C++ Tests stage
 
 FROM base_image
-
+COPY --from=uv_builder /uv /uvx /bin/
 # -----------------------------------------------------------------------------
 # Install sonar build-wrapper
 # -----------------------------------------------------------------------------
