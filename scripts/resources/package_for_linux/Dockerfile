@@ -26,7 +26,7 @@ FROM ${manylinux_image} AS base
 RUN --mount=type=cache,target=/var/cache/yum \
     yum install -y lndir
 
-# This needed to use uvx with --constraint option
+# This needed to use uv run with --only-group option
 RUN --mount=type=cache,target=/path/to/pipx/cache \
     pipx install "uv>=0.6.5" --force
 
@@ -76,7 +76,7 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
       cp ${CONAN_HOME}/remotes.json /tmp/remotes.json && \
       uv run --only-group conan --with ninja conan remote update conan-center --url ${CONAN_CENTER_PROXY_V2_URL}; \
     fi && \
-    uv run --only-group conan --with ninja conan install /tmp --build missing --conf=tools.cmake.cmaketoolchain:generator=Ninja && \
+    uv run --only-group conan --with ninja conan install /tmp --build missing --conf=tools.cmake.cmaketoolchain:generator=Ninja -c tools.graph:skip_test=True && \
     uv run --only-group conan --with ninja conan cache clean "*" -b --source --build --temp && \
     uv cache prune && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
@@ -98,4 +98,8 @@ RUN chmod -R 777 ${CONAN_HOME} && \
     chmod -R 777 ${PIP_DOWNLOAD_CACHE} && \
     mkdir -p ${UV_CACHE_DIR} && \
     chmod -R 777 ${UV_CACHE_DIR}
+
 LABEL type="jenkins"
+
+# To help mark the image as a CI image so it can be cleaned up more easily
+LABEL purpose=ci

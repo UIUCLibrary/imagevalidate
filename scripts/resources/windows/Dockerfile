@@ -65,13 +65,11 @@ RUN New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
 FROM chocolatey_base AS conan_builder
 ARG CONAN_HOME
 
-ARG PIP_INDEX_URL
-ARG PIP_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
 ENV UV_PROJECT=c:/temp/uv
-COPY conanfile.py c:/temp/conanfile.py
-COPY pyproject.toml uv.lock conan.lock ${UV_PROJECT}/
+ENV UV_PROJECT_ENVIRONMENT=c:\temp\uv\.venv
+COPY pyproject.toml uv.lock conan.lock conanfile.py ${UV_PROJECT}/
 COPY scripts/resources/windows/conan/profile.ini ${CONAN_HOME}/profiles/default
 COPY ci/docker/shared/conan/remotes.json ${CONAN_HOME}/remotes.json
 
@@ -82,12 +80,12 @@ RUN uv run --only-group conan --with ninja conan profile detect --exist-ok ; `
           Copy-Item -Path "${Env:CONAN_HOME}\remotes.json" -Destination "c:\remotes.json" ; `
           uv run --only-group conan --with ninja conan remote update conan-center --url ${env:CONAN_CENTER_PROXY_V2_URL}; `
     }; `
-    uv run --only-group conan --with ninja conan install c:/temp/ --build missing -pr:b=default --conf=tools.cmake.cmaketoolchain:generator=Ninja ; `
+    uv run --only-group conan --with ninja conan install ${env:UV_PROJECT}/conanfile.py --build missing -pr:b=default --conf=tools.cmake.cmaketoolchain:generator=Ninja -c tools.build:skip_test=True -c tools.graph:skip_test=True ; `
     if ($LASTEXITCODE -ne 0) { `
           throw \"Command 'conan install' failed with exit code: $LASTEXITCODE\"`
     } ;`
     uv run --only-group conan --with ninja conan cache clean "*" -b --source --build --temp ; `
-    Remove-Item -Path \"${Env:UV_PROJECT}\\.venv\" -Recurse -Force ; `
+    Remove-Item -Path \"${Env:UV_PROJECT_ENVIRONMENT}\" -Recurse -Force ; `
     uv cache clean --no-progress ; `
     if (${env:CONAN_CENTER_PROXY_V2_URL} -ne $(Get-Content -Raw -Path ${Env:CONAN_HOME}\remotes.json)) { `
       Move-Item -Path "c:\remotes.json" -Destination "${Env:CONAN_HOME}\remotes.json" -Force ;`
@@ -114,3 +112,5 @@ ENV CONAN_USER_HOME=${CONAN_USER_HOME}`
     UV_CACHE_DIR=${UV_CACHE_DIR}`
     PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 
+# To help mark the image as a CI image so it can be cleaned up more easily
+LABEL purpose=ci

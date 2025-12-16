@@ -2,7 +2,7 @@
 // Created by Borchers, Henry Samuel on 9/13/18.
 //
 
-#include "catch2/catch.hpp"
+#include "catch2/catch_test_macros.hpp"
 #include "opj_colorspace_checker.h"
 
 
