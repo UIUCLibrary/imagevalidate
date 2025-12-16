@@ -589,7 +589,7 @@ pipeline {
                                                        ]
                                                    )
                                                    sh '''. ./venv/bin/activate
-                                                         mkdir -p reports && gcovr --filter src/uiucprescon/imagevalidate --print-summary  --xml -o reports/coverage_cpp.xml
+                                                         mkdir -p reports && gcovr --filter src/uiucprescon/imagevalidate --exclude-directories build/cpp/_deps/ --print-summary  --xml -o reports/coverage_cpp.xml
                                                       '''
                                                    stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
                                                 }
@@ -730,7 +730,7 @@ pipeline {
                                             sh(label: 'combining coverage data',
                                                script: '''./venv/bin/uv run coverage combine
                                                           ./venv/bin/uv run coverage xml -o ./reports/coverage-python.xml
-                                                          ./venv/bin/uv run gcovr --filter src/uiucprescon/imagevalidate --print-summary --xml -o reports/coverage-c-extension.xml
+                                                          ./venv/bin/uv run gcovr --filter src/uiucprescon/imagevalidate --exclude-directories build/cpp/_deps/ --print-summary --xml -o reports/coverage-c-extension.xml
                                                           '''
                                             )
                                             recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage*.xml']])
