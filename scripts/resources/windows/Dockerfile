@@ -108,7 +108,6 @@ RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force | Out-Null ;
 
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}`
     CONAN_HOME=${CONAN_HOME}`
-    UV_INDEX_STRATEGY=unsafe-best-match`
     UV_CACHE_DIR=${UV_CACHE_DIR}`
     PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 
