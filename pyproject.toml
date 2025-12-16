@@ -117,7 +117,7 @@ before-all = [
     'echo Conan user home: %CONAN_USER_HOME%',
     'echo Conan home: %CONAN_HOME%',
     'uv run --only-group=conan --with ninja --isolated conan profile detect --exist-ok',
-    'uv run --only-group=conan --with ninja --isolated conan install conanfile.py --build missing --conf=tools.cmake.cmaketoolchain:generator=Ninja',
+    'uv run --only-group=conan --with ninja --isolated conan install conanfile.py --build missing --conf=tools.cmake.cmaketoolchain:generator=Ninja -c tools.graph:skip_test=True',
 ]
 [tool.cibuildwheel.windows.environment]
 CONAN_USER_HOME="$TEMP/conan"
@@ -127,7 +127,7 @@ before-all = [
     'echo "Conan user home: $CONAN_USER_HOME"',
     'echo "Conan home: $CONAN_HOME"',
     'uv run --only-group=conan --with ninja --isolated conan profile detect --exist-ok',
-    "uv run --only-group=conan --with ninja --isolated conan install conanfile.py -pr:h {package}/ci/cibuildwheel/conan_profiles/Macos/mac_host_profile.ini --build missing -of=/tmp/ciwheelbuilder/uiucprescon_imagevalidate/tmp --conf=tools.cmake.cmaketoolchain:generator=Ninja"
+    "uv run --only-group=conan --with ninja --isolated conan install conanfile.py -pr:h {package}/ci/cibuildwheel/conan_profiles/Macos/mac_host_profile.ini --build missing -of=/tmp/ciwheelbuilder/uiucprescon_imagevalidate/tmp --conf=tools.cmake.cmaketoolchain:generator=Ninja -c tools.graph:skip_test=True"
 ]
 environment-pass = ["CONAN_COMPILER_VERSION", "CONAN_USER_HOME"]
 repair-wheel-command = [

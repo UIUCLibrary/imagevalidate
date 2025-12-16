@@ -12,7 +12,10 @@ class ImageValidate(ConanFile):
     default_options = {
         # "openjpeg:shared": True
     }
-    #
+
+    def build_requirements(self):
+        self.test_requires('catch2/3.11.0')
+
     def imports(self):
         self.copy("*.dll", dst=".", src="bin")  # From bin to bin
         self.copy("*.dylib", dst=".", src="lib")  # From bin to bin

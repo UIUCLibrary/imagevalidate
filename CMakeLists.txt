@@ -3,6 +3,7 @@ project(OpenJpegWrapper)
 cmake_policy(SET CMP0135 OLD)
 include(FetchContent)
 find_package(Python3 REQUIRED COMPONENTS Development)
+find_package(Catch2 QUIET)
 
 if(NOT CONAN_OPENJPEG_ROOT)
     find_package(OpenJPEG)

@@ -55,7 +55,7 @@ RUN --mount=type=cache,target=${UV_CACHE_DIR} \
         cp ${CONAN_HOME}/remotes.json /tmp/remotes.json && \
         uv run --only-group=conan conan remote update conan-center --url ${CONAN_CENTER_PROXY_V2_URL}; \
     fi && \
-    uv run --only-group=conan conan install /tmp --build missing --build=openjpeg && \
+    uv run --only-group=conan conan install /tmp --build missing -c tools.graph:skip_test=True && \
     uv run --only-group=conan conan cache clean "*" -b --source --build --temp && \
     rm -rf venv && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
@@ -79,3 +79,5 @@ RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
     mkdir -p ${UV_CACHE_DIR} && \
     chmod -R 777 ${UV_CACHE_DIR}
 
+# To help mark the image as a CI image so it can be cleaned up more easily
+LABEL purpose=ci

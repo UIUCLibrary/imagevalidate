@@ -331,7 +331,12 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPipCa
                                                     archiveArtifacts artifacts: 'dist/*.whl'
                                                 } finally{
                                                     sh "${tool(name: 'Default', type: 'git')} clean -dfx"
-                                                    sh "docker rmi --no-prune ${dockerImageName}"
+                                                    sh(label:'untagging image',
+                                                       script: """if [[ ! -z \$(docker images -q ${dockerImageName}) ]]; then
+                                                                     docker rmi ${dockerImageName}
+                                                                  fi
+                                                               """
+                                                       )
                                                 }
                                             }
                                         }
