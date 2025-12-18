@@ -468,13 +468,7 @@ pipeline {
                                     steps{
                                         sh(
                                             label: 'Create virtual environment',
-                                            script: '''python3 -m venv bootstrap_uv
-                                                       bootstrap_uv/bin/pip install --disable-pip-version-check uv
-                                                       bootstrap_uv/bin/uv venv venv
-                                                       UV_PROJECT_ENVIRONMENT=./venv bootstrap_uv/bin/uv sync --frozen --group ci --no-install-project
-                                                       bootstrap_uv/bin/uv pip install --python=./venv/bin/python uv
-                                                       rm -rf bootstrap_uv
-                                                    '''
+                                            script: 'uv sync --frozen --group ci --no-install-project'
                                        )
                                     }
                                 }
@@ -482,9 +476,7 @@ pipeline {
                                     steps{
                                         sh(
                                             label: 'Install package in development mode',
-                                            script: '''. ./venv/bin/activate
-                                                       CFLAGS="--coverage" uv pip install -e .
-                                                    '''
+                                            script: 'CFLAGS="--coverage" uv pip install -e .'
                                             )
                                     }
                                 }
@@ -494,7 +486,7 @@ pipeline {
                             steps {
                                 sh(
                                     label: 'Building docs',
-                                    script: './venv/bin/uv run sphinx-build -b html docs/source build/docs/html -d build/docs/doctrees -v -w logs/build_sphinx.log -W --keep-going'
+                                    script: 'uv run sphinx-build -b html docs/source build/docs/html -d build/docs/doctrees -v -w logs/build_sphinx.log -W --keep-going'
                                 )
                             }
                             post{
@@ -530,9 +522,8 @@ pipeline {
                                     steps{
                                         tee('logs/cmake-build.log'){
                                             sh(label: 'Compiling CPP Code',
-                                               script: '''. ./venv/bin/activate
-                                                          conan install conanfile.py -of build/cpp --build=missing -pr:b=default
-                                                          cmake --preset conan-release -B build/cpp \
+                                               script: '''uv run conan install conanfile.py -of build/cpp --build=missing -pr:b=default
+                                                          uv run cmake --preset conan-release -B build/cpp \
                                                             -Wdev \
                                                             -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON \
                                                             -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true \
@@ -541,7 +532,7 @@ pipeline {
                                                             -DCMAKE_CXX_FLAGS="-fno-inline -fno-omit-frame-pointer -fprofile-arcs -ftest-coverage -Wall -Wextra" \
                                                             -DMEMORYCHECK_COMMAND=$(which drmemory) \
                                                             -DMEMORYCHECK_COMMAND_OPTIONS="-check_uninit_blacklist libopenjp2.so.7"
-                                                          build-wrapper-linux --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --config Debug
+                                                          build-wrapper-linux --out-dir build/build_wrapper_output_directory uv run cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --config Debug
                                                           '''
                                             )
                                         }
@@ -566,9 +557,8 @@ pipeline {
                                         stage('C++ Unit Tests'){
                                             steps{
                                                 sh(label: 'Running CTest',
-                                                   script: '''. ./venv/bin/activate
-                                                              cd build/cpp
-                                                              ctest --output-on-failure --no-compress-output -T Test
+                                                   script: '''cd build/cpp
+                                                              uv run ctest --output-on-failure --no-compress-output -T Test
                                                            '''
                                                 )
                                             }
@@ -591,9 +581,7 @@ pipeline {
                                                            )
                                                        ]
                                                    )
-                                                   sh '''. ./venv/bin/activate
-                                                         mkdir -p reports && gcovr --filter src/uiucprescon/imagevalidate --exclude-directories build/cpp/_deps/ --print-summary  --xml -o reports/coverage_cpp.xml
-                                                      '''
+                                                   sh 'mkdir -p reports && uv run gcovr --filter src/uiucprescon/imagevalidate --exclude-directories build/cpp/_deps/ --print-summary  --xml -o reports/coverage_cpp.xml'
                                                    stash(includes: 'reports/coverage_cpp.xml', name: 'CPP_COVERAGE_REPORT')
                                                 }
                                             }
@@ -643,9 +631,7 @@ pipeline {
                                                 timeout(15){
                                                     sh(
                                                       label: 'Running memcheck',
-                                                      script: '''. ./venv/bin/activate
-                                                                 (cd build/cpp && ctest -T memcheck -j $(grep -c ^processor /proc/cpuinfo) )
-                                                              '''
+                                                      script: '(cd build/cpp && uv run ctest -T memcheck -j $(grep -c ^processor /proc/cpuinfo) )'
                                                     )
                                                 }
                                             }
@@ -666,7 +652,7 @@ pipeline {
                                                     sh(
                                                         label: 'Running Pytest',
                                                         script:'''mkdir -p reports/coverage
-                                                                  ./venv/bin/uv run coverage run --parallel-mode --source=src -m pytest --junitxml=reports/pytest.xml --integration
+                                                                  uv run coverage run --parallel-mode --source=src -m pytest --junitxml=reports/pytest.xml --integration
                                                                '''
                                                    )
                                                }
@@ -681,7 +667,7 @@ pipeline {
                                            steps {
                                                catchError(buildResult: 'SUCCESS', message: 'Doctest found issues', stageResult: 'UNSTABLE') {
                                                    sh( label: 'Running Doctest',
-                                                       script: '''./venv/bin/uv run coverage run --parallel-mode --source=src -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v
+                                                       script: '''uv run coverage run --parallel-mode --source=src -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -v
                                                                   mkdir -p reports
                                                                   mv build/docs/output.txt reports/doctest.txt
                                                                   '''
@@ -700,7 +686,7 @@ pipeline {
                                                     sh(
                                                         label: 'Running Mypy',
                                                         script: '''mkdir -p logs
-                                                                   ./venv/bin/uv run mypy -p uiucprescon.imagevalidate --html-report reports/mypy/html > logs/mypy.log
+                                                                   uv run mypy -p uiucprescon.imagevalidate --html-report reports/mypy/html > logs/mypy.log
                                                                 '''
                                                    )
                                                 }
@@ -731,10 +717,10 @@ pipeline {
                                     post{
                                         always{
                                             sh(label: 'combining coverage data',
-                                               script: '''./venv/bin/uv run coverage combine
-                                                          ./venv/bin/uv run coverage xml -o ./reports/coverage-python.xml
-                                                          ./venv/bin/uv run gcovr --filter src/uiucprescon/imagevalidate --exclude-directories build/cpp/_deps/ --print-summary --xml -o reports/coverage-c-extension.xml
-                                                          '''
+                                               script: '''uv run coverage combine
+                                                          uv run coverage xml -o ./reports/coverage-python.xml
+                                                          uv run gcovr --filter src/uiucprescon/imagevalidate --exclude-directories build/cpp/_deps/ --print-summary --xml -o reports/coverage-c-extension.xml
+                                                       '''
                                             )
                                             recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage*.xml']])
                                         }
@@ -768,8 +754,8 @@ pipeline {
                                         sh(
                                             label: 'Preparing c++ coverage data available for SonarQube',
                                             script: """mkdir -p build/coverage
-                                                    find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
-                                                    mv *.gcov build/coverage/
+                                                       find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
+                                                       mv *.gcov build/coverage/
                                                     """
                                         )
                                         milestone 1
@@ -779,12 +765,12 @@ pipeline {
                                                     if (env.CHANGE_ID){
                                                         sh(
                                                             label: 'Running Sonar Scanner',
-                                                            script: "./venv/bin/uv run --isolated --group ci pysonar -t \$token -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
+                                                            script: "uv run pysonar -t \$token -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
                                                             )
                                                     } else {
                                                         sh(
                                                             label: 'Running Sonar Scanner',
-                                                            script: "./venv/bin/uv run --isolated --group ci pysonar -t \$token -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
+                                                            script: "uv run pysonar -t \$token -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
                                                             )
                                                     }
                                                 }
@@ -817,6 +803,7 @@ pipeline {
                                 cleanup{
                                     cleanWs(
                                         patterns: [
+                                            [pattern: '.venv/', type: 'INCLUDE'],
                                             [pattern: 'venv/', type: 'INCLUDE'],
                                             [pattern: 'logs/', type: 'INCLUDE'],
                                             [pattern: 'reports', type: 'INCLUDE'],

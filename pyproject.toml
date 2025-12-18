@@ -154,6 +154,19 @@ before-all = [
     'uv run --only-group=conan --with ninja --isolated conan install conanfile.py -pr:h {package}/ci/cibuildwheel/conan_profiles/Linux/linux_build_profile.ini --build missing -of /tmp/ciwheelbuilder/uiucprescon_orc/tmp --conf=tools.cmake.cmaketoolchain:generator=Ninja',
 
 ]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_scheme = "pep440"
+version_provider = "pep621"
+update_changelog_on_bump = true
+major_version_zero = true
+changelog_merge_prerelease = true
+pre_bump_hooks = [
+    "uv lock"
+]
+
 [tool.cibuildwheel.linux.environment]
 PYTHONFAULTHANDLER="True"
 CONAN_USER_HOME="/tmp/conan/manylinux"
@@ -180,3 +193,4 @@ default = true
 name = "uiuc_prescon_python"
 url = "https://nexus.library.illinois.edu/repository/uiuc_prescon_python/simple"
 explicit = true
+
