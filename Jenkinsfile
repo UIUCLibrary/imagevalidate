@@ -536,6 +536,7 @@ pipeline {
                                                             -Wdev \
                                                             -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON \
                                                             -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true \
+                                                            -DSAMPLE_IMAGES_ARCHIVE=${SAMPLE_IMAGES_ARCHIVE} \
                                                             -DBUILD_TESTING:BOOL=true \
                                                             -DCMAKE_CXX_FLAGS="-fno-inline -fno-omit-frame-pointer -fprofile-arcs -ftest-coverage -Wall -Wextra" \
                                                             -DMEMORYCHECK_COMMAND=$(which drmemory) \

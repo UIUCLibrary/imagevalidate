@@ -2,6 +2,7 @@ ARG CONAN_USER_HOME=/conan
 
 ARG CONAN_HOME=${CONAN_USER_HOME}/.conan2
 
+
 ARG CONAN_CENTER_PROXY_V2_URL=https://center2.conan.io
 # If you want to use a diffrent remote for Conan, such as a proxy. Set the CONAN_CENTER_PROXY_V2_URL
 # Not this is only for building the image. The actual conan center proxy URL is set in the remotes.json file.
@@ -11,6 +12,8 @@ ARG PIP_DOWNLOAD_CACHE=/.cache/pip
 
 ARG UV_CACHE_DIR=/.cache/uv
 # UV Cache directory. Change this only if you need to override the default location.
+
+ARG SAMPLE_IMAGES_URL=https://nexus.library.illinois.edu/repository/sample-data/images/metadata_test_images.tar.gz
 
 FROM ghcr.io/astral-sh/uv:latest AS uv_builder
 
@@ -112,6 +115,21 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
 
 # shared files are needed to run the Build C++ Tests stage
 
+#==============================================================================
+
+
+FROM base_image AS sample_files_downloader
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update &&  \
+    apt-get install -y --no-install-recommends wget
+
+ARG SAMPLE_IMAGES_URL
+ENV EXPECTED_SHA256="eee5fa3641628c7365e14de3f58da069cb332dc13a4b739dc168a1617109ebbf"
+RUN mkdir /sampledata && wget $SAMPLE_IMAGES_URL -P /sampledata && echo "$EXPECTED_SHA256 /sampledata/metadata_test_images.tar.gz" | sha256sum --check
+
+
+
 FROM base_image
 COPY --from=uv_builder /uv /uvx /bin/
 # -----------------------------------------------------------------------------
@@ -136,14 +154,15 @@ RUN ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
 
 ARG PIP_EXTRA_INDEX_URL
 
-ENV PIP_NO_CACHE_DIR=1
-
 ARG CONAN_USER_HOME
-ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 ARG CONAN_HOME
-ENV CONAN_HOME=${CONAN_HOME}
 COPY --from=conan_builder --chmod=777 ${CONAN_HOME} ${CONAN_HOME}
-ENV TZ=UTC
+COPY --from=sample_files_downloader /sampledata /sampledata
+ENV TZ=UTC \
+    PIP_NO_CACHE_DIR=1 \
+    CONAN_USER_HOME=${CONAN_USER_HOME} \
+    SAMPLE_IMAGES_ARCHIVE=/sampledata/metadata_test_images.tar.gz \
+    CONAN_HOME=${CONAN_HOME}
 
 # To help mark the image as a CI image so it can be cleaned up more easily
 LABEL purpose=ci

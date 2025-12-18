@@ -1,3 +1,4 @@
+import hashlib
 import shutil
 
 import pytest
@@ -11,25 +12,20 @@ from tempfile import TemporaryDirectory
 
 # TEST_PATH = os.path.join(os.path.dirname(__file__), "henrytestmetadata")
 SAMPLE_IMAGES = "https://nexus.library.illinois.edu/repository/sample-data/images/metadata_test_images.tar.gz"
+SAMPLE_IMAGES_SHA256 = "eee5fa3641628c7365e14de3f58da069cb332dc13a4b739dc168a1617109ebbf"
 
+# To save time from redownloading the metadata_test_images.tar.gz file every time,
+# download it locally and set the environment variable SAMPLE_IMAGES_ARCHIVE
+# to the path of the downloaded file
 
-def download_images(url, destination):
-    with TemporaryDirectory() as download_path:
-        print("Downloading {}".format(url), flush=True)
-        urllib.request.urlretrieve(url,
-                                   filename=os.path.join(download_path,
-                                                         "sample_images.tar.gz"))
-        if not os.path.exists(
-                os.path.join(download_path, "sample_images.tar.gz")):
-            raise FileNotFoundError("sample images not download")
-        print("Extracting images")
-        with tarfile.open(os.path.join(download_path, "sample_images.tar.gz"),
-                          "r:gz") as archive_file:
-            for item in archive_file.getmembers():
-                print("Extracting {}".format(item.name))
-                archive_file.extract(item, path=destination)
-            pass
+def download_images(url, download_path):
 
+    print(f"Downloading {url}")
+    output = os.path.join(download_path, "sample_images.tar.gz")
+    urllib.request.urlretrieve(url, filename=output)
+    if not os.path.exists(output):
+        raise FileNotFoundError("sample images not download")
+    return output
 
 @pytest.fixture(scope="session")
 def sample_data():
@@ -40,13 +36,32 @@ def sample_data():
     if os.path.exists(sample_images_path):
         print("{} already exits".format(sample_images_path))
     else:
-        print("Downloading sample images")
-        if not os.path.exists(sample_images_path):
-            download_images(
-                url=SAMPLE_IMAGES,
-                destination=test_path)
+        archive = os.getenv('SAMPLE_IMAGES_ARCHIVE')
+        if not archive:
+            print("Downloading sample images")
+            if not os.path.exists(sample_images_path):
+                archive = download_images(
+                    url=SAMPLE_IMAGES,
+                    download_path=test_path
+                )
+        if not os.path.exists(archive):
+            raise FileNotFoundError(f"sample image archive not found. {archive} does not exist.")
+        verify_hash(archive, sha256_hash=SAMPLE_IMAGES_SHA256)
+        extract_images(path=archive, destination=test_path)
     yield sample_images_path
     shutil.rmtree(sample_images_path)
+
+def extract_images(path, destination):
+    print("Extracting images")
+    with tarfile.open(path, "r:gz") as archive_file:
+        for item in archive_file.getmembers():
+            print("Extracting {}".format(item.name))
+            archive_file.extract(item, path=destination)
+
+def verify_hash(path, sha256_hash):
+    with open(path, "rb") as f:
+        file_hash = hashlib.sha256(f.read()).hexdigest()
+    assert file_hash == sha256_hash
 
 
 @pytest.mark.integration

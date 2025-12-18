@@ -1,20 +1,27 @@
 if (BUILD_TESTING AND Catch2_FOUND)
     include(FetchContent)
     include(Catch)
+    set(SAMPLE_IMAGES_ARCHIVE "" CACHE FILEPATH "Path to sample images archive. If not set, it will be downloaded from the internet.")
 
     # Get sample images
-    if(NOT EXISTS ${PROJECT_BINARY_DIR}/metadata_test_images.tar.gz)
-        file(DOWNLOAD https://nexus.library.illinois.edu/repository/sample-data/images/metadata_test_images.tar.gz ${PROJECT_BINARY_DIR}/metadata_test_images.tar.gz SHOW_PROGRESS)
-    endif()
-    FetchContent_Declare(
-            test_images
-            URL ${PROJECT_BINARY_DIR}/metadata_test_images.tar.gz
-    )
-    FetchContent_MakeAvailable(test_images)
+    if(SAMPLE_IMAGES_ARCHIVE)
+        set(TEST_IMAGE_PATH "${CMAKE_CURRENT_BINARY_DIR}/metadata_test_images/")
+        file(ARCHIVE_EXTRACT
+                INPUT "${SAMPLE_IMAGES_ARCHIVE}"
+                DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/"
+        )
+    else ()
+         FetchContent_Declare(
+                test_images
+                URL ${PROJECT_BINARY_DIR}/metadata_test_images.tar.gz
+        )
+        FetchContent_MakeAvailable(test_images)
+        set(TEST_IMAGE_PATH ${test_images_SOURCE_DIR})
+    endif ()
     add_executable(tester test-basic.cpp test_exceptions.cpp)
     target_include_directories(tester PRIVATE ${PROJECT_SOURCE_DIR}/uiucprescon/imagevalidate)
 
-    target_compile_definitions(tester PRIVATE TEST_IMAGE_PATH="${test_images_SOURCE_DIR}")
+    target_compile_definitions(tester PRIVATE TEST_IMAGE_PATH="${TEST_IMAGE_PATH}")
     target_link_libraries(tester PRIVATE Catch2::Catch2WithMain imagevalidate::glue)
     catch_discover_tests(tester
             TEST_PREFIX imagevalidate.
@@ -24,7 +31,7 @@ if (BUILD_TESTING AND Catch2_FOUND)
 
     add_executable(tester-internal tester-internal.cpp)
     target_compile_definitions(tester-internal
-            PRIVATE TEST_IMAGE_PATH="${test_images_SOURCE_DIR}")
+            PRIVATE TEST_IMAGE_PATH="${TEST_IMAGE_PATH}")
 
 
     target_link_libraries(tester-internal
