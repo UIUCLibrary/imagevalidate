@@ -13,7 +13,7 @@ build-backend = "uiucprescon.build"
 
 [project]
 name = "uiucprescon.imagevalidate"
-version = "0.1.10.dev4"
+version = "0.1.10"
 dependencies = [
     "py3exiv2bind>=0.1.15"
 ]
