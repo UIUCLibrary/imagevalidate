@@ -4,7 +4,7 @@
 #include <pybind11/pybind11.h>
 
 //NOLINTNEXTLINE
-PYBIND11_MODULE(openjp2wrap, m){ //  cppcheck-suppress unusedFunction
+PYBIND11_MODULE(openjp2wrap, m, pybind11::mod_gil_not_used()){ //  cppcheck-suppress unusedFunction
     pybind11::options options;
     options.enable_function_signatures();
     m.def("open_jpeg_version", &open_jpeg_version, "Get the version of OpenJPEG built with");
