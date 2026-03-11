@@ -355,16 +355,10 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPipCa
                                                                 "TOX_INSTALL_PKG=${findFiles(glob:'dist/*.whl')[0].path}",
                                                                 "TOX_ENV=py${pythonVersion.replace('.', '')}"
                                                             ]){
-                                                                docker.image('python').inside{
+                                                                docker.image('ghcr.io/astral-sh/uv:debian').inside{
                                                                     sh(
                                                                         label: 'Testing with tox',
-                                                                        script: '''python3 -m venv venv
-                                                                                   . ./venv/bin/activate
-                                                                                   trap "rm -rf venv" EXIT
-                                                                                   pip install --disable-pip-version-check uv
-                                                                                   uv run --only-group tox --with tox-uv tox
-                                                                                   rm -rf .tox
-                                                                                '''
+                                                                        script: 'uv run --only-group=tox tox'
                                                                     )
                                                                 }
                                                             }
@@ -701,10 +695,7 @@ pipeline {
                                         stage('Run Flake8 Static Analysis') {
                                             steps{
                                                 catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
-                                                    sh '''. ./venv/bin/activate
-                                                          mkdir -p logs
-                                                          flake8 src --format=pylint --tee --output-file=logs/flake8.log
-                                                          '''
+                                                    sh 'uv run flake8 src --format=pylint --tee --output-file=logs/flake8.log'
                                                 }
                                             }
                                             post {
@@ -836,11 +827,10 @@ pipeline {
                                         try{
                                             checkout scm
                                             timeout(10){
-                                                docker.image('python').inside{
-                                                    sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
+                                                docker.image('ghcr.io/astral-sh/uv:debian').inside{
                                                     envs = sh(
                                                         label: 'Get tox environments',
-                                                        script: './venv/bin/uv run --quiet --only-group tox --with tox-uv --isolated tox list -d --no-desc',
+                                                        script: 'uv run --quiet --only-group=tox --isolated tox list -d --no-desc',
                                                         returnStdout: true,
                                                     ).trim().split('\n')
                                                 }
@@ -869,9 +859,7 @@ pipeline {
                                                                     image.inside{
                                                                         try{
                                                                             sh( label: 'Running Tox',
-                                                                                script: """python3 -m venv /tmp/venv && /tmp/venv/bin/pip install --disable-pip-version-check uv
-                                                                                           /tmp/venv/bin/uv run --only-group tox --with tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
-                                                                                        """
+                                                                                script: "uv run --only-group tox --with tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv"
                                                                                 )
                                                                         } catch(e) {
                                                                             sh(script: './venv/bin/uv python list')
@@ -913,7 +901,7 @@ pipeline {
                                                      bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
                                                      envs = bat(
                                                          label: 'Get tox environments',
-                                                         script: '@.\\venv\\Scripts\\uv run --quiet --only-group tox --with tox-uv tox list -d --no-desc',
+                                                         script: '@.\\venv\\Scripts\\uv run --quiet --only-group=tox tox list -d --no-desc',
                                                          returnStdout: true,
                                                      ).trim().split('\r\n')
                                                 }
@@ -1009,7 +997,7 @@ pipeline {
                         stage('Build sdist'){
                             agent {
                                 docker{
-                                    image 'python'
+                                    image 'ghcr.io/astral-sh/uv:debian'
                                     label 'linux && docker'
                                     args '--mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp'
                                   }
@@ -1023,10 +1011,7 @@ pipeline {
                                     try{
                                         sh(
                                             label: 'Package',
-                                            script: '''python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv
-                                                       trap "rm -rf venv" EXIT
-                                                       ./venv/bin/uv build --sdist
-                                                    '''
+                                            script: 'uv build --sdist'
                                         )
                                         stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'python sdist'
                                         archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
@@ -1234,7 +1219,7 @@ pipeline {
                     }
                     agent {
                         docker{
-                            image 'python'
+                            image 'ghcr.io/astral-sh/uv:debian'
                             label 'docker && linux'
                             args '--mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp'
                         }
@@ -1281,12 +1266,7 @@ pipeline {
                                 ]){
                                     sh(
                                         label: 'Uploading to pypi',
-                                        script: '''python3 -m venv venv
-                                                   trap "rm -rf venv" EXIT
-                                                   . ./venv/bin/activate
-                                                   pip install --disable-pip-version-check uv
-                                                   uv run --only-group release twine upload --disable-progress-bar --non-interactive dist/*
-                                                '''
+                                        script: 'uv run --only-group release twine upload --disable-progress-bar --non-interactive dist/*'
                                     )
                             }
                         }
