@@ -52,7 +52,11 @@ lint = [
     "pydocstyle"
 ]
 tox = ["tox"]
-test = ["coverage[toml]", "gcovr", "pytest"]
+tox-uv = [
+    {include-group = "tox"},
+    "tox-uv-bare"
+]
+test = ["coverage[toml]", "gcovr;os_name!= 'nt'", "pytest"]
 conan = ["conan>=2.0", "cmake<4.0"]
 dev = [
     {include-group = "conan"},

@@ -5,9 +5,9 @@ library identifier: 'JenkinsPythonHelperLibrary@2024.2.0', retriever: modernSCM(
    ])
 
 
-def SUPPORTED_MAC_VERSIONS = ['3.10', '3.11', '3.12', '3.13', '3.14', '3.14t']
-def SUPPORTED_LINUX_VERSIONS = ['3.10', '3.11', '3.12', '3.13', '3.14', '3.14t']
-def SUPPORTED_WINDOWS_VERSIONS = ['3.10', '3.11', '3.12', '3.13', '3.14', '3.14t']
+def SUPPORTED_MAC_VERSIONS = ['3.10', '3.11', '3.12', '3.13', '3.14+gil', '3.14t']
+def SUPPORTED_LINUX_VERSIONS = ['3.10', '3.11', '3.12', '3.13', '3.14+gil', '3.14t']
+def SUPPORTED_WINDOWS_VERSIONS = ['3.10', '3.11', '3.12', '3.13', '3.14+gil', '3.14t']
 def SHARED_PIP_CACHE_VOLUME_NAME = 'pipcache'
 def installMSVCRuntime(cacheLocation){
     def cachedFile = "${cacheLocation}\\vc_redist.x64.exe".replaceAll(/\\\\+/, '\\\\')
@@ -103,15 +103,17 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                         retries: 3,
                                                         testCommand: {
                                                             findFiles(glob: 'dist/*.whl').each{
-                                                                sh(label: 'Running Tox',
-                                                                   script: """python${pythonVersion} -m venv venv
-                                                                              . ./venv/bin/activate
-                                                                              trap "rm -rf venv" EXIT
-                                                                              python -m pip install --disable-pip-version-check uv
-                                                                              trap "rm -rf venv && rm -rf .tox" EXIT
-                                                                              venv/bin/uv run --only-group tox --with tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
-                                                                          """
-                                                                )
+                                                                withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
+                                                                    sh(label: 'Running Tox',
+                                                                       script: """python${pythonVersion} -m venv venv
+                                                                                  . ./venv/bin/activate
+                                                                                  trap "rm -rf venv" EXIT
+                                                                                  python -m pip install --disable-pip-version-check uv
+                                                                                  trap "rm -rf venv && rm -rf .tox" EXIT
+                                                                                  venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                              """
+                                                                    )
+                                                                }
                                                             }
                                                         },
                                                         post:[
@@ -189,14 +191,16 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                     retries: 3,
                                                     testCommand: {
                                                         findFiles(glob: 'dist/*.whl').each{
-                                                            sh(label: 'Running Tox',
-                                                               script: """python${pythonVersion} -m venv venv
-                                                                          trap "rm -rf venv" EXIT
-                                                                          ./venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                          trap "rm -rf venv && rm -rf .tox" EXIT
-                                                                          venv/bin/uv run --only-group tox --with tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
-                                                                       """
-                                                            )
+                                                            withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
+                                                                sh(label: 'Running Tox',
+                                                                   script: """python${pythonVersion} -m venv venv
+                                                                              trap "rm -rf venv" EXIT
+                                                                              ./venv/bin/python -m pip install --disable-pip-version-check uv
+                                                                              trap "rm -rf venv && rm -rf .tox" EXIT
+                                                                              venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                           """
+                                                                )
+                                                            }
                                                         }
                                                     },
                                                     post:[
@@ -273,7 +277,7 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPip
                                                     unstash "python${pythonVersion} windows wheel"
                                                     findFiles(glob: 'dist/*.whl').each{
                                                         bat """python -m pip install --disable-pip-version-check uv
-                                                               uv run --only-group tox --with tox-uv tox run -e py${pythonVersion.replace('.', '')}  --installpkg ${it.path}
+                                                               uv run --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '')}  --installpkg ${it.path}
                                                                rmdir /s /q .tox
                                                                rmdir /s /q dist
                                                             """
@@ -352,13 +356,11 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPipCa
                                                                 'UV_TOOL_DIR=/tmp/uvtools',
                                                                 'UV_PYTHON_CACHE_DIR=/tmp/uvpython',
                                                                 'UV_CACHE_DIR=/tmp/uvcache',
-                                                                "TOX_INSTALL_PKG=${findFiles(glob:'dist/*.whl')[0].path}",
-                                                                "TOX_ENV=py${pythonVersion.replace('.', '')}"
                                                             ]){
-                                                                docker.image('ghcr.io/astral-sh/uv:debian').inside{
+                                                                docker.image('ghcr.io/astral-sh/uv:debian').inside('--tmpfs /.local/share:exec'){
                                                                     sh(
                                                                         label: 'Testing with tox',
-                                                                        script: 'uv run --only-group=tox tox'
+                                                                        script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '')} --installpkg ${findFiles(glob:'dist/*.whl')[0].path}"
                                                                     )
                                                                 }
                                                             }
@@ -859,7 +861,7 @@ pipeline {
                                                                     image.inside{
                                                                         try{
                                                                             sh( label: 'Running Tox',
-                                                                                script: "uv run --only-group tox --with tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv"
+                                                                                script: "uv run --only-group=tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv"
                                                                                 )
                                                                         } catch(e) {
                                                                             sh(script: './venv/bin/uv python list')
@@ -932,7 +934,7 @@ pipeline {
                                                                         image.inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"){
                                                                             powershell(label: 'Running Tox',
                                                                                  script: """uv python install cpython-${version}
-                                                                                            uv run --only-group tox --with tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
+                                                                                            uv run --only-group=tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
                                                                                          """
                                                                             )
                                                                         }
@@ -1057,14 +1059,16 @@ pipeline {
                                                                 },
                                                                 testCommand: {
                                                                     findFiles(glob: 'dist/*.tar.gz').each{
-                                                                        sh(label: 'Running Tox',
-                                                                           script: """python${pythonVersion} -m venv venv
-                                                                                      venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                                      CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --only-group tox --with tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
-                                                                                      rm -rf ./.tox
-                                                                                      rm -rf ./venv
-                                                                                   """
-                                                                        )
+                                                                        withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
+                                                                            sh(label: 'Running Tox',
+                                                                               script: """python${pythonVersion} -m venv venv
+                                                                                          venv/bin/python -m pip install --disable-pip-version-check uv
+                                                                                          CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --only-group=tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                                          rm -rf ./.tox
+                                                                                          rm -rf ./venv
+                                                                                       """
+                                                                            )
+                                                                        }
                                                                     }
                                                                 },
                                                                 post:[
@@ -1108,7 +1112,7 @@ pipeline {
                                                                                 findFiles(glob: 'dist/*.tar.gz').each{
                                                                                     powershell(
                                                                                         label: 'Running Tox',
-                                                                                        script: "uv run --only-group tox --with tox-uv tox run --workdir \${Env.TEMP}\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv"
+                                                                                        script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run --workdir \${Env.TEMP}\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv"
                                                                                     )
                                                                                 }
                                                                             }
@@ -1169,12 +1173,8 @@ pipeline {
                                                                         findFiles(glob: 'dist/*.tar.gz').each{
                                                                             sh(
                                                                                 label: 'Running Tox',
-                                                                                script: """python3 -m venv venv
-                                                                                           trap "rm -rf venv" EXIT
-                                                                                           venv/bin/pip install --disable-pip-version-check uv
-                                                                                           trap "rm -rf venv && rm -rf .tox" EXIT
-                                                                                           venv/bin/uv run --only-group tox --with tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '')}"""
-                                                                                )
+                                                                                script: "uv run --only-group=tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '')}"
+                                                                            )
                                                                         }
                                                                     }
                                                                 },
