@@ -265,10 +265,10 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPip
                                             withEnv([
                                                 'PIP_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\pipcache',
                                                 'UV_TOOL_DIR=C:\\Users\\ContainerUser\\Documents\\uvtools',
-                                                'UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
+                                                'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
                                                 'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvcache',
                                             ]){
-                                                docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime --mount source=${sharedPipCacheVolumeName},target=${env:PIP_CACHE_DIR}"){
+                                                docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=uv_python_cache_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime --mount source=${sharedPipCacheVolumeName},target=${env:PIP_CACHE_DIR}"){
                                                     installMSVCRuntime('c:\\msvc_runtime\\')
                                                     unstash "python${pythonVersion} windows wheel"
                                                     findFiles(glob: 'dist/*.whl').each{
@@ -350,7 +350,7 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPipCa
                                                             withEnv([
                                                                 'PIP_CACHE_DIR=/tmp/pipcache',
                                                                 'UV_TOOL_DIR=/tmp/uvtools',
-                                                                'UV_PYTHON_INSTALL_DIR=/tmp/uvpython',
+                                                                'UV_PYTHON_CACHE_DIR=/tmp/uvpython',
                                                                 'UV_CACHE_DIR=/tmp/uvcache',
                                                                 "TOX_INSTALL_PKG=${findFiles(glob:'dist/*.whl')[0].path}",
                                                                 "TOX_ENV=py${pythonVersion.replace('.', '')}"
@@ -450,7 +450,7 @@ pipeline {
                     environment{
                         PIP_CACHE_DIR='/tmp/pipcache'
                         UV_TOOL_DIR='/tmp/uvtools'
-                        UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                        UV_PYTHON_CACHE_DIR='/tmp/uvpython'
                         UV_CACHE_DIR='/tmp/uvcache'
                     }
                     options {
@@ -823,7 +823,7 @@ pipeline {
                             environment{
                                 PIP_CACHE_DIR='/tmp/docker_cache/.cache/pip'
                                 UV_TOOL_DIR='/tmp/uvtools'
-                                UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                                UV_PYTHON_CACHE_DIR='/tmp/uvpython'
                                 UV_CACHE_DIR='/tmp/uvcache'
                             }
                             when{
@@ -899,7 +899,7 @@ pipeline {
                              environment{
                                  PIP_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\pipcache'
                                  UV_TOOL_DIR='C:\\Users\\ContainerUser\\Documents\\uvtools'
-                                 UV_PYTHON_INSTALL_DIR='C:\\Users\\ContainerUser\\Documents\\uvpython'
+                                 UV_PYTHON_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\uvpython'
                                  UV_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\uvcache'
                              }
                              steps{
@@ -909,7 +909,7 @@ pipeline {
                                          try{
                                              checkout scm
                                              timeout(10){
-                                                 docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
+                                                 docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"){
                                                      bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
                                                      envs = bat(
                                                          label: 'Get tox environments',
@@ -941,7 +941,7 @@ pipeline {
                                                                 checkout scm
                                                                 try{
                                                                     timeout(30){
-                                                                        image.inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
+                                                                        image.inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"){
                                                                             powershell(label: 'Running Tox',
                                                                                  script: """uv python install cpython-${version}
                                                                                             uv run --only-group tox --with tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
@@ -1117,8 +1117,8 @@ pipeline {
                                                                             def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
                                                                             dockerImage = docker.build(dockerImageName, '-f scripts/resources/windows/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                         }
-                                                                        withEnv(['UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython']){
-                                                                            dockerImage.inside('--mount type=volume,source=uv_python_install_dir,target=$UV_PYTHON_INSTALL_DIR'){
+                                                                        withEnv(['UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython']){
+                                                                            dockerImage.inside('--mount type=volume,source=uv_python_cache_dir,target=$UV_PYTHON_CACHE_DIR'){
                                                                                 unstash 'python sdist'
                                                                                 findFiles(glob: 'dist/*.tar.gz').each{
                                                                                     powershell(
@@ -1178,7 +1178,7 @@ pipeline {
                                                                     withEnv([
                                                                         'PIP_CACHE_DIR=/tmp/pipcache',
                                                                         'UV_TOOL_DIR=/tmp/uvtools',
-                                                                        'UV_PYTHON_INSTALL_DIR=/tmp/uvpython',
+                                                                        'UV_PYTHON_CACHE_DIR=/tmp/uvpython',
                                                                         'UV_CACHE_DIR=/tmp/uvcache',
                                                                     ]){
                                                                         findFiles(glob: 'dist/*.tar.gz').each{
@@ -1229,7 +1229,7 @@ pipeline {
                     environment{
                         PIP_CACHE_DIR='/tmp/pipcache'
                         UV_TOOL_DIR='/tmp/uvtools'
-                        UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                        UV_PYTHON_CACHE_DIR='/tmp/uvpython'
                         UV_CACHE_DIR='/tmp/uvcache'
                     }
                     agent {
