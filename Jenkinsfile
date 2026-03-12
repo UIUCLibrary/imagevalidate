@@ -68,7 +68,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                             stage("Build Wheel (${pythonVersion} MacOS ${arch})"){
                                                 buildPythonPkg(
                                                     agent: [
-                                                        label: "mac && python${pythonVersion} && ${arch}",
+                                                        label: "mac && python3 && ${arch}",
                                                     ],
                                                     retries: 3,
                                                     buildCmd: {
@@ -94,7 +94,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                 if(params.TEST_PACKAGES == true){
                                                     testPythonPkg(
                                                         agent: [
-                                                            label: "mac && python${pythonVersion} && ${arch}",
+                                                            label: "mac && python3 && ${arch}",
                                                         ],
                                                         testSetup: {
                                                             checkout scm
@@ -105,12 +105,12 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                             findFiles(glob: 'dist/*.whl').each{
                                                                 withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
                                                                     sh(label: 'Running Tox',
-                                                                       script: """python${pythonVersion} -m venv venv
+                                                                       script: """python3 -m venv venv
                                                                                   . ./venv/bin/activate
                                                                                   trap "rm -rf venv" EXIT
                                                                                   python -m pip install --disable-pip-version-check uv
                                                                                   trap "rm -rf venv && rm -rf .tox" EXIT
-                                                                                  venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                                  venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
                                                                               """
                                                                     )
                                                                 }
@@ -143,7 +143,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                 stage("Universal2 Wheel: Python ${pythonVersion}"){
                     if(params.INCLUDE_MACOS_X86_64 && params.INCLUDE_MACOS_ARM){
                         stage('Make Universal2 wheel'){
-                            node("mac && python${pythonVersion}") {
+                            node("mac && python3") {
                                 checkout scm
                                 unstash "python${pythonVersion} mac arm64 wheel"
                                 unstash "python${pythonVersion} mac x86_64 wheel"
@@ -153,7 +153,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                 }
                                 try{
                                     sh(label: 'Make Universal2 wheel',
-                                       script: """python${pythonVersion} -m venv venv
+                                       script: """python3 -m venv venv
                                                   trap "rm -rf venv" EXIT
                                                   ./venv/bin/pip install --disable-pip-version-check uv
                                                   ./venv/bin/uv run --only-group package delocate-merge ${wheelNames.join(' ')} --verbose -w ./out/
@@ -162,7 +162,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                        )
                                    def fusedWheel = findFiles(excludes: '', glob: 'out/*.whl')[0]
                                    def props = readTOML( file: 'pyproject.toml')['project']
-                                   def universalWheel = "uiucprescon.imagevalidate-${props.version}-cp${pythonVersion.replace('.','')}-cp${pythonVersion.replace('.','')}-macosx_11_0_universal2.whl"
+                                   def universalWheel = "uiucprescon.imagevalidate-${props.version}-cp${pythonVersion.replace('.','').replace('+gil','')}-cp${pythonVersion.replace('.','').replace('+gil','')}-macosx_11_0_universal2.whl"
                                    sh "mv ${fusedWheel.path} ./dist/${universalWheel}"
                                    stash includes: 'dist/*.whl', name: "python${pythonVersion} mac-universal2 wheel"
                                    wheelStashes << "python${pythonVersion} mac-universal2 wheel"
@@ -182,7 +182,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                             stage("Test Python ${pythonVersion} universal2 Wheel on ${arch} mac"){
                                                 testPythonPkg(
                                                     agent: [
-                                                        label: "mac && python${pythonVersion} && ${arch}",
+                                                        label: "mac && python3 && ${arch}",
                                                     ],
                                                     testSetup: {
                                                         checkout scm
@@ -193,11 +193,11 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                         findFiles(glob: 'dist/*.whl').each{
                                                             withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
                                                                 sh(label: 'Running Tox',
-                                                                   script: """python${pythonVersion} -m venv venv
+                                                                   script: """python3 -m venv venv
                                                                               trap "rm -rf venv" EXIT
                                                                               ./venv/bin/python -m pip install --disable-pip-version-check uv
                                                                               trap "rm -rf venv && rm -rf .tox" EXIT
-                                                                              venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                              venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
                                                                            """
                                                                 )
                                                             }
@@ -277,7 +277,7 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPip
                                                     unstash "python${pythonVersion} windows wheel"
                                                     findFiles(glob: 'dist/*.whl').each{
                                                         bat """python -m pip install --disable-pip-version-check uv
-                                                               uv run --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '')}  --installpkg ${it.path}
+                                                               uv run --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')}  --installpkg ${it.path}
                                                                rmdir /s /q .tox
                                                                rmdir /s /q dist
                                                             """
@@ -358,9 +358,10 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPipCa
                                                                 'UV_CACHE_DIR=/tmp/uvcache',
                                                             ]){
                                                                 docker.image('ghcr.io/astral-sh/uv:debian').inside('--tmpfs /.local/share:exec'){
+                                                                    sh "uv python install cpython-${pythonVersion.replace('+gil', '')}"
                                                                     sh(
                                                                         label: 'Testing with tox',
-                                                                        script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '')} --installpkg ${findFiles(glob:'dist/*.whl')[0].path}"
+                                                                        script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')} --installpkg ${findFiles(glob:'dist/*.whl')[0].path}"
                                                                     )
                                                                 }
                                                             }
@@ -1050,7 +1051,7 @@ pipeline {
                                                         stage("Test sdist (MacOS ${arch} - Python ${pythonVersion})"){
                                                             testPythonPkg(
                                                                 agent: [
-                                                                    label: "mac && python${pythonVersion} && ${arch}",
+                                                                    label: "mac && python3 && ${arch}",
                                                                 ],
                                                                 retries: 3,
                                                                 testSetup: {
@@ -1061,9 +1062,9 @@ pipeline {
                                                                     findFiles(glob: 'dist/*.tar.gz').each{
                                                                         withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
                                                                             sh(label: 'Running Tox',
-                                                                               script: """python${pythonVersion} -m venv venv
+                                                                               script: """python3 -m venv venv
                                                                                           venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                                          CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --only-group=tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                                          CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --only-group=tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
                                                                                           rm -rf ./.tox
                                                                                           rm -rf ./venv
                                                                                        """
@@ -1106,13 +1107,16 @@ pipeline {
                                                                             def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
                                                                             dockerImage = docker.build(dockerImageName, '-f scripts/resources/windows/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                         }
-                                                                        withEnv(['UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython']){
-                                                                            dockerImage.inside('--mount type=volume,source=uv_python_cache_dir,target=$UV_PYTHON_CACHE_DIR'){
+                                                                        withEnv([
+                                                                            'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
+                                                                            'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\cache\\uvcache'
+                                                                        ]){
+                                                                            dockerImage.inside('--mount type=volume,source=uv_python_cache_dir,target=$UV_PYTHON_CACHE_DIR --mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR'){
                                                                                 unstash 'python sdist'
                                                                                 findFiles(glob: 'dist/*.tar.gz').each{
                                                                                     powershell(
                                                                                         label: 'Running Tox',
-                                                                                        script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run --workdir \${Env.TEMP}\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -vv"
+                                                                                        script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run --workdir \${Env:TEMP}\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil','')} -vv"
                                                                                     )
                                                                                 }
                                                                             }
@@ -1173,7 +1177,7 @@ pipeline {
                                                                         findFiles(glob: 'dist/*.tar.gz').each{
                                                                             sh(
                                                                                 label: 'Running Tox',
-                                                                                script: "uv run --only-group=tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '')}"
+                                                                                script: "uv run --only-group=tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '').replace('+gil','')}"
                                                                             )
                                                                         }
                                                                     }
