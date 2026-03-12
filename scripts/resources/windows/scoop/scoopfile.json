@@ -1,0 +1,32 @@
+{
+  "buckets": [
+    {
+      "Name": "main"
+    },
+    {
+      "Name": "versions"
+    }
+  ],
+  "apps": [
+    {
+      "Source": "main",
+      "Name": "git"
+    },
+    {
+      "Source": "main",
+      "Name": "nasm"
+    },
+    {
+      "Source": "versions",
+      "Name": "python313"
+    },
+    {
+      "Source": "versions",
+      "Name": "python314"
+    },
+    {
+      "Source": "main",
+      "Name": "uv"
+    }
+  ]
+}
