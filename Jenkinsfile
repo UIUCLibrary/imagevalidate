@@ -441,7 +441,7 @@ pipeline {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86_64'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL'
-                            args "-v ${SHARED_PIP_CACHE_VOLUME_NAME}:/tmp/pipcache  --tmpfs /.config:exec --tmpfs /.tree-sitter:exec"
+                            args "-v ${SHARED_PIP_CACHE_VOLUME_NAME}:/tmp/pipcache  --tmpfs /.config:exec --tmpfs /.tree-sitter:exec --tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv"
                         }
                     }
                     environment{
@@ -473,7 +473,7 @@ pipeline {
                                     steps{
                                         sh(
                                             label: 'Install package in development mode',
-                                            script: 'CFLAGS="--coverage" uv pip install -e .'
+                                            script: 'VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT CFLAGS="--coverage" uv pip install -e .'
                                             )
                                     }
                                 }
@@ -830,7 +830,7 @@ pipeline {
                                         try{
                                             checkout scm
                                             timeout(10){
-                                                docker.image('ghcr.io/astral-sh/uv:debian').inside{
+                                                docker.image('ghcr.io/astral-sh/uv:debian').inside('--tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'){
                                                     envs = sh(
                                                         label: 'Get tox environments',
                                                         script: 'uv run --quiet --only-group=tox --isolated tox list -d --no-desc',
@@ -859,13 +859,13 @@ pipeline {
                                                             }
                                                             try{
                                                                 timeout(30){
-                                                                    image.inside{
+                                                                    image.inside('--tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv --tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'){
                                                                         try{
                                                                             sh( label: 'Running Tox',
                                                                                 script: "uv run --only-group=tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv"
                                                                                 )
                                                                         } catch(e) {
-                                                                            sh(script: './venv/bin/uv python list')
+                                                                            sh(script: 'uv python list')
                                                                             throw e
                                                                         }
                                                                     }
