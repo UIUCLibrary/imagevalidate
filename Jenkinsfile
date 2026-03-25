@@ -925,7 +925,7 @@ pipeline {
                                                             checkout scm
                                                             timeout(60){
                                                                 lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                                    image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                    image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/Dockerfile --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                 }
                                                             }
                                                             try{
