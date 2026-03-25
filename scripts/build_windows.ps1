@@ -18,7 +18,6 @@ function Build-DockerImage {
         "--isolation", $DockerIsolation,
         "--platform windows/amd64",
         "-f", $DockerfilePath,
-        "--build-arg CHOCOLATEY_SOURCE",
         "--build-arg UV_INDEX_URL",
         "--build-arg UV_EXTRA_INDEX_URL",
         "--build-arg CONAN_CENTER_PROXY_V2_URL",
