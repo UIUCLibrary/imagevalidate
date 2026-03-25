@@ -88,17 +88,16 @@ FROM base
 
 ARG CONAN_USER_HOME
 ARG CONAN_HOME
-COPY --from=conan_builder ${CONAN_HOME} ${CONAN_HOME}
+COPY --from=conan_builder --chmod=777 ${CONAN_HOME} ${CONAN_HOME}
 ENV CONAN_HOME=${CONAN_HOME}
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 ARG UV_CACHE_DIR
 ARG PIP_DOWNLOAD_CACHE
-RUN chmod -R 777 ${CONAN_HOME} && \
-    mkdir -p ${PIP_DOWNLOAD_CACHE} && \
+RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
     chmod -R 777 ${PIP_DOWNLOAD_CACHE} && \
     mkdir -p ${UV_CACHE_DIR} && \
     chmod -R 777 ${UV_CACHE_DIR}
-
+COPY scripts/resources/package_for_linux/helper_scripts/build_wheel.sh /usr/local/bin/build_wheel
 LABEL type="jenkins"
 
 # To help mark the image as a CI image so it can be cleaned up more easily
