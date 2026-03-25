@@ -109,7 +109,7 @@ generate_wheel(){
             find ${CONTAINER_WORKSPACE} -type f -name '*.pyc' -exec rm -f {} + && \
             for i in "${python_versions_to_use[@]}"; do
                 echo \"Creating wheel for Python version: \$i\";
-                uv build --python=\$i --python-preference=system --wheel --out-dir=/tmp/dist ${CONTAINER_WORKSPACE};
+                uv build --python=\"\$i\" --python-preference=system --wheel --out-dir=/tmp/dist ${CONTAINER_WORKSPACE};
                 if [ \$? -ne 0 ]; then
                   echo \"Failed to build wheel for Python \$i\";
                   exit 1;
