@@ -13,13 +13,10 @@ ARG CONAN_HOME=${CONAN_USER_HOME}/.conan2
 ARG UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv
 ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 
-ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
-ARG chocolateyVersion
-
 FROM ${FROM_IMAGE} AS certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
-FROM ${FROM_IMAGE} AS chocolatey_base
+FROM ${FROM_IMAGE} AS installed_applications_base
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
@@ -50,7 +47,7 @@ RUN irm get.scoop.sh -outfile 'install.ps1' ; `
 RUN New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
     -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
-FROM chocolatey_base AS conan_builder
+FROM installed_applications_base AS conan_builder
 ARG CONAN_HOME
 
 ARG UV_INDEX_URL
@@ -80,7 +77,7 @@ RUN uv run --only-group conan --with ninja conan profile detect --exist-ok ; `
     }
 # ==============================================================================
 
-FROM chocolatey_base
+FROM installed_applications_base
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
