@@ -1054,16 +1054,28 @@ pipeline {
                                                                 retry(3){
                                                                     try{
                                                                         unstash 'python sdist'
+                                                                        sh 'mkdir -p logs'
                                                                         findFiles(glob: 'dist/*.tar.gz').each{
-                                                                            withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
-                                                                                sh(label: 'Running Tox',
-                                                                                   script: """python3 -m venv venv
-                                                                                              venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                                              CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --only-group=tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
-                                                                                              rm -rf ./.tox
-                                                                                              rm -rf ./venv
-                                                                                           """
-                                                                                )
+                                                                            withEnv([
+                                                                                "TOX_UV_PATH=${WORKSPACE}/venv/bin/uv",
+                                                                                "TOX_RESULT_JSON_PATH=${WORKSPACE}/logs/tox_result-macos-${arch}-sdist-${pythonVersion}.json"
+                                                                            ]){
+                                                                                try{
+                                                                                    sh(label: 'Running Tox',
+                                                                                       script: """python3 -m venv venv
+                                                                                                  venv/bin/python -m pip install --disable-pip-version-check uv
+                                                                                                  CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --only-group=tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')} --result-json=${TOX_RESULT_JSON_PATH}
+                                                                                                  rm -rf ./.tox
+                                                                                                  rm -rf ./venv
+                                                                                               """
+                                                                                    )
+                                                                                } catch(e){
+                                                                                    archiveArtifacts artifacts: 'logs/*.json'
+                                                                                    echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                                                    sh 'rm -rf ./.tox'
+                                                                                    sh 'rm -rf ./venv'
+                                                                                    throw e
+                                                                                }
                                                                             }
                                                                         }
                                                                     } finally {
@@ -1102,15 +1114,28 @@ pipeline {
                                                                         }
                                                                         withEnv([
                                                                             'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
-                                                                            'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\cache\\uvcache'
+                                                                            'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\cache\\uvcache',
                                                                         ]){
                                                                             dockerImage.inside('--mount type=volume,source=uv_python_cache_dir,target=$UV_PYTHON_CACHE_DIR --mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR'){
                                                                                 unstash 'python sdist'
+                                                                                powershell('New-Item -Path ".\\logs" -ItemType Directory')
                                                                                 findFiles(glob: 'dist/*.tar.gz').each{
-                                                                                    powershell(
-                                                                                        label: 'Running Tox',
-                                                                                        script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run --workdir \${Env:TEMP}\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil','')} -vv"
-                                                                                    )
+                                                                                    withEnv(["TOX_RESULT_JSON_PATH=${WORKSPACE}\\logs\\tox_result-sdist-windows-${pythonVersion}.json"]){
+                                                                                        try{
+                                                                                            powershell(
+                                                                                                label: 'Running Tox',
+                                                                                                script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run --workdir \${Env:TEMP}\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil','')} -vv --result-json=\${env:TOX_RESULT_JSON_PATH}"
+                                                                                            )
+                                                                                        } catch(e){
+                                                                                            archiveArtifacts artifacts: 'logs/*.json'
+                                                                                            echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                                                            powershell(
+                                                                                                label: 'Removing temp directory',
+                                                                                                script: 'Remove-Item -Path ${Env:TEMP}\\.tox -Recurse -Force -ErrorAction SilentlyContinue'
+                                                                                            )
+                                                                                            throw e
+                                                                                        }
+                                                                                    }
                                                                                 }
                                                                             }
                                                                         }
@@ -1158,15 +1183,25 @@ pipeline {
                                                                                     'PIP_CACHE_DIR=/tmp/pipcache',
                                                                                     'UV_TOOL_DIR=/tmp/uvtools',
                                                                                     'UV_PYTHON_CACHE_DIR=/tmp/uvpython',
-                                                                                    'UV_CACHE_DIR=/tmp/uvcache',
+                                                                                    'UV_CACHE_DIR=/tmp/uvcache'
                                                                                 ]){
                                                                                     dockerImage.inside('--tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv --tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'){
                                                                                         unstash 'python sdist'
+                                                                                        sh 'mkdir -p logs'
                                                                                         findFiles(glob: 'dist/*.tar.gz').each{
-                                                                                            sh(
-                                                                                                label: 'Running Tox',
-                                                                                                script: "uv run --only-group=tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '').replace('+gil','')}"
-                                                                                            )
+                                                                                            withEnv(["TOX_RESULT_JSON_PATH=${WORKSPACE}/logs/tox_result-sdist-linux-${arch}-${pythonVersion}.json"]){
+                                                                                                try{
+                                                                                                    sh(
+                                                                                                        label: 'Running Tox',
+                                                                                                        script: "uv run --only-group=tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '').replace('+gil','')} --result-json=${env.TOX_RESULT_JSON_PATH}"
+                                                                                                    )
+                                                                                                } catch(e){
+                                                                                                    archiveArtifacts artifacts: 'logs/*.json'
+                                                                                                    echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                                                                    sh 'rm -rf ./.tox'
+                                                                                                    throw e
+                                                                                                }
+                                                                                            }
                                                                                         }
                                                                                     }
                                                                                 }
