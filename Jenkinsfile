@@ -267,12 +267,12 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPip
                                         checkout scm
                                         try{
                                             withEnv([
-                                                'PIP_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\pipcache',
-                                                'UV_TOOL_DIR=C:\\Users\\ContainerUser\\Documents\\uvtools',
-                                                'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
-                                                'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvcache',
+                                                'PIP_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\pipcache',
+                                                'UV_TOOL_DIR=C:\\Users\\ContainerAdministrator\\Documents\\uvtools',
+                                                'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\uvpython',
+                                                'UV_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\uvcache',
                                             ]){
-                                                docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=uv_python_cache_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime --mount source=${sharedPipCacheVolumeName},target=${env:PIP_CACHE_DIR}"){
+                                                docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=uv_python_cache_dir,target=C:\\Users\\ContainerAdministrator\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime --mount source=${sharedPipCacheVolumeName},target=${env:PIP_CACHE_DIR}"){
                                                     installMSVCRuntime('c:\\msvc_runtime\\')
                                                     unstash "python${pythonVersion} windows wheel"
                                                     findFiles(glob: 'dist/*.whl').each{
@@ -888,10 +888,10 @@ pipeline {
                                  expression {return nodesByLabel('windows && docker && x86').size() > 0}
                              }
                              environment{
-                                 PIP_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\pipcache'
-                                 UV_TOOL_DIR='C:\\Users\\ContainerUser\\Documents\\uvtools'
-                                 UV_PYTHON_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\uvpython'
-                                 UV_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\uvcache'
+                                 PIP_CACHE_DIR='C:\\Users\\ContainerAdministrator\\Documents\\pipcache'
+                                 UV_TOOL_DIR='C:\\Users\\ContainerAdministrator\\Documents\\uvtools'
+                                 UV_PYTHON_CACHE_DIR='C:\\Users\\ContainerAdministrator\\Documents\\uvpython'
+                                 UV_CACHE_DIR='C:\\Users\\ContainerAdministrator\\Documents\\uvcache'
                              }
                              steps{
                                  script{
@@ -925,7 +925,7 @@ pipeline {
                                                             checkout scm
                                                             timeout(60){
                                                                 lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                                    image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/Dockerfile --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                    image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/Dockerfile --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerAdministrator/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerAdministrator/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                 }
                                                             }
                                                             try{
@@ -1114,11 +1114,11 @@ pipeline {
                                                                         checkout scm
                                                                         lock("docker build-${env.NODE_NAME}"){
                                                                             def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
-                                                                            dockerImage = docker.build(dockerImageName, '-f scripts/resources/windows/Dockerfile --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                            dockerImage = docker.build(dockerImageName, '-f scripts/resources/windows/Dockerfile --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerAdministrator/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg UV_CACHE_DIR=c:/users/ContainerAdministrator/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                         }
                                                                         withEnv([
-                                                                            'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
-                                                                            'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\cache\\uvcache',
+                                                                            'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\uvpython',
+                                                                            'UV_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\cache\\uvcache',
                                                                         ]){
                                                                             dockerImage.inside('--mount type=volume,source=uv_python_cache_dir,target=$UV_PYTHON_CACHE_DIR --mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR'){
                                                                                 unstash 'python sdist'
@@ -1126,9 +1126,9 @@ pipeline {
                                                                                 findFiles(glob: 'dist/*.tar.gz').each{
                                                                                     withEnv(["TOX_RESULT_JSON_PATH=${WORKSPACE}\\logs\\tox_result-sdist-windows-${pythonVersion}.json"]){
                                                                                         try{
-                                                                                            powershell(
+                                                                                            bat(
                                                                                                 label: 'Running Tox',
-                                                                                                script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run --workdir \${Env:TEMP}\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil','')} -vv --result-json=\${env:TOX_RESULT_JSON_PATH}"
+                                                                                                script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil','')} -vv --result-json=%TOX_RESULT_JSON_PATH%"
                                                                                             )
                                                                                         } catch(e){
                                                                                             if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
