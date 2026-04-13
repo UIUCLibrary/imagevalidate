@@ -1070,8 +1070,12 @@ pipeline {
                                                                                                """
                                                                                     )
                                                                                 } catch(e){
-                                                                                    archiveArtifacts artifacts: 'logs/*.json'
-                                                                                    echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                                                    if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
+                                                                                        archiveArtifacts artifacts: 'logs/*.json'
+                                                                                        echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                                                    } else {
+                                                                                        echo "Tox failed but no result json found at ${TOX_RESULT_JSON_PATH}"
+                                                                                    }
                                                                                     sh 'rm -rf ./.tox'
                                                                                     sh 'rm -rf ./venv'
                                                                                     throw e
@@ -1127,8 +1131,12 @@ pipeline {
                                                                                                 script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run --workdir \${Env:TEMP}\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil','')} -vv --result-json=\${env:TOX_RESULT_JSON_PATH}"
                                                                                             )
                                                                                         } catch(e){
-                                                                                            archiveArtifacts artifacts: 'logs/*.json'
-                                                                                            echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                                                            if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
+                                                                                                archiveArtifacts artifacts: 'logs/*.json'
+                                                                                                echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                                                            } else {
+                                                                                                echo "Tox failed but no result json found at ${TOX_RESULT_JSON_PATH}"
+                                                                                            }
                                                                                             powershell(
                                                                                                 label: 'Removing temp directory',
                                                                                                 script: 'Remove-Item -Path ${Env:TEMP}\\.tox -Recurse -Force -ErrorAction SilentlyContinue'
@@ -1196,8 +1204,12 @@ pipeline {
                                                                                                         script: "uv run --only-group=tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '').replace('+gil','')} --result-json=${env.TOX_RESULT_JSON_PATH}"
                                                                                                     )
                                                                                                 } catch(e){
-                                                                                                    archiveArtifacts artifacts: 'logs/*.json'
-                                                                                                    echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                                                                    if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
+                                                                                                        archiveArtifacts artifacts: 'logs/*.json'
+                                                                                                        echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                                                                    } else {
+                                                                                                        echo "Tox failed but no result json found at ${TOX_RESULT_JSON_PATH}"
+                                                                                                    }
                                                                                                     sh 'rm -rf ./.tox'
                                                                                                     throw e
                                                                                                 }
