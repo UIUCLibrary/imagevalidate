@@ -939,7 +939,7 @@ pipeline {
                                                                 checkout scm
                                                                 try{
                                                                     timeout(30){
-                                                                        image.inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"){
+                                                                        image.inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_cache_dir,target=${env.UV_CACHE_DIR} --mount source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"){
                                                                             powershell(label: 'Running Tox',
                                                                                  script: """uv python install cpython-${version}
                                                                                             uv run --only-group=tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
