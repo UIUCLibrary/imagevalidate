@@ -672,6 +672,13 @@ pipeline {
                                                }
                                            }
                                         }
+                                        stage('Audit Lockfile Dependencies'){
+                                            steps{
+                                                catchError(buildResult: 'UNSTABLE', message: 'uv-secure found issues', stageResult: 'UNSTABLE') {
+                                                    sh 'uv run uv-secure --disable-cache uv.lock'
+                                                }
+                                            }
+                                        }
                                         stage('Task Scanner'){
                                             steps{
                                                 recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'src/**/*.py', normalTags: 'TODO')])
