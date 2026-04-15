@@ -267,12 +267,12 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPip
                                         checkout scm
                                         try{
                                             withEnv([
-                                                'PIP_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\pipcache',
-                                                'UV_TOOL_DIR=C:\\Users\\ContainerUser\\Documents\\uvtools',
-                                                'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
-                                                'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvcache',
+                                                'PIP_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\pipcache',
+                                                'UV_TOOL_DIR=C:\\Users\\ContainerAdministrator\\Documents\\uvtools',
+                                                'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\uvpython',
+                                                'UV_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\uvcache',
                                             ]){
-                                                docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=uv_python_cache_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime --mount source=${sharedPipCacheVolumeName},target=${env:PIP_CACHE_DIR}"){
+                                                docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=uv_python_cache_dir,target=C:\\Users\\ContainerAdministrator\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime --mount source=${sharedPipCacheVolumeName},target=${env:PIP_CACHE_DIR}"){
                                                     installMSVCRuntime('c:\\msvc_runtime\\')
                                                     unstash "python${pythonVersion} windows wheel"
                                                     findFiles(glob: 'dist/*.whl').each{
@@ -672,6 +672,13 @@ pipeline {
                                                }
                                            }
                                         }
+                                        stage('Audit Lockfile Dependencies'){
+                                            steps{
+                                                catchError(buildResult: 'UNSTABLE', message: 'uv-secure found issues', stageResult: 'UNSTABLE') {
+                                                    sh 'uv run uv-secure --disable-cache uv.lock'
+                                                }
+                                            }
+                                        }
                                         stage('Task Scanner'){
                                             steps{
                                                 recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'src/**/*.py', normalTags: 'TODO')])
@@ -888,10 +895,10 @@ pipeline {
                                  expression {return nodesByLabel('windows && docker && x86').size() > 0}
                              }
                              environment{
-                                 PIP_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\pipcache'
-                                 UV_TOOL_DIR='C:\\Users\\ContainerUser\\Documents\\uvtools'
-                                 UV_PYTHON_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\uvpython'
-                                 UV_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\uvcache'
+                                 PIP_CACHE_DIR='C:\\Users\\ContainerAdministrator\\Documents\\pipcache'
+                                 UV_TOOL_DIR='C:\\Users\\ContainerAdministrator\\Documents\\uvtools'
+                                 UV_PYTHON_CACHE_DIR='C:\\Users\\ContainerAdministrator\\Documents\\uvpython'
+                                 UV_CACHE_DIR='C:\\Users\\ContainerAdministrator\\Documents\\uvcache'
                              }
                              steps{
                                  script{
@@ -925,14 +932,14 @@ pipeline {
                                                             checkout scm
                                                             timeout(60){
                                                                 lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                                    image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/Dockerfile --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                    image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/Dockerfile --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerAdministrator/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerAdministrator/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                 }
                                                             }
                                                             try{
                                                                 checkout scm
                                                                 try{
                                                                     timeout(30){
-                                                                        image.inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"){
+                                                                        image.inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_cache_dir,target=${env.UV_CACHE_DIR} --mount source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"){
                                                                             powershell(label: 'Running Tox',
                                                                                  script: """uv python install cpython-${version}
                                                                                             uv run --only-group=tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
@@ -1054,16 +1061,32 @@ pipeline {
                                                                 retry(3){
                                                                     try{
                                                                         unstash 'python sdist'
+                                                                        sh 'mkdir -p logs'
                                                                         findFiles(glob: 'dist/*.tar.gz').each{
-                                                                            withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
-                                                                                sh(label: 'Running Tox',
-                                                                                   script: """python3 -m venv venv
-                                                                                              venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                                              CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --only-group=tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
-                                                                                              rm -rf ./.tox
-                                                                                              rm -rf ./venv
-                                                                                           """
-                                                                                )
+                                                                            withEnv([
+                                                                                "TOX_UV_PATH=${WORKSPACE}/venv/bin/uv",
+                                                                                "TOX_RESULT_JSON_PATH=${WORKSPACE}/logs/tox_result-macos-${arch}-sdist-${pythonVersion}.json"
+                                                                            ]){
+                                                                                try{
+                                                                                    sh(label: 'Running Tox',
+                                                                                       script: """python3 -m venv venv
+                                                                                                  venv/bin/python -m pip install --disable-pip-version-check uv
+                                                                                                  CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --only-group=tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')} --result-json=${TOX_RESULT_JSON_PATH}
+                                                                                                  rm -rf ./.tox
+                                                                                                  rm -rf ./venv
+                                                                                               """
+                                                                                    )
+                                                                                } catch(e){
+                                                                                    if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
+                                                                                        archiveArtifacts artifacts: 'logs/*.json'
+                                                                                        echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                                                    } else {
+                                                                                        echo "Tox failed but no result json found at ${TOX_RESULT_JSON_PATH}"
+                                                                                    }
+                                                                                    sh 'rm -rf ./.tox'
+                                                                                    sh 'rm -rf ./venv'
+                                                                                    throw e
+                                                                                }
                                                                             }
                                                                         }
                                                                     } finally {
@@ -1098,19 +1121,36 @@ pipeline {
                                                                         checkout scm
                                                                         lock("docker build-${env.NODE_NAME}"){
                                                                             def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
-                                                                            dockerImage = docker.build(dockerImageName, '-f scripts/resources/windows/Dockerfile --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerUser/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg UV_CACHE_DIR=c:/users/ContainerUser/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                            dockerImage = docker.build(dockerImageName, '-f scripts/resources/windows/Dockerfile --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerAdministrator/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg UV_CACHE_DIR=c:/users/ContainerAdministrator/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                         }
                                                                         withEnv([
-                                                                            'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
-                                                                            'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\cache\\uvcache'
+                                                                            'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\uvpython',
+                                                                            'UV_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\cache\\uvcache',
                                                                         ]){
                                                                             dockerImage.inside('--mount type=volume,source=uv_python_cache_dir,target=$UV_PYTHON_CACHE_DIR --mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR'){
                                                                                 unstash 'python sdist'
+                                                                                powershell('New-Item -Path ".\\logs" -ItemType Directory')
                                                                                 findFiles(glob: 'dist/*.tar.gz').each{
-                                                                                    powershell(
-                                                                                        label: 'Running Tox',
-                                                                                        script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run --workdir \${Env:TEMP}\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil','')} -vv"
-                                                                                    )
+                                                                                    withEnv(["TOX_RESULT_JSON_PATH=${WORKSPACE}\\logs\\tox_result-sdist-windows-${pythonVersion}.json"]){
+                                                                                        try{
+                                                                                            bat(
+                                                                                                label: 'Running Tox',
+                                                                                                script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil','')} -vv --result-json=%TOX_RESULT_JSON_PATH%"
+                                                                                            )
+                                                                                        } catch(e){
+                                                                                            if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
+                                                                                                archiveArtifacts artifacts: 'logs/*.json'
+                                                                                                echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                                                            } else {
+                                                                                                echo "Tox failed but no result json found at ${TOX_RESULT_JSON_PATH}"
+                                                                                            }
+                                                                                            powershell(
+                                                                                                label: 'Removing temp directory',
+                                                                                                script: 'Remove-Item -Path ${Env:TEMP}\\.tox -Recurse -Force -ErrorAction SilentlyContinue'
+                                                                                            )
+                                                                                            throw e
+                                                                                        }
+                                                                                    }
                                                                                 }
                                                                             }
                                                                         }
@@ -1158,15 +1198,29 @@ pipeline {
                                                                                     'PIP_CACHE_DIR=/tmp/pipcache',
                                                                                     'UV_TOOL_DIR=/tmp/uvtools',
                                                                                     'UV_PYTHON_CACHE_DIR=/tmp/uvpython',
-                                                                                    'UV_CACHE_DIR=/tmp/uvcache',
+                                                                                    'UV_CACHE_DIR=/tmp/uvcache'
                                                                                 ]){
                                                                                     dockerImage.inside('--tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv --tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'){
                                                                                         unstash 'python sdist'
+                                                                                        sh 'mkdir -p logs'
                                                                                         findFiles(glob: 'dist/*.tar.gz').each{
-                                                                                            sh(
-                                                                                                label: 'Running Tox',
-                                                                                                script: "uv run --only-group=tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '').replace('+gil','')}"
-                                                                                            )
+                                                                                            withEnv(["TOX_RESULT_JSON_PATH=${WORKSPACE}/logs/tox_result-sdist-linux-${arch}-${pythonVersion}.json"]){
+                                                                                                try{
+                                                                                                    sh(
+                                                                                                        label: 'Running Tox',
+                                                                                                        script: "uv run --only-group=tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '').replace('+gil','')} --result-json=${env.TOX_RESULT_JSON_PATH}"
+                                                                                                    )
+                                                                                                } catch(e){
+                                                                                                    if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
+                                                                                                        archiveArtifacts artifacts: 'logs/*.json'
+                                                                                                        echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                                                                    } else {
+                                                                                                        echo "Tox failed but no result json found at ${TOX_RESULT_JSON_PATH}"
+                                                                                                    }
+                                                                                                    sh 'rm -rf ./.tox'
+                                                                                                    throw e
+                                                                                                }
+                                                                                            }
                                                                                         }
                                                                                     }
                                                                                 }
