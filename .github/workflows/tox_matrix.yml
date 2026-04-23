@@ -93,13 +93,13 @@ jobs:
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
-          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uv run --only-group tox --with tox-uv tox run
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uv run --only-group=tox-uv tox run --runner uv-venv-lock-runner
         env:
           TOX_ENV: "${{ steps.tox-env.outputs.result }}"
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
       - name: Run Tox
         if: "!contains(matrix.os, 'windows')"
-        run: cc --version &&  cc -dumpfullversion -dumpversion && uv run --only-group tox --with tox-uv tox run -vvv
+        run: cc --version &&  cc -dumpfullversion -dumpversion && uv run --only-group=tox-uv tox run --runner uv-venv-lock-runner -vvv
         env:
           TOX_ENV: "${{ steps.tox-env.outputs.result }}"
           CONAN_USER_HOME: "${{steps.conan-path-script.outputs.result}}"
