@@ -95,6 +95,3 @@ ENV CONAN_USER_HOME=${CONAN_USER_HOME}`
     CONAN_HOME=${CONAN_HOME}`
     UV_CACHE_DIR=${UV_CACHE_DIR}`
     PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
-
-# To help mark the image as a CI image so it can be cleaned up more easily
-LABEL purpose=ci

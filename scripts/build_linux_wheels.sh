@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -e
 scriptDir=$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")
 PROJECT_ROOT=$(realpath "$scriptDir/..")
@@ -50,6 +49,7 @@ generate_wheel(){
         --build-arg UV_EXTRA_INDEX_URL \
         --build-arg UV_INDEX_URL \
         --build-arg manylinux_image=$manylinux_image \
+        --label=purpose=build-wheel \
         "$PROJECT_ROOT"
 
     mkdir -p "$OUTPUT_PATH"
@@ -59,6 +59,7 @@ generate_wheel(){
         -v "$PROJECT_ROOT":/project:ro \
         -v $OUTPUT_PATH:/dist \
         --entrypoint="/bin/bash" \
+        --label=purpose=build-wheel \
         $docker_image_name_to_use \
         -c "build_wheel /project /dist ${python_versions_to_use[@]}"
     echo "Built wheel can be found in '$OUTPUT_PATH'"

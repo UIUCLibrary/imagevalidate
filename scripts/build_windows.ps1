@@ -15,6 +15,7 @@ function Build-DockerImage {
     $projectRootDirectory = (Get-Item $PSScriptRoot).Parent.FullName
     $dockerArgsList = @(
         "build",
+        "--label=purpose=build-wheel",
         "--isolation", $DockerIsolation,
         "--platform windows/amd64",
         "-f", $DockerfilePath,
@@ -65,6 +66,7 @@ function Build-Wheel {
 
     $dockerArgsList = @(
         "run",
+        "--label=purpose=build-wheel",
         "--isolation", $DockerIsolation,
         "--platform windows/amd64",
         "--rm",
