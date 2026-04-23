@@ -57,7 +57,7 @@ tox-uv = [
     {include-group = "tox"},
     "tox-uv-bare"
 ]
-test = ["coverage[toml]", "gcovr;os_name!= 'nt'", "pytest"]
+test = ["pytest"]
 conan = ["conan>=2.0", "cmake<4.0"]
 dev = [
     {include-group = "conan"},
@@ -65,6 +65,8 @@ dev = [
     {include-group = "lint"},
     {include-group = "test"},
     {include-group = "audit-dependencies"},
+    "coverage[toml]",
+    "gcovr;os_name!= 'nt'",
 ]
 release = ["twine"]
 ci = [

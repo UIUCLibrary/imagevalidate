@@ -2380,8 +2380,6 @@ release = [
     { name = "twine" },
 ]
 test = [
-    { name = "coverage", extra = ["toml"] },
-    { name = "gcovr", marker = "os_name != 'nt'" },
     { name = "pytest" },
 ]
 tox = [
@@ -2449,11 +2447,7 @@ lint = [
 ]
 package = [{ name = "delocate", marker = "sys_platform == 'darwin'" }]
 release = [{ name = "twine" }]
-test = [
-    { name = "coverage", extras = ["toml"] },
-    { name = "gcovr", marker = "os_name != 'nt'" },
-    { name = "pytest" },
-]
+test = [{ name = "pytest" }]
 tox = [{ name = "tox" }]
 tox-uv = [
     { name = "tox" },
