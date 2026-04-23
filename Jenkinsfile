@@ -277,13 +277,16 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPip
                                                     "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
                                                     "--label \"JOB_NAME=${env.JOB_NAME}\" " +
                                                     "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
-                                                    "--mount source=uv_python_cache_dir,target=C:\\Users\\ContainerAdministrator\\Documents\\uvpython " +
-                                                    "--mount source=msvc-runtime,target=c:\\msvc_runtime "+
-                                                    "--mount source=${sharedPipCacheVolumeName},target=${env:PIP_CACHE_DIR}"
+                                                    '--mount source=uv_python_cache_dir,target=C:\\Users\\ContainerAdministrator\\Documents\\uvpython ' +
+                                                    '--mount source=msvc-runtime,target=c:\\msvc_runtime '+
+                                                    '--mount source=uv_cache_dir,target=$UV_CACHE_DIR ' +
+                                                    "--mount source=pipcache,target=${env:PIP_CACHE_DIR}"
                                                 ){
                                                     installMSVCRuntime('c:\\msvc_runtime\\')
                                                     unstash "python${pythonVersion} windows wheel"
-                                                    bat "uv python install ${pythonVersion.replace('+gil','')}"
+                                                    bat """python -m pip install --disable-pip-version-check uv
+                                                           uv python install ${pythonVersion.replace('+gil','')}
+                                                        """
                                                     findFiles(glob: 'dist/*.whl').each{
                                                         def attempt = 0
                                                         retry(2){
@@ -291,8 +294,7 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPip
                                                             withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
                                                                 bat(
                                                                     label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
-                                                                    script: """python -m pip install --disable-pip-version-check uv
-                                                                               uv run --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')}  --installpkg ${it.path}
+                                                                    script: """uv run --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')}  --installpkg ${it.path}
                                                                                rmdir /s /q .tox
                                                                                rmdir /s /q dist
                                                                             """

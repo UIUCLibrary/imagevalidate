@@ -53,7 +53,7 @@ function Build-Wheel {
     $containerWorkingPath = "c:\build"
     $containerCacheDir = "C:\Users\ContainerUser\Documents\cache"
     $venv = "${containerCacheDir}\venv"
-
+    $UV_CACHE_DIR="${containerCacheDir}\uvcache"
     $UV_TOOL_DIR = "${containerCacheDir}\uvtools"
     $UV_PYTHON_CACHE_DIR = "${containerCacheDir}\uvpython"
 
@@ -74,6 +74,7 @@ function Build-Wheel {
         "--mount type=volume,source=${ContainerName}Cache,target=${containerCacheDir}",
         "--mount type=bind,source=$(Resolve-Path $projectRootDirectory),target=${containerSourcePath}",
         "--mount type=bind,source=$(Resolve-Path $outputDirectory),target=${containerDistPath}",
+        "-e UV_CACHE_DIR=${UV_CACHE_DIR}",
         "-e UV_TOOL_DIR=${UV_TOOL_DIR}",
         "-e UV_PYTHON_CACHE_DIR=${UV_PYTHON_CACHE_DIR}",
         '--entrypoint', 'powershell',
