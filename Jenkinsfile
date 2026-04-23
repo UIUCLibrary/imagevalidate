@@ -48,10 +48,10 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
     def selectedArches = []
     def allValidArches = ['arm64', 'x86_64']
     if(params.INCLUDE_MACOS_X86_64 == true){
-        selectedArches << "x86_64"
+        selectedArches << 'x86_64'
     }
     if(params.INCLUDE_MACOS_ARM == true){
-        selectedArches << "arm64"
+        selectedArches << 'arm64'
     }
     parallel([failFast: true] << pythonVersions.collectEntries{ pythonVersion ->
         def versionStageName = "Python ${pythonVersion} - Mac"
@@ -107,7 +107,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                                     sh(label: 'Running Tox',
                                                                        script: """python3 -m venv venv
                                                                                   . ./venv/bin/activate
-                                                                                  trap "rm -rf venv" EXIT
+                                                                                  trap 'rm -rf venv' EXIT
                                                                                   python -m pip install --disable-pip-version-check uv
                                                                                   trap "rm -rf venv && rm -rf .tox" EXIT
                                                                                   venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
@@ -154,7 +154,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                 try{
                                     sh(label: 'Make Universal2 wheel',
                                        script: """python3 -m venv venv
-                                                  trap "rm -rf venv" EXIT
+                                                  trap 'rm -rf venv' EXIT
                                                   ./venv/bin/pip install --disable-pip-version-check uv
                                                   ./venv/bin/uv run --only-group package delocate-merge ${wheelNames.join(' ')} --verbose -w ./out/
                                                   rm dist/*.whl
@@ -194,7 +194,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                             withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
                                                                 sh(label: 'Running Tox',
                                                                    script: """python3 -m venv venv
-                                                                              trap "rm -rf venv" EXIT
+                                                                              trap 'rm -rf venv' EXIT
                                                                               ./venv/bin/python -m pip install --disable-pip-version-check uv
                                                                               trap "rm -rf venv && rm -rf .tox" EXIT
                                                                               venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
@@ -239,7 +239,7 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPip
                     if(params.INCLUDE_WINDOWS_X86_64 == true){
                         stage("Build Wheel (${pythonVersion} Windows)"){
                             node('windows && docker && x86_64'){
-                                def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
+                                def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', "").toLowerCase()
                                 try{
                                     checkout scm
                                     try{
@@ -252,7 +252,7 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPip
                                     }
                                 } finally {
                                     powershell(
-                                        label: "Untagging Docker Image used",
+                                        label: 'Untagging Docker Image used',
                                         script: "docker image rm --no-prune ${dockerImageName}",
                                         returnStatus: true
                                     )
@@ -272,15 +272,36 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPip
                                                 'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\uvpython',
                                                 'UV_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\uvcache',
                                             ]){
-                                                docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=uv_python_cache_dir,target=C:\\Users\\ContainerAdministrator\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime --mount source=${sharedPipCacheVolumeName},target=${env:PIP_CACHE_DIR}"){
+                                                docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside(
+                                                    "--label=purpose=ci " +
+                                                    "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
+                                                    "--label \"JOB_NAME=${env.JOB_NAME}\" " +
+                                                    "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
+                                                    '--mount source=uv_python_cache_dir,target=C:\\Users\\ContainerAdministrator\\Documents\\uvpython ' +
+                                                    '--mount source=msvc-runtime,target=c:\\msvc_runtime '+
+                                                    '--mount source=uv_cache_dir,target=$UV_CACHE_DIR ' +
+                                                    "--mount source=pipcache,target=${env:PIP_CACHE_DIR}"
+                                                ){
                                                     installMSVCRuntime('c:\\msvc_runtime\\')
                                                     unstash "python${pythonVersion} windows wheel"
+                                                    bat """python -m pip install --disable-pip-version-check uv
+                                                           uv python install ${pythonVersion.replace('+gil','')}
+                                                        """
                                                     findFiles(glob: 'dist/*.whl').each{
-                                                        bat """python -m pip install --disable-pip-version-check uv
-                                                               uv run --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')}  --installpkg ${it.path}
-                                                               rmdir /s /q .tox
-                                                               rmdir /s /q dist
-                                                            """
+                                                        def attempt = 0
+                                                        retry(2){
+                                                            attempt += 1
+                                                            withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
+                                                                bat(
+                                                                    label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+                                                                    script: """uv run --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')}  --installpkg ${it.path}
+                                                                               rmdir /s /q .tox
+                                                                               rmdir /s /q dist
+                                                                            """
+                                                                )
+
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -324,7 +345,7 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPipCa
                                 stage(newStage){
                                     if(selectedArches.contains(arch)){
                                         stage("Build Wheel (${pythonVersion} Linux ${arch})"){
-                                            def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
+                                            def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', "").toLowerCase()
                                             node("docker && linux && ${arch}"){
                                                 checkout scm
                                                 try{
@@ -357,7 +378,12 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPipCa
                                                                 'UV_PYTHON_CACHE_DIR=/tmp/uvpython',
                                                                 'UV_CACHE_DIR=/tmp/uvcache',
                                                             ]){
-                                                                docker.image('ghcr.io/astral-sh/uv:debian').inside('--tmpfs /.local/share:exec'){
+                                                                docker.image('ghcr.io/astral-sh/uv:debian').inside(
+                                                                    '--label=purpose=ci --label "JOB_NAME=$JOB_NAME" ' +
+                                                                    "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
+                                                                    "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
+                                                                    '--tmpfs /.local/share:exec'
+                                                                ){
                                                                     sh "uv python install cpython-${pythonVersion.replace('+gil', '')}"
                                                                     sh(
                                                                         label: 'Testing with tox',
@@ -385,6 +411,235 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPipCa
             }
         ]
     })
+}
+
+def getLinuxSdistStages(params, supportedVersions){
+    return supportedVersions.collectEntries{ pythonVersion ->
+        def selectedArches = []
+        def allValidArches = ['x86_64', 'arm64']
+        if(params.INCLUDE_LINUX_X86_64 == true){
+            selectedArches << 'x86_64'
+        }
+        if(params.INCLUDE_LINUX_ARM == true){
+            selectedArches << 'arm64'
+        }
+        return allValidArches.collectEntries{ arch ->
+            def newStageName = "Test sdist (Linux ${arch} - Python ${pythonVersion})"
+            return [
+                "${newStageName}": {
+                    stage(newStageName){
+                        if(selectedArches.contains(arch)){
+                            node("linux && docker && ${arch}"){
+                                checkout scm
+                                retry(3){
+                                    try{
+                                        lock("docker build-${env.NODE_NAME}"){
+                                            def dockerImage = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv --build-arg CONAN_CENTER_PROXY_V2_URL .')
+                                            try{
+                                                withEnv([
+                                                    'PIP_CACHE_DIR=/tmp/pipcache',
+                                                    'UV_TOOL_DIR=/tmp/uvtools',
+                                                    'UV_PYTHON_CACHE_DIR=/tmp/uvpython',
+                                                    'UV_CACHE_DIR=/tmp/uvcache'
+                                                ]){
+                                                    dockerImage.inside(
+                                                        '--label=purpose=ci --label "JOB_NAME=$JOB_NAME" ' +
+                                                        "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
+                                                        "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
+                                                        '--tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv ' +
+                                                        '--tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'
+                                                    ){
+                                                        unstash 'python sdist'
+                                                        sh 'mkdir -p logs'
+                                                        findFiles(glob: 'dist/*.tar.gz').each{
+                                                            withEnv(["TOX_RESULT_JSON_PATH=${WORKSPACE}/logs/tox_result-sdist-linux-${arch}-${pythonVersion}.json"]){
+                                                                try{
+                                                                    sh(
+                                                                        label: 'Running Tox',
+                                                                        script: "uv run --only-group=tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '').replace('+gil','')} --result-json=${env.TOX_RESULT_JSON_PATH}"
+                                                                    )
+                                                                } catch(e){
+                                                                    if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
+                                                                        archiveArtifacts artifacts: 'logs/*.json'
+                                                                        echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                                    } else {
+                                                                        echo "Tox failed but no result json found at ${TOX_RESULT_JSON_PATH}"
+                                                                    }
+                                                                    sh 'rm -rf ./.tox'
+                                                                    throw e
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            } finally {
+                                                sh "docker rmi --no-prune ${dockerImage.id}"
+                                            }
+                                        }
+                                    } finally {
+                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                    }
+                                }
+                            }
+                        } else {
+                            Utils.markStageSkippedForConditional(newStageName)
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
+def getWindowsSdistStages(params, supportedVersions){
+    return supportedVersions.collectEntries{ pythonVersion ->
+        def selectedArches = []
+        def allValidArches = ['x86_64']
+        if(params.INCLUDE_WINDOWS_X86_64 == true){
+            selectedArches << 'x86_64'
+        }
+        return allValidArches.collectEntries{ arch ->
+            def newStageName = "Test sdist (Windows ${arch} - Python ${pythonVersion})"
+            return [
+                "${newStageName}": {
+                    stage(newStageName){
+                        if(selectedArches.contains(arch)){
+                            retry(2){
+                                node("windows && docker && ${arch}"){
+                                    def dockerImage
+                                    try{
+                                        checkout scm
+                                        lock("docker build-${env.NODE_NAME}"){
+                                            def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', "").toLowerCase()
+                                            dockerImage = docker.build(dockerImageName, '-f scripts/resources/windows/Dockerfile --label=purpose=ci --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerAdministrator/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg UV_CACHE_DIR=c:/users/ContainerAdministrator/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                        }
+                                        withEnv([
+                                            'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\uvpython',
+                                            'PIP_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\pipcache',
+                                            'UV_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\cache\\uvcache',
+                                        ]){
+                                            dockerImage.inside(
+                                                '--label=purpose=ci --label "JOB_NAME=$JOB_NAME" ' +
+                                                "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
+                                                "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
+                                                '--mount type=volume,source=uv_python_cache_dir,target=$UV_PYTHON_CACHE_DIR ' +
+                                                '--mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR ' +
+                                                "--mount type=volume,source=pipcache,target=${env:PIP_CACHE_DIR}"
+                                            ){
+                                                unstash 'python sdist'
+                                                bat "uv python install ${pythonVersion.replace('+gil','')}"
+                                                powershell('New-Item -Path ".\\logs" -ItemType Directory')
+                                                findFiles(glob: 'dist/*.tar.gz').each{
+                                                    withEnv(["TOX_RESULT_JSON_PATH=${WORKSPACE}\\logs\\tox_result-sdist-windows-${pythonVersion}.json"]){
+                                                        try{
+                                                            def attempt = 0
+                                                            retry(2){
+                                                                attempt += 1
+                                                                withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
+                                                                    bat(
+                                                                        label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+                                                                        script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil','')} -vv --result-json=%TOX_RESULT_JSON_PATH%"
+                                                                    )
+                                                                }
+                                                            }
+                                                        } catch(e){
+                                                            if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
+                                                                archiveArtifacts artifacts: 'logs/*.json'
+                                                                echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                            } else {
+                                                                echo "Tox failed but no result json found at ${TOX_RESULT_JSON_PATH}"
+                                                            }
+                                                            powershell(
+                                                                label: 'Removing temp directory',
+                                                                script: 'Remove-Item -Path ${Env:TEMP}\\.tox -Recurse -Force -ErrorAction SilentlyContinue'
+                                                            )
+                                                            throw e
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } finally {
+                                        powershell(
+                                            label: 'Untagging Docker Image used',
+                                            script: "docker image rm --no-prune ${dockerImage.imageName()}",
+                                            returnStatus: true
+                                        )
+                                        bat "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                    }
+                                }
+                            }
+                        } else {
+                            Utils.markStageSkippedForConditional(newStageName)
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
+
+def getMacSdistStages(params, supportedVersions){
+    return supportedVersions.collectEntries{ pythonVersion ->
+        def selectedArches = []
+        def allValidArches = ['x86_64', 'arm64']
+        if(params.INCLUDE_MACOS_X86_64 == true){
+            selectedArches << 'x86_64'
+        }
+        if(params.INCLUDE_MACOS_ARM == true){
+            selectedArches << 'arm64'
+        }
+        return allValidArches.collectEntries{ arch ->
+            def newStageName = "Test sdist (MacOS ${arch} - Python ${pythonVersion})"
+            return [
+                "${newStageName}": {
+                    if(selectedArches.contains(arch)){
+                        stage("Test sdist (MacOS ${arch} - Python ${pythonVersion})"){
+                            node("mac && python3 && ${arch}"){
+                                checkout scm
+                                retry(3){
+                                    try{
+                                        unstash 'python sdist'
+                                        sh 'mkdir -p logs'
+                                        findFiles(glob: 'dist/*.tar.gz').each{
+                                            withEnv([
+                                                "TOX_UV_PATH=${WORKSPACE}/venv/bin/uv",
+                                                "TOX_RESULT_JSON_PATH=${WORKSPACE}/logs/tox_result-macos-${arch}-sdist-${pythonVersion}.json"
+                                            ]){
+                                                try{
+                                                    sh(label: 'Running Tox',
+                                                       script: """python3 -m venv venv
+                                                                  venv/bin/python -m pip install --disable-pip-version-check uv
+                                                                  CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --only-group=tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')} --result-json=${TOX_RESULT_JSON_PATH}
+                                                                  rm -rf ./.tox
+                                                                  rm -rf ./venv
+                                                               """
+                                                    )
+                                                } catch(e){
+                                                    if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
+                                                        archiveArtifacts artifacts: 'logs/*.json'
+                                                        echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
+                                                    } else {
+                                                        echo "Tox failed but no result json found at ${TOX_RESULT_JSON_PATH}"
+                                                    }
+                                                    sh 'rm -rf ./.tox'
+                                                    sh 'rm -rf ./venv'
+                                                    throw e
+                                                }
+                                            }
+                                        }
+                                    } finally {
+                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        Utils.markStageSkippedForConditional(newStageName)
+                    }
+                }
+            ]
+        }
+    }
 }
 
 def wheelStashes = []
@@ -441,7 +696,7 @@ pipeline {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86_64'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL'
-                            args "-v ${SHARED_PIP_CACHE_VOLUME_NAME}:/tmp/pipcache  --tmpfs /.config:exec --tmpfs /.tree-sitter:exec --tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv"
+                            args "--label=purpose=ci --label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"JOB_NAME=${env.JOB_NAME}\" --label \"BUILD_NUMBER=${currentBuild.number}\" -v ${SHARED_PIP_CACHE_VOLUME_NAME}:/tmp/pipcache  --tmpfs /.config:exec --tmpfs /.tree-sitter:exec --tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv"
                         }
                     }
                     environment{
@@ -495,8 +750,6 @@ pipeline {
                                         zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.name}-${props.version}.doc.zip"
                                     }
                                     stash includes: 'dist/*.doc.zip,build/docs/html/**', name: 'DOCS_ARCHIVE'
-                                }
-                                success{
                                     publishHTML(
                                         [
                                             allowMissing: false,
@@ -754,10 +1007,10 @@ pipeline {
                                     steps{
                                         sh(
                                             label: 'Preparing c++ coverage data available for SonarQube',
-                                            script: """mkdir -p build/coverage
-                                                       find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
+                                            script: '''mkdir -p build/coverage
+                                                       find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=$WORKSPACE/ \\;
                                                        mv *.gcov build/coverage/
-                                                    """
+                                                    '''
                                         )
                                         milestone 1
                                         script{
@@ -837,7 +1090,12 @@ pipeline {
                                         try{
                                             checkout scm
                                             timeout(10){
-                                                docker.image('ghcr.io/astral-sh/uv:debian').inside('--tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'){
+                                                docker.image('ghcr.io/astral-sh/uv:debian').inside(
+                                                    '--label=purpose=ci --label "JOB_NAME=$JOB_NAME" ' +
+                                                    "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
+                                                    "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
+                                                    '--tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'
+                                                ){
                                                     envs = sh(
                                                         label: 'Get tox environments',
                                                         script: 'uv run --quiet --only-group=tox --isolated tox list -d --no-desc',
@@ -866,7 +1124,13 @@ pipeline {
                                                             }
                                                             try{
                                                                 timeout(30){
-                                                                    image.inside('--tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv --tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'){
+                                                                    image.inside(
+                                                                        '--label=purpose=ci --label "JOB_NAME=$JOB_NAME" ' +
+                                                                        "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
+                                                                        "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
+                                                                        '--tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv '+
+                                                                        '--tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'
+                                                                    ){
                                                                         try{
                                                                             sh( label: 'Running Tox',
                                                                                 script: "uv run --only-group=tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv"
@@ -907,7 +1171,13 @@ pipeline {
                                          try{
                                              checkout scm
                                              timeout(10){
-                                                 docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"){
+                                                 docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside(
+                                                    '--label=purpose=ci --label "JOB_NAME=$JOB_NAME" ' +
+                                                    "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
+                                                    "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
+                                                    "--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} "+
+                                                    "--mount source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"
+                                                ){
                                                      bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
                                                      envs = bat(
                                                          label: 'Get tox environments',
@@ -932,14 +1202,21 @@ pipeline {
                                                             checkout scm
                                                             timeout(60){
                                                                 lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                                    image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/Dockerfile --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerAdministrator/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerAdministrator/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                    image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/Dockerfile --label=purpose=ci --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerAdministrator/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerAdministrator/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                 }
                                                             }
                                                             try{
                                                                 checkout scm
                                                                 try{
                                                                     timeout(30){
-                                                                        image.inside("--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} --mount source=uv_cache_dir,target=${env.UV_CACHE_DIR} --mount source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"){
+                                                                        image.inside(
+                                                                            '--label=purpose=ci --label "JOB_NAME=$JOB_NAME" ' +
+                                                                            "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
+                                                                            "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
+                                                                            "--mount source=${SHARED_PIP_CACHE_VOLUME_NAME},target=${env:PIP_CACHE_DIR} " +
+                                                                            '--mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR ' +
+                                                                            "--mount source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"
+                                                                        ){
                                                                             powershell(label: 'Running Tox',
                                                                                  script: """uv python install cpython-${version}
                                                                                             uv run --only-group=tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
@@ -1009,7 +1286,7 @@ pipeline {
                                 docker{
                                     image 'ghcr.io/astral-sh/uv:debian'
                                     label 'linux && docker'
-                                    args '--mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp'
+                                    args '--label=purpose=ci --label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"JOB_NAME=${env.JOB_NAME}\" --label \"BUILD_NUMBER=${currentBuild.number}\" --mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp'
                                   }
                             }
                             environment{
@@ -1041,206 +1318,10 @@ pipeline {
                                     def testSdistStages = [
                                         failFast: true
                                     ]
-                                    testSdistStages << SUPPORTED_MAC_VERSIONS.collectEntries{ pythonVersion ->
-                                        def selectedArches = []
-                                        def allValidArches = ["x86_64", "arm64"]
-                                        if(params.INCLUDE_MACOS_X86_64 == true){
-                                            selectedArches << "x86_64"
-                                        }
-                                        if(params.INCLUDE_MACOS_ARM == true){
-                                            selectedArches << "arm64"
-                                        }
-                                        return allValidArches.collectEntries{ arch ->
-                                            def newStageName = "Test sdist (MacOS ${arch} - Python ${pythonVersion})"
-                                            return [
-                                                "${newStageName}": {
-                                                    if(selectedArches.contains(arch)){
-                                                        stage("Test sdist (MacOS ${arch} - Python ${pythonVersion})"){
-                                                            node("mac && python3 && ${arch}"){
-                                                                checkout scm
-                                                                retry(3){
-                                                                    try{
-                                                                        unstash 'python sdist'
-                                                                        sh 'mkdir -p logs'
-                                                                        findFiles(glob: 'dist/*.tar.gz').each{
-                                                                            withEnv([
-                                                                                "TOX_UV_PATH=${WORKSPACE}/venv/bin/uv",
-                                                                                "TOX_RESULT_JSON_PATH=${WORKSPACE}/logs/tox_result-macos-${arch}-sdist-${pythonVersion}.json"
-                                                                            ]){
-                                                                                try{
-                                                                                    sh(label: 'Running Tox',
-                                                                                       script: """python3 -m venv venv
-                                                                                                  venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                                                  CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --only-group=tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')} --result-json=${TOX_RESULT_JSON_PATH}
-                                                                                                  rm -rf ./.tox
-                                                                                                  rm -rf ./venv
-                                                                                               """
-                                                                                    )
-                                                                                } catch(e){
-                                                                                    if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
-                                                                                        archiveArtifacts artifacts: 'logs/*.json'
-                                                                                        echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
-                                                                                    } else {
-                                                                                        echo "Tox failed but no result json found at ${TOX_RESULT_JSON_PATH}"
-                                                                                    }
-                                                                                    sh 'rm -rf ./.tox'
-                                                                                    sh 'rm -rf ./venv'
-                                                                                    throw e
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    } finally {
-                                                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    } else {
-                                                        Utils.markStageSkippedForConditional(newStageName)
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                    testSdistStages << SUPPORTED_WINDOWS_VERSIONS.collectEntries{ pythonVersion ->
-                                        def selectedArches = []
-                                        def allValidArches = ["x86_64"]
-                                        if(params.INCLUDE_WINDOWS_X86_64 == true){
-                                            selectedArches << "x86_64"
-                                        }
-                                        return allValidArches.collectEntries{ arch ->
-                                            def newStageName = "Test sdist (Windows ${arch} - Python ${pythonVersion})"
-                                            return [
-                                                "${newStageName}": {
-                                                    stage(newStageName){
-                                                        if(selectedArches.contains(arch)){
-                                                            retry(2){
-                                                                node("windows && docker && ${arch}"){
-                                                                    def dockerImage
-                                                                    try{
-                                                                        checkout scm
-                                                                        lock("docker build-${env.NODE_NAME}"){
-                                                                            def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
-                                                                            dockerImage = docker.build(dockerImageName, '-f scripts/resources/windows/Dockerfile --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerAdministrator/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg UV_CACHE_DIR=c:/users/ContainerAdministrator/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
-                                                                        }
-                                                                        withEnv([
-                                                                            'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\uvpython',
-                                                                            'UV_CACHE_DIR=C:\\Users\\ContainerAdministrator\\Documents\\cache\\uvcache',
-                                                                        ]){
-                                                                            dockerImage.inside('--mount type=volume,source=uv_python_cache_dir,target=$UV_PYTHON_CACHE_DIR --mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR'){
-                                                                                unstash 'python sdist'
-                                                                                powershell('New-Item -Path ".\\logs" -ItemType Directory')
-                                                                                findFiles(glob: 'dist/*.tar.gz').each{
-                                                                                    withEnv(["TOX_RESULT_JSON_PATH=${WORKSPACE}\\logs\\tox_result-sdist-windows-${pythonVersion}.json"]){
-                                                                                        try{
-                                                                                            bat(
-                                                                                                label: 'Running Tox',
-                                                                                                script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil','')} -vv --result-json=%TOX_RESULT_JSON_PATH%"
-                                                                                            )
-                                                                                        } catch(e){
-                                                                                            if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
-                                                                                                archiveArtifacts artifacts: 'logs/*.json'
-                                                                                                echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
-                                                                                            } else {
-                                                                                                echo "Tox failed but no result json found at ${TOX_RESULT_JSON_PATH}"
-                                                                                            }
-                                                                                            powershell(
-                                                                                                label: 'Removing temp directory',
-                                                                                                script: 'Remove-Item -Path ${Env:TEMP}\\.tox -Recurse -Force -ErrorAction SilentlyContinue'
-                                                                                            )
-                                                                                            throw e
-                                                                                        }
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    } finally {
-                                                                        powershell(
-                                                                            label: "Untagging Docker Image used",
-                                                                            script: "docker image rm --no-prune ${dockerImage.imageName()}",
-                                                                            returnStatus: true
-                                                                        )
-                                                                        bat "${tool(name: 'Default', type: 'git')} clean -dfx"
-                                                                    }
-                                                                }
-                                                            }
-                                                        } else {
-                                                            Utils.markStageSkippedForConditional(newStageName)
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                    testSdistStages << SUPPORTED_LINUX_VERSIONS.collectEntries{ pythonVersion ->
-                                        def selectedArches = []
-                                        def allValidArches = ["x86_64", "arm64"]
-                                        if(params.INCLUDE_LINUX_X86_64 == true){
-                                            selectedArches << "x86_64"
-                                        }
-                                        if(params.INCLUDE_LINUX_ARM == true){
-                                            selectedArches << "arm64"
-                                        }
-                                        return allValidArches.collectEntries{ arch ->
-                                            def newStageName = "Test sdist (Linux ${arch} - Python ${pythonVersion})"
-                                            return [
-                                                "${newStageName}": {
-                                                    stage(newStageName){
-                                                        if(selectedArches.contains(arch)){
-                                                            node("linux && docker && ${arch}"){
-                                                                checkout scm
-                                                                retry(3){
-                                                                    try{
-                                                                        lock("docker build-${env.NODE_NAME}"){
-                                                                            def dockerImage = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip --build-arg UV_CACHE_DIR=/.cache/uv --build-arg CONAN_CENTER_PROXY_V2_URL .')
-                                                                            try{
-                                                                                withEnv([
-                                                                                    'PIP_CACHE_DIR=/tmp/pipcache',
-                                                                                    'UV_TOOL_DIR=/tmp/uvtools',
-                                                                                    'UV_PYTHON_CACHE_DIR=/tmp/uvpython',
-                                                                                    'UV_CACHE_DIR=/tmp/uvcache'
-                                                                                ]){
-                                                                                    dockerImage.inside('--tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv --tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'){
-                                                                                        unstash 'python sdist'
-                                                                                        sh 'mkdir -p logs'
-                                                                                        findFiles(glob: 'dist/*.tar.gz').each{
-                                                                                            withEnv(["TOX_RESULT_JSON_PATH=${WORKSPACE}/logs/tox_result-sdist-linux-${arch}-${pythonVersion}.json"]){
-                                                                                                try{
-                                                                                                    sh(
-                                                                                                        label: 'Running Tox',
-                                                                                                        script: "uv run --only-group=tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '').replace('+gil','')} --result-json=${env.TOX_RESULT_JSON_PATH}"
-                                                                                                    )
-                                                                                                } catch(e){
-                                                                                                    if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
-                                                                                                        archiveArtifacts artifacts: 'logs/*.json'
-                                                                                                        echo(readFile("${env.TOX_RESULT_JSON_PATH}"))
-                                                                                                    } else {
-                                                                                                        echo "Tox failed but no result json found at ${TOX_RESULT_JSON_PATH}"
-                                                                                                    }
-                                                                                                    sh 'rm -rf ./.tox'
-                                                                                                    throw e
-                                                                                                }
-                                                                                            }
-                                                                                        }
-                                                                                    }
-                                                                                }
-                                                                            } finally {
-                                                                                sh "docker rmi --no-prune ${dockerImage.id}"
-                                                                            }
-                                                                        }
-                                                                    } finally {
-                                                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
-                                                                    }
-                                                                }
-                                                            }
-                                                        } else {
-                                                            Utils.markStageSkippedForConditional(newStageName)
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
+                                    testSdistStages << getMacSdistStages(params, SUPPORTED_MAC_VERSIONS)
+                                    testSdistStages << getWindowsSdistStages(params, SUPPORTED_WINDOWS_VERSIONS)
+                                    testSdistStages << getLinuxSdistStages(params, SUPPORTED_LINUX_VERSIONS)
+
                                     parallel(testSdistStages)
                                 }
                             }
@@ -1262,7 +1343,7 @@ pipeline {
                         docker{
                             image 'ghcr.io/astral-sh/uv:debian'
                             label 'docker && linux'
-                            args '--mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp'
+                            args "--label=purpose=ci --label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"JOB_NAME=${env.JOB_NAME}\" --label \"BUILD_NUMBER=${currentBuild.number}\" --mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp"
                         }
                     }
                     when{
@@ -1336,6 +1417,7 @@ pipeline {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL'
+                            args "--label=purpose=ci --label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"JOB_NAME=${env.JOB_NAME}\" --label \"BUILD_NUMBER=${currentBuild.number}\""
                         }
                     }
                     options{

@@ -79,7 +79,7 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     uv run --only-group conan --with ninja conan install /tmp --build missing --conf=tools.cmake.cmaketoolchain:generator=Ninja -c tools.graph:skip_test=True && \
     uv run --only-group conan --with ninja conan cache clean "*" -b --source --build --temp && \
     uv cache prune && \
-    if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
+    if [ -f /tmp/remotes.json ]; then \
         mv -f /tmp/remotes.json ${CONAN_HOME}/remotes.json; \
     fi
 # ==============================================================================
@@ -98,7 +98,3 @@ RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
     mkdir -p ${UV_CACHE_DIR} && \
     chmod -R 777 ${UV_CACHE_DIR}
 COPY scripts/resources/package_for_linux/helper_scripts/build_wheel.sh /usr/local/bin/build_wheel
-LABEL type="jenkins"
-
-# To help mark the image as a CI image so it can be cleaned up more easily
-LABEL purpose=ci
