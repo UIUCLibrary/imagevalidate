@@ -1219,7 +1219,7 @@ pipeline {
                                                                         ){
                                                                             powershell(label: 'Running Tox',
                                                                                  script: """uv python install cpython-${version}
-                                                                                            uv run --only-group=tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
+                                                                                            uv run --only-group=tox-uv tox run --recreate -e ${toxEnv} --runner uv-venv-lock-runner -vv
                                                                                          """
                                                                             )
                                                                         }
