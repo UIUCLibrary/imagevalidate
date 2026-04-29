@@ -66,66 +66,55 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                     stage(newArchStage){
                                         if(selectedArches.contains(arch)){
                                             stage("Build Wheel (${pythonVersion} MacOS ${arch})"){
-                                                buildPythonPkg(
-                                                    agent: [
-                                                        label: "mac && python3 && ${arch}",
-                                                    ],
-                                                    retries: 3,
-                                                    buildCmd: {
-                                                        checkout scm
-                                                        sh(label: 'Building wheel',
-                                                           script: "sh ./scripts/build_mac_wheel.sh ${pythonVersion}"
-                                                           )
-                                                    },
-                                                    post:[
-                                                        cleanup: {
-                                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
-                                                        },
-                                                        success: {
-                                                            stash includes: 'dist/*.whl', name: "python${pythonVersion} mac ${arch} wheel"
-                                                            wheelStashes << "python${pythonVersion} mac ${arch} wheel"
-                                                            archiveArtifacts artifacts: 'dist/*.whl'
+                                                node("mac && python3 && ${arch}"){
+                                                    checkout scm
+                                                    try{
+                                                        retry(3){
+                                                            sh(label: 'Building wheel',
+                                                               script: "sh ./scripts/build_mac_wheel.sh ${pythonVersion}"
+                                                            )
                                                         }
-                                                    ]
-                                                )
+                                                        stash includes: 'dist/*.whl', name: "python${pythonVersion} mac ${arch} wheel"
+                                                        wheelStashes << "python${pythonVersion} mac ${arch} wheel"
+                                                        archiveArtifacts artifacts: 'dist/*.whl'
+                                                    } finally {
+                                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                    }
+                                                }
                                             }
                                             def testSingleArchWheelStageName = "Test Wheel (${pythonVersion} MacOS ${arch})"
                                             stage(testSingleArchWheelStageName){
                                                 if(params.TEST_PACKAGES == true){
-                                                    testPythonPkg(
-                                                        agent: [
-                                                            label: "mac && python3 && ${arch}",
-                                                        ],
-                                                        testSetup: {
+                                                    retry(3){
+                                                        node("mac && python3 && ${arch}"){
                                                             checkout scm
                                                             unstash "python${pythonVersion} mac ${arch} wheel"
-                                                        },
-                                                        retries: 3,
-                                                        testCommand: {
-                                                            findFiles(glob: 'dist/*.whl').each{
-                                                                withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
-                                                                    sh(label: 'Running Tox',
-                                                                       script: """python3 -m venv venv
-                                                                                  . ./venv/bin/activate
-                                                                                  trap 'rm -rf venv' EXIT
-                                                                                  python -m pip install --disable-pip-version-check uv
-                                                                                  trap "rm -rf venv && rm -rf .tox" EXIT
-                                                                                  venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
-                                                                              """
-                                                                    )
+                                                            try{
+                                                                findFiles(glob: 'dist/*.whl').each{
+                                                                    withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
+                                                                        sh """python3 -m venv venv
+                                                                              venv/bin/python -m pip install --disable-pip-version-check uv
+                                                                              venv/bin/uv python install ${pythonVersion.replace('+gil','')}
+                                                                           """
+                                                                        def attempt = 0
+                                                                        retry(2){
+                                                                            attempt += 1
+                                                                            withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
+                                                                                sh(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+                                                                                   script: """trap 'rm -rf .tox' EXIT
+                                                                                              venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
+                                                                                           """
+                                                                                )
+                                                                            }
+                                                                        }
+                                                                    }
                                                                 }
-                                                            }
-                                                        },
-                                                        post:[
-                                                            cleanup: {
+                                                                archiveArtifacts artifacts: 'dist/*.whl'
+                                                            } finally {
                                                                 sh "${tool(name: 'Default', type: 'git')} clean -dfx"
-                                                            },
-                                                            success: {
-                                                                 archiveArtifacts artifacts: 'dist/*.whl'
                                                             }
-                                                        ]
-                                                    )
-
+                                                        }
+                                                    }
                                                 } else {
                                                     Utils.markStageSkippedForConditional(testSingleArchWheelStageName)
                                                 }
@@ -180,38 +169,37 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                     return [
                                         "${testWheelStageName}": {
                                             stage("Test Python ${pythonVersion} universal2 Wheel on ${arch} mac"){
-                                                testPythonPkg(
-                                                    agent: [
-                                                        label: "mac && python3 && ${arch}",
-                                                    ],
-                                                    testSetup: {
+                                                retry(3){
+                                                    node("mac && python3 && ${arch}"){
                                                         checkout scm
                                                         unstash "python${pythonVersion} mac-universal2 wheel"
-                                                    },
-                                                    retries: 3,
-                                                    testCommand: {
-                                                        findFiles(glob: 'dist/*.whl').each{
-                                                            withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
-                                                                sh(label: 'Running Tox',
-                                                                   script: """python3 -m venv venv
-                                                                              trap 'rm -rf venv' EXIT
-                                                                              ./venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                              trap "rm -rf venv && rm -rf .tox" EXIT
-                                                                              venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
-                                                                           """
-                                                                )
+
+                                                        sh """python3 -m venv venv
+                                                              ./venv/bin/python -m pip install --disable-pip-version-check uv
+                                                              ./venv/bin/uv python install ${pythonVersion.replace('+gil','')}
+                                                          """
+                                                        try{
+                                                            findFiles(glob: 'dist/*.whl').each{
+                                                                withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
+                                                                    def attempt = 0
+                                                                    retry(2){
+                                                                        attempt += 1
+                                                                        withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
+                                                                            sh(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+                                                                               script: """trap 'rm -rf .tox' EXIT
+                                                                                          venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
+                                                                                       """
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                }
                                                             }
-                                                        }
-                                                    },
-                                                    post:[
-                                                        cleanup: {
+                                                            archiveArtifacts artifacts: 'dist/*.whl'
+                                                        } finally {
                                                             sh "${tool(name: 'Default', type: 'git')} clean -dfx"
-                                                        },
-                                                        success: {
-                                                             archiveArtifacts artifacts: 'dist/*.whl'
                                                         }
-                                                    ]
-                                                )
+                                                    }
+                                                }
                                             }
                                         }
                                     ]
@@ -385,10 +373,16 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPipCa
                                                                     '--tmpfs /.local/share:exec'
                                                                 ){
                                                                     sh "uv python install cpython-${pythonVersion.replace('+gil', '')}"
-                                                                    sh(
-                                                                        label: 'Testing with tox',
-                                                                        script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')} --installpkg ${findFiles(glob:'dist/*.whl')[0].path}"
-                                                                    )
+                                                                    def attempt = 0
+                                                                    retry(2){
+                                                                        attempt += 1
+                                                                        withEnv([(attempt == 1) ? 'UV_OFFLINE=1' : 'UV_OFFLINE=0']){
+                                                                            sh(
+                                                                                label: "Testing with tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+                                                                                script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')} --installpkg ${findFiles(glob:'dist/*.whl')[0].path}"
+                                                                            )
+                                                                        }
+                                                                    }
                                                                 }
                                                             }
                                                         } finally {
@@ -447,17 +441,25 @@ def getLinuxSdistStages(params, supportedVersions){
                                                         "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
                                                         "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
                                                         '--tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv ' +
+                                                        '--tmpfs /.local/share:exec ' +
                                                         '--tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'
                                                     ){
+                                                        sh "uv python install ${pythonVersion.replace('+gil','')}"
                                                         unstash 'python sdist'
                                                         sh 'mkdir -p logs'
                                                         findFiles(glob: 'dist/*.tar.gz').each{
                                                             withEnv(["TOX_RESULT_JSON_PATH=${WORKSPACE}/logs/tox_result-sdist-linux-${arch}-${pythonVersion}.json"]){
                                                                 try{
-                                                                    sh(
-                                                                        label: 'Running Tox',
-                                                                        script: "uv run --only-group=tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '').replace('+gil','')} --result-json=${env.TOX_RESULT_JSON_PATH}"
-                                                                    )
+                                                                    def attempt = 0
+                                                                    retry(2){
+                                                                        attempt += 1
+                                                                        withEnv([(attempt == 1) ? 'UV_OFFLINE=1' : 'UV_OFFLINE=0']){
+                                                                            sh(
+                                                                                label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+                                                                                script: "uv run --only-group=tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '').replace('+gil','')} --result-json=${env.TOX_RESULT_JSON_PATH}"
+                                                                            )
+                                                                        }
+                                                                    }
                                                                 } catch(e){
                                                                     if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
                                                                         archiveArtifacts artifacts: 'logs/*.json'
@@ -606,14 +608,19 @@ def getMacSdistStages(params, supportedVersions){
                                                 "TOX_RESULT_JSON_PATH=${WORKSPACE}/logs/tox_result-macos-${arch}-sdist-${pythonVersion}.json"
                                             ]){
                                                 try{
-                                                    sh(label: 'Running Tox',
-                                                       script: """python3 -m venv venv
-                                                                  venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                  CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --only-group=tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')} --result-json=${TOX_RESULT_JSON_PATH}
-                                                                  rm -rf ./.tox
-                                                                  rm -rf ./venv
-                                                               """
-                                                    )
+                                                    sh """python3 -m venv venv
+                                                          venv/bin/python -m pip install --disable-pip-version-check uv
+                                                          venv/bin/uv python install cpython-${pythonVersion.replace('+gil','')}
+                                                       """
+                                                    def attempt = 0
+                                                    retry(2){
+                                                        attempt += 1
+                                                        withEnv([(attempt == 1) ? 'UV_OFFLINE=1' : 'UV_OFFLINE=0']){
+                                                            sh(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+                                                               script: "CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --only-group=tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')} --result-json=${TOX_RESULT_JSON_PATH}"
+                                                            )
+                                                        }
+                                                    }
                                                 } catch(e){
                                                     if(fileExists("${env.TOX_RESULT_JSON_PATH}")){
                                                         archiveArtifacts artifacts: 'logs/*.json'
