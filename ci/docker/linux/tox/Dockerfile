@@ -58,7 +58,7 @@ RUN --mount=type=cache,target=${UV_CACHE_DIR} \
     uv run --only-group=conan conan install /tmp --build missing -c tools.graph:skip_test=True && \
     uv run --only-group=conan conan cache clean "*" -b --source --build --temp && \
     rm -rf venv && \
-    if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
+    if [ -f "/tmp/remotes.json" ]; then \
         mv -f /tmp/remotes.json ${CONAN_HOME}/remotes.json; \
     fi
 # ==============================================================================
