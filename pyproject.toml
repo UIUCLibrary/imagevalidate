@@ -39,7 +39,6 @@ Documentation = "https://www.library.illinois.edu/dccdocs/imagevalidate"
 Download = "https://github.com/UIUCLibrary/imagevalidate"
 
 [dependency-groups]
-audit-dependencies = ["uv-secure"]
 docs = ["sphinx"]
 type_checking = [
     "mypy",
@@ -64,7 +63,6 @@ dev = [
     {include-group = "docs"},
     {include-group = "lint"},
     {include-group = "test"},
-    {include-group = "audit-dependencies"},
     "coverage[toml]",
     "gcovr;os_name!= 'nt'",
 ]
