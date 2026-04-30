@@ -102,7 +102,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                                             withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
                                                                                 sh(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
                                                                                    script: """trap 'rm -rf .tox' EXIT
-                                                                                              venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
+                                                                                              venv/bin/uv run --frozen --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
                                                                                            """
                                                                                 )
                                                                             }
@@ -145,7 +145,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                        script: """python3 -m venv venv
                                                   trap 'rm -rf venv' EXIT
                                                   ./venv/bin/pip install --disable-pip-version-check uv
-                                                  ./venv/bin/uv run --only-group package delocate-merge ${wheelNames.join(' ')} --verbose -w ./out/
+                                                  ./venv/bin/uv run --frozen --only-group=package delocate-merge ${wheelNames.join(' ')} --verbose -w ./out/
                                                   rm dist/*.whl
                                                """
                                        )
@@ -187,7 +187,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                                         withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
                                                                             sh(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
                                                                                script: """trap 'rm -rf .tox' EXIT
-                                                                                          venv/bin/uv run --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
+                                                                                          venv/bin/uv run --frozen --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
                                                                                        """
                                                                             )
                                                                         }
@@ -282,7 +282,7 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPip
                                                             withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
                                                                 bat(
                                                                     label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
-                                                                    script: """uv run --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')}  --installpkg ${it.path}
+                                                                    script: """uv run --frozen --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')}  --installpkg ${it.path}
                                                                                rmdir /s /q .tox
                                                                                rmdir /s /q dist
                                                                             """
@@ -379,7 +379,7 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPipCa
                                                                         withEnv([(attempt == 1) ? 'UV_OFFLINE=1' : 'UV_OFFLINE=0']){
                                                                             sh(
                                                                                 label: "Testing with tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
-                                                                                script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')} --installpkg ${findFiles(glob:'dist/*.whl')[0].path}"
+                                                                                script: "uv run --frozen --python=${pythonVersion} --only-group=tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')} --installpkg ${findFiles(glob:'dist/*.whl')[0].path}"
                                                                             )
                                                                         }
                                                                     }
@@ -456,7 +456,7 @@ def getLinuxSdistStages(params, supportedVersions){
                                                                         withEnv([(attempt == 1) ? 'UV_OFFLINE=1' : 'UV_OFFLINE=0']){
                                                                             sh(
                                                                                 label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
-                                                                                script: "uv run --only-group=tox-uv  tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '').replace('+gil','')} --result-json=${env.TOX_RESULT_JSON_PATH}"
+                                                                                script: "uv run --frozen --only-group=tox-uv tox run --installpkg ${it.path} --workdir ./.tox -e py${pythonVersion.replace('.', '').replace('+gil','')} --result-json=${env.TOX_RESULT_JSON_PATH}"
                                                                             )
                                                                         }
                                                                     }
@@ -539,7 +539,7 @@ def getWindowsSdistStages(params, supportedVersions){
                                                                 withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
                                                                     bat(
                                                                         label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
-                                                                        script: "uv run --python=${pythonVersion} --only-group=tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil','')} -vv --result-json=%TOX_RESULT_JSON_PATH%"
+                                                                        script: "uv run --frozen --python=${pythonVersion} --only-group=tox-uv tox run --workdir %TEMP%\\.tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil','')} -vv --result-json=%TOX_RESULT_JSON_PATH%"
                                                                     )
                                                                 }
                                                             }
@@ -617,7 +617,7 @@ def getMacSdistStages(params, supportedVersions){
                                                         attempt += 1
                                                         withEnv([(attempt == 1) ? 'UV_OFFLINE=1' : 'UV_OFFLINE=0']){
                                                             sh(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
-                                                               script: "CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --only-group=tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')} --result-json=${TOX_RESULT_JSON_PATH}"
+                                                               script: "CONAN_REVISIONS_ENABLED=1  venv/bin/uv run --frozen --only-group=tox-uv tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')} --result-json=${TOX_RESULT_JSON_PATH}"
                                                             )
                                                         }
                                                     }
@@ -1105,7 +1105,7 @@ pipeline {
                                                 ){
                                                     envs = sh(
                                                         label: 'Get tox environments',
-                                                        script: 'uv run --quiet --only-group=tox --isolated tox list -d --no-desc',
+                                                        script: 'uv run --frozen --quiet --only-group=tox --isolated tox list -d --no-desc',
                                                         returnStdout: true,
                                                     ).trim().split('\n')
                                                 }
@@ -1140,7 +1140,7 @@ pipeline {
                                                                     ){
                                                                         try{
                                                                             sh( label: 'Running Tox',
-                                                                                script: "uv run --only-group=tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv"
+                                                                                script: "uv run --frozen --only-group=tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv"
                                                                                 )
                                                                         } catch(e) {
                                                                             sh(script: 'uv python list')
@@ -1188,7 +1188,7 @@ pipeline {
                                                      bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
                                                      envs = bat(
                                                          label: 'Get tox environments',
-                                                         script: '@.\\venv\\Scripts\\uv run --quiet --only-group=tox tox list -d --no-desc',
+                                                         script: '@.\\venv\\Scripts\\uv run --frozen --quiet --only-group=tox tox list -d --no-desc',
                                                          returnStdout: true,
                                                      ).trim().split('\r\n')
                                                 }
@@ -1226,7 +1226,7 @@ pipeline {
                                                                         ){
                                                                             bat(label: 'Running Tox',
                                                                                 script: """uv python install cpython-${version}
-                                                                                           uv run --only-group=tox-uv tox run --recreate -e ${toxEnv} --runner uv-venv-lock-runner -vv
+                                                                                           uv run --frozen --only-group=tox-uv tox run --recreate -e ${toxEnv} --runner uv-venv-lock-runner -vvv
                                                                                         """
                                                                             )
                                                                         }
