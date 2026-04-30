@@ -1224,10 +1224,10 @@ pipeline {
                                                                             '--mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR ' +
                                                                             "--mount source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"
                                                                         ){
-                                                                            powershell(label: 'Running Tox',
-                                                                                 script: """uv python install cpython-${version}
-                                                                                            uv run --only-group=tox-uv tox run --recreate -e ${toxEnv} --runner uv-venv-lock-runner -vv
-                                                                                         """
+                                                                            bat(label: 'Running Tox',
+                                                                                script: """uv python install cpython-${version}
+                                                                                           uv run --only-group=tox-uv tox run --recreate -e ${toxEnv} --runner uv-venv-lock-runner -vv
+                                                                                        """
                                                                             )
                                                                         }
                                                                     }
