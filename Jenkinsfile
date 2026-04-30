@@ -406,6 +406,7 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPipCa
                                                                     '--label=purpose=ci --label "JOB_NAME=$JOB_NAME" ' +
                                                                     "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
                                                                     "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
+                                                                    '--mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp -e UV_CACHE_DIR=/tmp/uvcache ' +
                                                                     '--tmpfs /.local/share:exec'
                                                                 ){
                                                                     sh "uv python install cpython-${pythonVersion.replace('+gil', '')}"
@@ -476,9 +477,10 @@ def getLinuxSdistStages(params, supportedVersions){
                                                         '--label=purpose=ci --label "JOB_NAME=$JOB_NAME" ' +
                                                         "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
                                                         "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
+                                                        '--mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp -e UV_CACHE_DIR=/tmp/uvcache ' +
                                                         '--tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv ' +
                                                         '--tmpfs /.local/share:exec ' +
-                                                        '--tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'
+                                                        '--tmpfs /tmp_tox:exec -e TOX_WORK_DIR=/tmp_tox'
                                                     ){
                                                         sh "uv python install ${pythonVersion.replace('+gil','')}"
                                                         unstash 'python sdist'
@@ -745,7 +747,7 @@ pipeline {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86_64'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL'
-                            args "--label=purpose=ci --label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"JOB_NAME=${env.JOB_NAME}\" --label \"BUILD_NUMBER=${currentBuild.number}\" -v ${SHARED_PIP_CACHE_VOLUME_NAME}:/tmp/pipcache  --tmpfs /.config:exec --tmpfs /.tree-sitter:exec --tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv"
+                            args "--label=purpose=ci --label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"JOB_NAME=${env.JOB_NAME}\" --label \"BUILD_NUMBER=${currentBuild.number}\" -v ${SHARED_PIP_CACHE_VOLUME_NAME}:/tmp/pipcache  --tmpfs /.config:exec --tmpfs /.tree-sitter:exec --tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv --mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp"
                         }
                     }
                     environment{
@@ -1144,7 +1146,8 @@ pipeline {
                                                     '--label=purpose=ci --label "JOB_NAME=$JOB_NAME" ' +
                                                     "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
                                                     "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
-                                                    '--tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'
+                                                    '--mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp -e UV_CACHE_DIR=/tmp/uvcache ' +
+                                                    '--tmpfs /tmp_toxworkingdir:exec -e TOX_WORK_DIR=/tmp_toxworkingdir'
                                                 ){
                                                     withEnv(["UV_CONFIG_FILE=${createUnixUvConfig()}"]){
                                                         envs = sh(
@@ -1180,8 +1183,9 @@ pipeline {
                                                                         '--label=purpose=ci --label "JOB_NAME=$JOB_NAME" ' +
                                                                         "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" " +
                                                                         "--label \"BUILD_NUMBER=${currentBuild.number}\" " +
-                                                                        '--tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv '+
-                                                                        '--tmpfs /tmp/toxworkingdir:exec -e TOX_WORK_DIR=/tmp/toxworkingdir'
+                                                                        '--mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp -e UV_CACHE_DIR=/tmp/uvcache ' +
+                                                                        '--tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv ' +
+                                                                        '--tmpfs /tmp_toxworkingdir:exec -e TOX_WORK_DIR=/tmp_toxworkingdir '
                                                                     ){
                                                                         withEnv(["UV_CONFIG_FILE=${createUnixUvConfig()}"]){
                                                                             try{
