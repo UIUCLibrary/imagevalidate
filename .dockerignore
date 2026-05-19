@@ -1,0 +1,10 @@
+/.tox
+/.venv
+/venv
+/dist
+/build
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+/CMakeUserPresets.json
