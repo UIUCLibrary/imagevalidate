@@ -1260,7 +1260,7 @@ pipeline {
                                                          node('docker && windows'){
                                                             def image
                                                             checkout scm
-                                                            timeout(60){
+                                                            timeout(120){
                                                                 lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
                                                                     image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/Dockerfile --label=purpose=ci --build-arg PIP_DOWNLOAD_CACHE=c:/users/ContainerAdministrator/appdata/local/pip --build-arg UV_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg UV_CACHE_DIR=c:/users/ContainerAdministrator/appdata/local/uv' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                 }
