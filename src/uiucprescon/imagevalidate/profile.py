@@ -13,6 +13,7 @@ known_profiles: Dict[str, Type[profile_pkg.AbsProfile]] = {}
 
 
 class Profile:
+    # pylint: disable=too-few-public-methods
     """Profile loader for validating embedded metadata in image files."""
 
     def __init__(self, validation_profile: profile_pkg.AbsProfile) -> None:
@@ -36,6 +37,7 @@ class Profile:
         if not os.path.exists(file):
             raise FileNotFoundError(f"Unable to locate {file}")
         return self._profile.validate(file)
+# pylint: enable=too-few-public-methods
 
 
 def available_profiles() -> Set[str]:
