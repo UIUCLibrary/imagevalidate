@@ -66,4 +66,5 @@ def get_profile_classes():
         known_package_profiles[profile[1].profile_name()] = profile[1]
     return known_package_profiles
 
+
 known_profiles = get_profile_classes()

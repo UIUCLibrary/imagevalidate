@@ -2,7 +2,9 @@
 
 from .issues import IssueCategory
 from .report import Report
-from .profile import Profile, available_profiles, get_profile, get_profile_classes
+from .profile import (
+    Profile, available_profiles, get_profile, get_profile_classes
+)
 from . import profiles
 
 __all__ = [
