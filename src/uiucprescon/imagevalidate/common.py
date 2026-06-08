@@ -74,8 +74,8 @@ class ColorSpaceIccDeviceModelCheck(AbsColorSpaceExtractor):
         exiv_image = py3exiv2bind.Image(image)
         try:
             icc = exiv_image.icc()
-        except py3exiv2bind.core.NoICCError:
-            raise InvalidStrategy("Unable to get ICC profile.")
+        except py3exiv2bind.core.NoICCError as error:
+            raise InvalidStrategy("Unable to get ICC profile.") from error
 
         device_model = icc.get('device_model')
         if not device_model or \
@@ -102,7 +102,9 @@ class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
         try:
             icc = exiv2_image.icc()
         except py3exiv2bind.core.NoICCError as error:
-            raise InvalidStrategy(f"Unable to get ICC profile.Reason: {error}")
+            raise InvalidStrategy(
+                f"Unable to get ICC profile.Reason: {error}"
+            ) from error
 
         pref_ccm = icc.get("pref_ccm")
         if not pref_ccm or pref_ccm.value.decode("ascii").rstrip(' \0') == '':
