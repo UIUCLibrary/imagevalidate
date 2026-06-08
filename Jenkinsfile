@@ -965,6 +965,21 @@ pipeline {
                                                 }
                                             }
                                         }
+                                        stage('pyDocStyle'){
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'Did not pass all pyDocStyle tests', stageResult: 'UNSTABLE') {
+                                                    sh(
+                                                        label: 'Run pydocstyle',
+                                                        script: 'uv run pydocstyle src/uiucprescon/imagevalidate > reports/pydocstyle-report.txt'
+                                                    )
+                                                }
+                                            }
+                                            post {
+                                                always{
+                                                    recordIssues(tools: [pyDocStyle(pattern: 'reports/pydocstyle-report.txt')])
+                                                }
+                                            }
+                                        }
                                         stage('Run Doctest Tests'){
                                            steps {
                                                catchError(buildResult: 'SUCCESS', message: 'Doctest found issues', stageResult: 'UNSTABLE') {
