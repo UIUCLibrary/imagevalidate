@@ -20,8 +20,8 @@ class AbsProfile(metaclass=abc.ABCMeta):
     Implement the validate method when creating new profile
     """
 
-    expected_metadata_constants: Dict[str, str] = dict()
-    expected_metadata_any_value: List[str] = list()
+    expected_metadata_constants: Dict[str, str] = {}
+    expected_metadata_any_value: List[str] = []
     valid_extensions: Set[str] = set()
 
     @staticmethod
@@ -44,7 +44,7 @@ class AbsProfile(metaclass=abc.ABCMeta):
     def _get_metadata_static_values(cls, image: py3exiv2bind.Image) \
             -> Dict[str, Result]:
 
-        data = dict()
+        data = {}
         for key, value in cls.expected_metadata_constants.items():
             data[key] = Result(
                 expected=value,
@@ -56,7 +56,7 @@ class AbsProfile(metaclass=abc.ABCMeta):
     def _get_metadata_has_values(cls, image: py3exiv2bind.Image) -> \
             Dict[str, Result]:
 
-        data = dict()
+        data = {}
         for key in cls.expected_metadata_any_value:
             data[key] = Result(
                 expected=ResultCategory.ANY,
@@ -81,7 +81,7 @@ class AbsProfile(metaclass=abc.ABCMeta):
 
             return message_generator.generate_message(field, report_data)
 
-        return "Unknown error with {}".format(field)
+        return f"Unknown error with {field}"
 
     @staticmethod
     def analyze_data_for_issues(result: Result) -> Optional[IssueCategory]:
@@ -104,7 +104,7 @@ class AbsProfile(metaclass=abc.ABCMeta):
             -> Dict[str, Result]:
         """Access data from image."""
         image = py3exiv2bind.Image(filename)
-        data: Dict[str, Result] = dict()
+        data: Dict[str, Result] = {}
         data.update(cls._get_metadata_has_values(image))
         data.update(cls._get_metadata_static_values(image))
         return data
