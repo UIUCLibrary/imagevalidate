@@ -1,8 +1,10 @@
 """Report generated from validation."""
+from __future__ import annotations
 
-from typing import NamedTuple, Optional, Dict, List, Union
+from typing import NamedTuple, Optional, Dict, List, Union, TYPE_CHECKING
 from enum import Enum
-from uiucprescon import imagevalidate
+if TYPE_CHECKING:
+    from uiucprescon import imagevalidate
 
 
 class ResultCategory(Enum):

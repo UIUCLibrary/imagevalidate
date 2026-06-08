@@ -1,11 +1,17 @@
 """Abstract class for creating a profile."""
+from __future__ import annotations
 
 import abc
 
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, TYPE_CHECKING
+
 import py3exiv2bind
-from uiucprescon.imagevalidate import Report, IssueCategory, messages
+from uiucprescon.imagevalidate import messages
+from uiucprescon.imagevalidate.issues import IssueCategory
 from uiucprescon.imagevalidate.report import Result, ResultCategory
+
+if TYPE_CHECKING:
+    from uiucprescon.imagevalidate.report import Report
 
 
 class AbsProfile(metaclass=abc.ABCMeta):
