@@ -6,11 +6,15 @@ from uiucprescon import imagevalidate
 
 
 class ResultCategory(Enum):
+    """Enum class defining result categories."""
+
     ANY = 0
     NONE = 1
 
 
 class Result(NamedTuple):
+    """Result class defining result values."""
+
     expected: Union[str, ResultCategory]
     actual: Optional[str]
 

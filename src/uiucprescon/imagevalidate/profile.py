@@ -55,6 +55,7 @@ def get_profile(name: str) -> profile_pkg.AbsProfile:
 
 
 def get_profile_classes():
+    """Get all available profiles."""
     known_package_profiles: Dict[str, Type[profile_pkg.AbsProfile]] = {}
     profiles = \
         inspect.getmembers(
