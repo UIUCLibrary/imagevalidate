@@ -1,10 +1,13 @@
 """Profile for validating images."""
+from __future__ import annotations
 
 import os
 import inspect
-from typing import Type, Set, Dict
-from uiucprescon import imagevalidate
+from typing import Type, Set, Dict, TYPE_CHECKING
 from . import profiles as profile_pkg
+
+if TYPE_CHECKING:
+    from uiucprescon import imagevalidate
 
 known_profiles: Dict[str, Type[profile_pkg.AbsProfile]] = {}
 

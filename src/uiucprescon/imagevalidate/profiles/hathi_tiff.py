@@ -1,14 +1,18 @@
 """Profile for HathiTrust tiff files."""
 
+from __future__ import annotations
+
 import collections
 import sys
 import typing
 
 import py3exiv2bind
-from uiucprescon.imagevalidate import IssueCategory
-from uiucprescon.imagevalidate import Report, common
-from uiucprescon.imagevalidate.report import Result
+from uiucprescon.imagevalidate import common
+from uiucprescon.imagevalidate.report import Result, Report
 from . import AbsProfile
+
+if typing.TYPE_CHECKING:
+    from uiucprescon.imagevalidate import IssueCategory
 
 
 class HathiTiff(AbsProfile):
