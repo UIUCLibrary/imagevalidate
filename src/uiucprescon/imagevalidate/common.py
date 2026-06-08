@@ -102,8 +102,7 @@ class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
         try:
             icc = exiv2_image.icc()
         except py3exiv2bind.core.NoICCError as error:
-            raise InvalidStrategy("Unable to get ICC profile."
-                                  "Reason: {}".format(error))
+            raise InvalidStrategy(f"Unable to get ICC profile.Reason: {error}")
 
         pref_ccm = icc.get("pref_ccm")
         if not pref_ccm or pref_ccm.value.decode("ascii").rstrip(' \0') == '':
