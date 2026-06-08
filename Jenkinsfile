@@ -1034,6 +1034,24 @@ pipeline {
                                                 }
                                             }
                                         }
+                                        stage('Run Pylint Static Analysis') {
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                                    sh(
+                                                        script: '''mkdir -p logs
+                                                                   mkdir -p reports
+                                                                   uv run pylint src/uiucprescon/imagevalidate -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
+                                                                ''',
+                                                        label: 'Running pylint'
+                                                    )
+                                                }
+                                            }
+                                            post{
+                                                always {
+                                                    recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
+                                                }
+                                            }
+                                        }
                                     }
                                     post{
                                         always{
@@ -1086,12 +1104,12 @@ pipeline {
                                                     if (env.CHANGE_ID){
                                                         sh(
                                                             label: 'Running Sonar Scanner',
-                                                            script: "uv run pysonar -t \$token -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
+                                                            script: "uv run pysonar -t \$token -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory -Dsonar.python.pylint.reportPaths=reports/pylint.txt"
                                                             )
                                                     } else {
                                                         sh(
                                                             label: 'Running Sonar Scanner',
-                                                            script: "uv run pysonar -t \$token -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
+                                                            script: "uv run pysonar -t \$token -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory -Dsonar.python.pylint.reportPaths=reports/pylint.txt"
                                                             )
                                                     }
                                                 }
