@@ -12,6 +12,7 @@ class InvalidStrategy(Exception):
 
 
 class AbsColorSpaceExtractor(metaclass=abc.ABCMeta):
+    # pylint: disable=too-few-public-methods
     """Base class for extracting the color space from an image file."""
 
     @abc.abstractmethod
@@ -29,6 +30,7 @@ class AbsColorSpaceExtractor(metaclass=abc.ABCMeta):
 
 
 class ExtractColorSpace:
+    # pylint: disable=too-few-public-methods
     """Strategy context for extract color space from a file."""
 
     def __init__(self, strategy: AbsColorSpaceExtractor) -> None:
@@ -55,6 +57,7 @@ class ExtractColorSpace:
 
 
 class ColorSpaceIccDeviceModelCheck(AbsColorSpaceExtractor):
+    # pylint: disable=too-few-public-methods
     """Extract color space by reading the device_model tag in the ICC profile.
 
     Useful for identifying sRGB.
@@ -85,6 +88,7 @@ class ColorSpaceIccDeviceModelCheck(AbsColorSpaceExtractor):
 
 
 class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
+    # pylint: disable=too-few-public-methods
     """Extract color space from reading pref_ccm in the ICC profile header."""
 
     def check(self, image: str) -> str:
@@ -113,6 +117,7 @@ class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
 
 
 class ColorSpaceOJPCheck(AbsColorSpaceExtractor):
+    # pylint: disable=too-few-public-methods
     """Color space extractor using openjpeg library."""
 
     def check(self, image: str) -> str:
