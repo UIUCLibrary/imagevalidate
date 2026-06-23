@@ -965,6 +965,21 @@ pipeline {
                                                 }
                                             }
                                         }
+                                        stage('pyDocStyle'){
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'Did not pass all pyDocStyle tests', stageResult: 'UNSTABLE') {
+                                                    sh(
+                                                        label: 'Run pydocstyle',
+                                                        script: 'uv run pydocstyle src/uiucprescon/imagevalidate > reports/pydocstyle-report.txt'
+                                                    )
+                                                }
+                                            }
+                                            post {
+                                                always{
+                                                    recordIssues(tools: [pyDocStyle(pattern: 'reports/pydocstyle-report.txt')])
+                                                }
+                                            }
+                                        }
                                         stage('Run Doctest Tests'){
                                            steps {
                                                catchError(buildResult: 'SUCCESS', message: 'Doctest found issues', stageResult: 'UNSTABLE') {
@@ -1016,6 +1031,24 @@ pipeline {
                                             post {
                                                 always {
                                                     recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                                                }
+                                            }
+                                        }
+                                        stage('Run Pylint Static Analysis') {
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                                    sh(
+                                                        script: '''mkdir -p logs
+                                                                   mkdir -p reports
+                                                                   uv run pylint src/uiucprescon/imagevalidate -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
+                                                                ''',
+                                                        label: 'Running pylint'
+                                                    )
+                                                }
+                                            }
+                                            post{
+                                                always {
+                                                    recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
                                                 }
                                             }
                                         }
@@ -1071,12 +1104,12 @@ pipeline {
                                                     if (env.CHANGE_ID){
                                                         sh(
                                                             label: 'Running Sonar Scanner',
-                                                            script: "uv run pysonar -t \$token -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
+                                                            script: "uv run pysonar -t \$token -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory -Dsonar.python.pylint.reportPaths=reports/pylint.txt"
                                                             )
                                                     } else {
                                                         sh(
                                                             label: 'Running Sonar Scanner',
-                                                            script: "uv run pysonar -t \$token -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
+                                                            script: "uv run pysonar -t \$token -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory -Dsonar.python.pylint.reportPaths=reports/pylint.txt"
                                                             )
                                                     }
                                                 }

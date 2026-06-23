@@ -1,81 +1,35 @@
 """Profile for HathiTrust tiff files."""
 
-import collections
+from __future__ import annotations
+
 import sys
 import typing
 
 import py3exiv2bind
-from uiucprescon.imagevalidate import IssueCategory
-from uiucprescon.imagevalidate import Report, common
+from uiucprescon.imagevalidate import common
 from uiucprescon.imagevalidate.report import Result
-from . import AbsProfile
+from . import hathi_common
 
 
-class HathiTiff(AbsProfile):
+class HathiTiff(hathi_common.AbsValidateHathiTrustProfile):
     """Profile for validating Tiff files for HathiTrust."""
 
-    expected_metadata_any_value = [
-        'Xmp.dc.creator',
+    expected_metadata_any_value =\
+        hathi_common.SHARED_EXPECTED_METADATA_ANY_VALUE
 
-        # Address
-        'Xmp.iptc.CreatorContactInfo/Iptc4xmpCore:CiAdrExtadr',
-
-        # City
-        'Xmp.iptc.CreatorContactInfo/Iptc4xmpCore:CiAdrCity',
-
-        # State
-        'Xmp.iptc.CreatorContactInfo/Iptc4xmpCore:CiAdrRegion',
-
-        # Zip code
-        'Xmp.iptc.CreatorContactInfo/Iptc4xmpCore:CiAdrPcode',
-
-        # Country
-        'Xmp.iptc.CreatorContactInfo/Iptc4xmpCore:CiAdrCtry',
-
-        # phone number
-        'Xmp.iptc.CreatorContactInfo/Iptc4xmpCore:CiTelWork',
-    ]
-
-    expected_metadata_constants = {
-        "Exif.Image.XResolution": "400/1",
-        "Exif.Image.YResolution": "400/1",
-        'Exif.Image.BitsPerSample': "8 8 8",
-    }
+    expected_metadata_constants = \
+        {
+            **hathi_common.SHARED_EXPECT_RESOLUTION_CONSTANTS,
+            **{
+                'Exif.Image.BitsPerSample': "8 8 8",
+            }
+        }
     valid_extensions = {".tif"}
 
     @staticmethod
     def profile_name() -> str:
         """Get the profile name."""
         return "HathiTrust Tiff"
-
-    def validate(self, file: str) -> Report:
-        """Validate the image file as a HathiTrust tiff.
-
-        Args:
-            file:
-                File path to an image file
-
-        Returns:
-            Returns a report of the results.
-
-        """
-        report = Report()
-        report.filename = file
-        report_data = self.get_data_from_image(file)
-        report._properties = report_data
-
-        analysis: typing.Dict[IssueCategory, list] = \
-            collections.defaultdict(list)
-
-        for key, result in report_data.items():
-            issue_category = self.analyze_data_for_issues(result)
-            if issue_category:
-                message = self.generate_error_msg(issue_category, key, result)
-                analysis[issue_category].append(message)
-
-        report._data.update(analysis)
-
-        return report
 
     @classmethod
     def get_data_from_image(cls, filename: str) -> typing.Dict[str, Result]:

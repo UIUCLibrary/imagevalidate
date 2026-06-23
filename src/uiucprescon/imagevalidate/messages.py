@@ -6,6 +6,7 @@ from uiucprescon.imagevalidate import report
 
 
 class AbsMessage(metaclass=abc.ABCMeta):
+    # pylint: disable=too-few-public-methods
     """Base class for messages."""
 
     @abc.abstractmethod
@@ -14,6 +15,7 @@ class AbsMessage(metaclass=abc.ABCMeta):
 
 
 class InvalidData(AbsMessage):
+    # pylint: disable=too-few-public-methods
     """Invalid data."""
 
     def generate_message(self, field: str, data: report.Result) -> str:
@@ -24,6 +26,7 @@ class InvalidData(AbsMessage):
 
 
 class EmptyData(AbsMessage):
+    # pylint: disable=too-few-public-methods
     """Empty data."""
 
     def generate_message(self, field: str, data: report.Result) -> str:
@@ -32,6 +35,7 @@ class EmptyData(AbsMessage):
 
 
 class MissingField(AbsMessage):
+    # pylint: disable=too-few-public-methods
     """Missing fields."""
 
     def generate_message(self, field: str, data: report.Result) -> str:
@@ -40,6 +44,7 @@ class MissingField(AbsMessage):
 
 
 class MessageGenerator:
+    # pylint: disable=too-few-public-methods
     """Message Generator."""
 
     def __init__(self, strategy: AbsMessage) -> None:

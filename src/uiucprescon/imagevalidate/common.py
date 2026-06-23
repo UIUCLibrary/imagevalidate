@@ -12,6 +12,7 @@ class InvalidStrategy(Exception):
 
 
 class AbsColorSpaceExtractor(metaclass=abc.ABCMeta):
+    # pylint: disable=too-few-public-methods
     """Base class for extracting the color space from an image file."""
 
     @abc.abstractmethod
@@ -29,6 +30,7 @@ class AbsColorSpaceExtractor(metaclass=abc.ABCMeta):
 
 
 class ExtractColorSpace:
+    # pylint: disable=too-few-public-methods
     """Strategy context for extract color space from a file."""
 
     def __init__(self, strategy: AbsColorSpaceExtractor) -> None:
@@ -55,6 +57,7 @@ class ExtractColorSpace:
 
 
 class ColorSpaceIccDeviceModelCheck(AbsColorSpaceExtractor):
+    # pylint: disable=too-few-public-methods
     """Extract color space by reading the device_model tag in the ICC profile.
 
     Useful for identifying sRGB.
@@ -74,8 +77,8 @@ class ColorSpaceIccDeviceModelCheck(AbsColorSpaceExtractor):
         exiv_image = py3exiv2bind.Image(image)
         try:
             icc = exiv_image.icc()
-        except py3exiv2bind.core.NoICCError:
-            raise InvalidStrategy("Unable to get ICC profile.")
+        except py3exiv2bind.core.NoICCError as error:
+            raise InvalidStrategy("Unable to get ICC profile.") from error
 
         device_model = icc.get('device_model')
         if not device_model or \
@@ -85,6 +88,7 @@ class ColorSpaceIccDeviceModelCheck(AbsColorSpaceExtractor):
 
 
 class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
+    # pylint: disable=too-few-public-methods
     """Extract color space from reading pref_ccm in the ICC profile header."""
 
     def check(self, image: str) -> str:
@@ -102,8 +106,9 @@ class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
         try:
             icc = exiv2_image.icc()
         except py3exiv2bind.core.NoICCError as error:
-            raise InvalidStrategy("Unable to get ICC profile."
-                                  "Reason: {}".format(error))
+            raise InvalidStrategy(
+                f"Unable to get ICC profile.Reason: {error}"
+            ) from error
 
         pref_ccm = icc.get("pref_ccm")
         if not pref_ccm or pref_ccm.value.decode("ascii").rstrip(' \0') == '':
@@ -112,6 +117,7 @@ class ColorSpaceIccPrefCcmCheck(AbsColorSpaceExtractor):
 
 
 class ColorSpaceOJPCheck(AbsColorSpaceExtractor):
+    # pylint: disable=too-few-public-methods
     """Color space extractor using openjpeg library."""
 
     def check(self, image: str) -> str:
