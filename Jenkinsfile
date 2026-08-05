@@ -5,9 +5,6 @@ library identifier: 'JenkinsPythonHelperLibrary@2024.2.0', retriever: modernSCM(
    ])
 
 
-def SUPPORTED_MAC_VERSIONS = ['3.10', '3.11', '3.12', '3.13', '3.14+gil', '3.14t']
-def SUPPORTED_LINUX_VERSIONS = ['3.10', '3.11', '3.12', '3.13', '3.14+gil', '3.14t']
-def SUPPORTED_WINDOWS_VERSIONS = ['3.10', '3.11', '3.12', '3.13', '3.14+gil', '3.14t']
 def SHARED_PIP_CACHE_VOLUME_NAME = 'pipcache'
 def installMSVCRuntime(cacheLocation){
     def cachedFile = "${cacheLocation}\\vc_redist.x64.exe".replaceAll(/\\\\+/, '\\\\')
@@ -710,6 +707,36 @@ def get_sonarqube_unresolved_issues(report_task_file){
     }
 }
 
+@NonCPS
+def getExclusions(config){
+    (config['supporting']['exclusions'] ?: []).collect{ exclusion ->
+        return exclusion.collect{ component ->
+            return ["name": component['name'], "values": component['values']]
+        }
+    }
+}
+
+def getConfig(){
+    def configData = [:]
+    node(){
+        checkout scm
+        def configID = 'uiucprescon_imagevalidate_pipeline_config'
+        def defaultConfigFile = 'ci/jenkins/jenkins_config.json'
+        try{
+            configFileProvider([configFile(fileId: configID, variable: 'config_file')]) {
+                echo "Using configuration from: \"$configID\""
+                configData = readJSON( file: config_file)
+            }
+        } catch (e){
+            echo "Using default configuration in ${defaultConfigFile}. To override, create a new config file in Jenkins with id: \"${configID}\""
+            configData = readJSON( file: defaultConfigFile)
+        }
+    }
+    configData['supporting']['exclusions'] = getExclusions(configData)
+    return configData
+}
+
+def config = getConfig()
 pipeline {
     agent none
     options {
@@ -1319,7 +1346,7 @@ pipeline {
                         }
                     }
                     steps{
-                        mac_wheels(SUPPORTED_MAC_VERSIONS, params.TEST_PACKAGES, params, wheelStashes)
+                        mac_wheels(config['supporting']['pythonVersions']['macOS'], params.TEST_PACKAGES, params, wheelStashes)
                     }
                 }
                 stage('Platform Wheels: Windows'){
@@ -1327,7 +1354,7 @@ pipeline {
                         equals expected: true, actual: params.INCLUDE_WINDOWS_X86_64
                     }
                     steps{
-                        windows_wheels(SUPPORTED_WINDOWS_VERSIONS, params.TEST_PACKAGES, params, wheelStashes, SHARED_PIP_CACHE_VOLUME_NAME)
+                        windows_wheels(config['supporting']['pythonVersions']['windows'], params.TEST_PACKAGES, params, wheelStashes, SHARED_PIP_CACHE_VOLUME_NAME)
                     }
                 }
                 stage('Platform Wheels: Linux'){
@@ -1338,7 +1365,7 @@ pipeline {
                         }
                     }
                     steps{
-                        linux_wheels(SUPPORTED_LINUX_VERSIONS, params.TEST_PACKAGES, params, wheelStashes, SHARED_PIP_CACHE_VOLUME_NAME)
+                        linux_wheels(config['supporting']['pythonVersions']['linux'], params.TEST_PACKAGES, params, wheelStashes, SHARED_PIP_CACHE_VOLUME_NAME)
                     }
                 }
                 stage('Source Distribution Package'){
@@ -1378,13 +1405,10 @@ pipeline {
                             }
                             steps{
                                 script{
-                                    def testSdistStages = [
-                                        failFast: true
-                                    ]
-                                    testSdistStages << getMacSdistStages(params, SUPPORTED_MAC_VERSIONS)
-                                    testSdistStages << getWindowsSdistStages(params, SUPPORTED_WINDOWS_VERSIONS)
-                                    testSdistStages << getLinuxSdistStages(params, SUPPORTED_LINUX_VERSIONS)
-
+                                    def testSdistStages = [failFast: true]
+                                    testSdistStages << getMacSdistStages(params, config['supporting']['pythonVersions']['macOS'])
+                                    testSdistStages << getWindowsSdistStages(params, config['supporting']['pythonVersions']['windows'])
+                                    testSdistStages << getLinuxSdistStages(params, config['supporting']['pythonVersions']['linux'])
                                     parallel(testSdistStages)
                                 }
                             }
