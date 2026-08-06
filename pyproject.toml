@@ -102,6 +102,11 @@ norecursedirs = "build"
 markers = "integration"
 junit_family="xunit2"
 
+[tool.pylint.MAIN]
+init-hook = "import sys; sys.path.append('src')"  # Replace 'src' with your module directory
+extension-pkg-allow-list = ["py3exiv2bind.core", "uiucprescon.imagevalidate.openjp2wrap"]
+
+
 [tool.cibuildwheel]
 test-groups = ["test"]
 test-command = "pytest {project}/tests"

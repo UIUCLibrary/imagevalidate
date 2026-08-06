@@ -1,16 +1,22 @@
 """Report generated from validation."""
+from __future__ import annotations
 
-from typing import NamedTuple, Optional, Dict, List, Union
+from typing import NamedTuple, Optional, Dict, List, Union, TYPE_CHECKING
 from enum import Enum
-from uiucprescon import imagevalidate
+if TYPE_CHECKING:
+    from uiucprescon import imagevalidate
 
 
 class ResultCategory(Enum):
+    """Enum class defining result categories."""
+
     ANY = 0
     NONE = 1
 
 
 class Result(NamedTuple):
+    """Result class defining result values."""
+
     expected: Union[str, ResultCategory]
     actual: Optional[str]
 
@@ -20,10 +26,10 @@ class Report:
 
     def __init__(self) -> None:
         """Access the results."""
-        self._properties: Dict[str, Result] = dict()
+        self._properties: Dict[str, Result] = {}
         self.filename: Optional[str] = None
 
-        self._data: Dict[imagevalidate.IssueCategory, List[str]] = dict()
+        self._data: Dict[imagevalidate.IssueCategory, List[str]] = {}
 
     @property
     def valid(self) -> bool:
@@ -40,7 +46,7 @@ class Report:
             -> List[str]:
         """Issues or problems discovered."""
         if issue_type is not None:
-            return self._data.get(issue_type, list())
+            return self._data.get(issue_type, [])
 
         # In issue category is selected, return all
         return [issue for issues in
@@ -53,4 +59,4 @@ class Report:
         else:
             issue_str = "No issues discovered"
 
-        return "File: {}\n{}".format(self.filename, issue_str)
+        return f"File: {self.filename}\n{issue_str}"

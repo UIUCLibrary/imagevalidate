@@ -1,15 +1,19 @@
 """Profile for validating images."""
+from __future__ import annotations
 
 import os
 import inspect
-from typing import Type, Set, Dict
-from uiucprescon import imagevalidate
+from typing import Type, Set, Dict, TYPE_CHECKING
 from . import profiles as profile_pkg
+
+if TYPE_CHECKING:
+    from uiucprescon import imagevalidate
 
 known_profiles: Dict[str, Type[profile_pkg.AbsProfile]] = {}
 
 
 class Profile:
+    # pylint: disable=too-few-public-methods
     """Profile loader for validating embedded metadata in image files."""
 
     def __init__(self, validation_profile: profile_pkg.AbsProfile) -> None:
@@ -33,6 +37,7 @@ class Profile:
         if not os.path.exists(file):
             raise FileNotFoundError(f"Unable to locate {file}")
         return self._profile.validate(file)
+# pylint: enable=too-few-public-methods
 
 
 def available_profiles() -> Set[str]:
@@ -55,6 +60,7 @@ def get_profile(name: str) -> profile_pkg.AbsProfile:
 
 
 def get_profile_classes():
+    """Get all available profiles."""
     known_package_profiles: Dict[str, Type[profile_pkg.AbsProfile]] = {}
     profiles = \
         inspect.getmembers(
@@ -65,5 +71,6 @@ def get_profile_classes():
     for profile in profiles:
         known_package_profiles[profile[1].profile_name()] = profile[1]
     return known_package_profiles
+
 
 known_profiles = get_profile_classes()
