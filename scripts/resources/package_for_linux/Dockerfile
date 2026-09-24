@@ -26,10 +26,6 @@ FROM ${manylinux_image} AS base
 RUN --mount=type=cache,target=/var/cache/yum \
     yum install -y lndir
 
-# This needed to use uv run with --only-group option and have access to +gil versions of python
-RUN --mount=type=cache,target=/path/to/pipx/cache \
-    pipx install "uv>=0.9.8" --force
-
 # ==============================================================================
 FROM base AS conan_builder
 # CentOS on ARM64 does not have a jq package, but there are binaries available via github.
