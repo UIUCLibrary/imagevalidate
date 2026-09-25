@@ -257,8 +257,10 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes, sharedPip
                                 try{
                                     checkout scm
                                     try{
-                                        withEnv(["UV_CONFIG_FILE=${createWindowUVConfig()}"]){
-                                            powershell(label: 'Building Wheel for Windows', script: "scripts/build_windows.ps1 -PythonVersion ${pythonVersion} -DockerImageName ${dockerImageName}")
+                                        retry(2){
+                                            withEnv(["UV_CONFIG_FILE=${createWindowUVConfig()}"]){
+                                                powershell(label: 'Building Wheel for Windows', script: "scripts/build_windows.ps1 -PythonVersion ${pythonVersion} -DockerImageName ${dockerImageName}")
+                                            }
                                         }
                                         stash includes: 'dist/*.whl', name: "python${pythonVersion} windows wheel"
                                         wheelStashes << "python${pythonVersion} windows wheel"
@@ -1298,11 +1300,13 @@ pipeline {
                                                 ){
                                                      withEnv(["UV_CONFIG_FILE=${createWindowUVConfig()}",]){
                                                          bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
-                                                         envs = bat(
-                                                             label: 'Get tox environments',
-                                                             script: '@.\\venv\\Scripts\\uv run --frozen --quiet --only-group=tox tox list -d --no-desc',
-                                                             returnStdout: true,
-                                                         ).trim().split('\r\n')
+                                                         retry(3){
+                                                             envs = bat(
+                                                                 label: 'Get tox environments',
+                                                                 script: '@.\\venv\\Scripts\\uv run --frozen --quiet --only-group=tox tox list -d --no-desc',
+                                                                 returnStdout: true,
+                                                             ).trim().split('\r\n')
+                                                         }
                                                      }
                                                 }
                                             }
