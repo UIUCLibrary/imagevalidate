@@ -151,93 +151,95 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                         })
                     }
                 }
-                def universal2BuildStageName = "Universal2 Wheel: Python ${pythonVersion}"
-                stage("Universal2 Wheel: Python ${pythonVersion}"){
-                    if(params.INCLUDE_MACOS_X86_64 && params.INCLUDE_MACOS_ARM){
-                        stage('Make Universal2 wheel'){
-                            node("mac && python3") {
-                                checkout scm
-                                unstash "python${pythonVersion} mac arm64 wheel"
-                                unstash "python${pythonVersion} mac x86_64 wheel"
-                                def wheelNames = []
-                                findFiles(excludes: '', glob: 'dist/*.whl').each{wheelFile ->
-                                    wheelNames.add(wheelFile.path)
-                                }
-                                try{
-                                    withEnv(["UV_CONFIG_FILE=${createUnixUvConfig()}"]){
-                                        sh(label: 'Make Universal2 wheel',
-                                           script: """python3 -m venv venv
-                                                      trap 'rm -rf venv' EXIT
-                                                      ./venv/bin/pip install --disable-pip-version-check uv
-                                                      ./venv/bin/uv run --frozen --only-group=package delocate-merge ${wheelNames.join(' ')} --verbose -w ./out/
-                                                      rm dist/*.whl
-                                                   """
-                                           )
-                                   }
-                                   def fusedWheel = findFiles(excludes: '', glob: 'out/*.whl')[0]
-                                   def props = readTOML( file: 'pyproject.toml')['project']
-                                   def universalWheel = "uiucprescon.imagevalidate-${props.version}-cp${pythonVersion.replace('.','').replace('+gil','')}-cp${pythonVersion.replace('.','').replace('+gil','')}-macosx_11_0_universal2.whl"
-                                   sh "mv ${fusedWheel.path} ./dist/${universalWheel}"
-                                   stash includes: 'dist/*.whl', name: "python${pythonVersion} mac-universal2 wheel"
-                                   wheelStashes << "python${pythonVersion} mac-universal2 wheel"
-                                   archiveArtifacts artifacts: 'dist/*.whl'
-                                } finally {
-                                    sh "${tool(name: 'Default', type: 'git')} clean -dfx"
-                               }
-                            }
-                        }
-                        def testUniversal2WheelStageName = "Test Universal2 Python ${pythonVersion} Wheel"
-                        stage(testUniversal2WheelStageName){
-                            if(testPackages == true){
-                                parallel([failFast: true] << allValidArches.collectEntries{ arch ->
-                                    def testWheelStageName = "Test Python ${pythonVersion} universal2 Wheel on ${arch} mac"
-                                    return [
-                                        "${testWheelStageName}": {
-                                            stage("Test Python ${pythonVersion} universal2 Wheel on ${arch} mac"){
-                                                retry(3){
-                                                    node("mac && python3 && ${arch}"){
-                                                        checkout scm
-                                                        unstash "python${pythonVersion} mac-universal2 wheel"
-                                                        try{
-                                                            withEnv(["UV_CONFIG_FILE=${createUnixUvConfig()}"]){
-                                                                sh """python3 -m venv venv
-                                                                      ./venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                      ./venv/bin/uv python install ${pythonVersion.replace('+gil','')}
-                                                                  """
-                                                                findFiles(glob: 'dist/*.whl').each{
-                                                                    withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
-                                                                        def attempt = 0
-                                                                        retry(2){
-                                                                            attempt += 1
-                                                                            withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
-                                                                                sh(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
-                                                                                   script: """trap 'rm -rf .tox' EXIT
-                                                                                              venv/bin/uv run --frozen --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
-                                                                                           """
-                                                                                )
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                            archiveArtifacts artifacts: 'dist/*.whl'
-                                                        } finally {
-                                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    ]
-                                })
-                            } else {
-                                Utils.markStageSkippedForConditional(testUniversal2WheelStageName)
-                            }
-                        }
-                    } else {
-                        Utils.markStageSkippedForConditional(universal2BuildStageName)
-                    }
-                }
+//                 Universal Wheels are not possible with the current method until
+//                 https://github.com/matthew-brett/delocate/issues/279 is addressed
+//                 def universal2BuildStageName = "Universal2 Wheel: Python ${pythonVersion}"
+//                 stage("Universal2 Wheel: Python ${pythonVersion}"){
+//                     if(params.INCLUDE_MACOS_X86_64 && params.INCLUDE_MACOS_ARM){
+//                         stage('Make Universal2 wheel'){
+//                             node("mac && python3") {
+//                                 checkout scm
+//                                 unstash "python${pythonVersion} mac arm64 wheel"
+//                                 unstash "python${pythonVersion} mac x86_64 wheel"
+//                                 def wheelNames = []
+//                                 findFiles(excludes: '', glob: 'dist/*.whl').each{wheelFile ->
+//                                     wheelNames.add(wheelFile.path)
+//                                 }
+//                                 try{
+//                                     withEnv(["UV_CONFIG_FILE=${createUnixUvConfig()}"]){
+//                                         sh(label: 'Make Universal2 wheel',
+//                                            script: """python3 -m venv venv
+//                                                       trap 'rm -rf venv' EXIT
+//                                                       ./venv/bin/pip install --disable-pip-version-check uv
+//                                                       ./venv/bin/uv run --frozen --only-group=package delocate-merge ${wheelNames.join(' ')} --verbose -w ./out/
+//                                                       rm dist/*.whl
+//                                                    """
+//                                            )
+//                                    }
+//                                    def fusedWheel = findFiles(excludes: '', glob: 'out/*.whl')[0]
+//                                    def props = readTOML( file: 'pyproject.toml')['project']
+//                                    def universalWheel = "uiucprescon.imagevalidate-${props.version}-cp${pythonVersion.replace('.','').replace('+gil','')}-cp${pythonVersion.replace('.','').replace('+gil','')}-macosx_11_0_universal2.whl"
+//                                    sh "mv ${fusedWheel.path} ./dist/${universalWheel}"
+//                                    stash includes: 'dist/*.whl', name: "python${pythonVersion} mac-universal2 wheel"
+//                                    wheelStashes << "python${pythonVersion} mac-universal2 wheel"
+//                                    archiveArtifacts artifacts: 'dist/*.whl'
+//                                 } finally {
+//                                     sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+//                                }
+//                             }
+//                         }
+//                         def testUniversal2WheelStageName = "Test Universal2 Python ${pythonVersion} Wheel"
+//                         stage(testUniversal2WheelStageName){
+//                             if(testPackages == true){
+//                                 parallel([failFast: true] << allValidArches.collectEntries{ arch ->
+//                                     def testWheelStageName = "Test Python ${pythonVersion} universal2 Wheel on ${arch} mac"
+//                                     return [
+//                                         "${testWheelStageName}": {
+//                                             stage("Test Python ${pythonVersion} universal2 Wheel on ${arch} mac"){
+//                                                 retry(3){
+//                                                     node("mac && python3 && ${arch}"){
+//                                                         checkout scm
+//                                                         unstash "python${pythonVersion} mac-universal2 wheel"
+//                                                         try{
+//                                                             withEnv(["UV_CONFIG_FILE=${createUnixUvConfig()}"]){
+//                                                                 sh """python3 -m venv venv
+//                                                                       ./venv/bin/python -m pip install --disable-pip-version-check uv
+//                                                                       ./venv/bin/uv python install ${pythonVersion.replace('+gil','')}
+//                                                                   """
+//                                                                 findFiles(glob: 'dist/*.whl').each{
+//                                                                     withEnv(["TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
+//                                                                         def attempt = 0
+//                                                                         retry(2){
+//                                                                             attempt += 1
+//                                                                             withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
+//                                                                                 sh(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+//                                                                                    script: """trap 'rm -rf .tox' EXIT
+//                                                                                               venv/bin/uv run --frozen --only-group=tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
+//                                                                                            """
+//                                                                                 )
+//                                                                             }
+//                                                                         }
+//                                                                     }
+//                                                                 }
+//                                                             }
+//                                                             archiveArtifacts artifacts: 'dist/*.whl'
+//                                                         } finally {
+//                                                             sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+//                                                         }
+//                                                     }
+//                                                 }
+//                                             }
+//                                         }
+//                                     ]
+//                                 })
+//                             } else {
+//                                 Utils.markStageSkippedForConditional(testUniversal2WheelStageName)
+//                             }
+//                         }
+//                     } else {
+//                         Utils.markStageSkippedForConditional(universal2BuildStageName)
+//                     }
+//                 }
             }
         ]
         }
@@ -776,7 +778,7 @@ pipeline {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86_64'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL'
-                            args "--label=purpose=ci --label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"JOB_NAME=${env.JOB_NAME}\" --label \"BUILD_NUMBER=${currentBuild.number}\" -v ${SHARED_PIP_CACHE_VOLUME_NAME}:/tmp/pipcache  --tmpfs /.config:exec --tmpfs /.tree-sitter:exec --tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv --mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp"
+                            args "--label=purpose=ci --label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"JOB_NAME=${env.JOB_NAME}\" --label \"BUILD_NUMBER=${currentBuild.number}\" -v ${SHARED_PIP_CACHE_VOLUME_NAME}:/tmp/pipcache  --tmpfs /.config:exec --tmpfs /.tree-sitter:exec --tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv --mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp --tmpfs /myhome:exec -e HOME=/myhome"
                         }
                     }
                     environment{
