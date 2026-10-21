@@ -776,7 +776,7 @@ pipeline {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86_64'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg UV_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL'
-                            args "--label=purpose=ci --label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"JOB_NAME=${env.JOB_NAME}\" --label \"BUILD_NUMBER=${currentBuild.number}\" -v ${SHARED_PIP_CACHE_VOLUME_NAME}:/tmp/pipcache  --tmpfs /.config:exec --tmpfs /.tree-sitter:exec --tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv --mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp"
+                            args "--label=purpose=ci --label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"JOB_NAME=${env.JOB_NAME}\" --label \"BUILD_NUMBER=${currentBuild.number}\" -v ${SHARED_PIP_CACHE_VOLUME_NAME}:/tmp/pipcache  --tmpfs /.config:exec --tmpfs /.tree-sitter:exec --tmpfs /tmp_venv:exec -e UV_PROJECT_ENVIRONMENT=/tmp_venv --mount source=python-tmp-uiucpreson-imagevalidate,target=/tmp --tmpfs /myhome:exec -e HOME=/myhome"
                         }
                     }
                     environment{
